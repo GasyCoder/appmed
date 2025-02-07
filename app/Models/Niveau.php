@@ -33,7 +33,7 @@ class Niveau extends Model
 
     public function teachers()
     {
-        return $this->belongsToMany(User::class, 'teacher_niveaux', 'niveau_id', 'user_id');
+        return $this->belongsToMany(User::class, 'niveau_user', 'niveau_id', 'user_id');
     }
 
     public function semestres()

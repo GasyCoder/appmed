@@ -91,16 +91,20 @@ class DocumentUpload extends Component
 
     public function getTeacherParcoursProperty()
     {
-        return Parcour::whereHas('teachers', function($q) {
-            $q->where('users.id', Auth::id());
+        if (!$this->niveau_id) {
+            return collect();
+        }
+    
+        return Parcour::whereHas('teachers', function($query) {
+            $query->where('user_id', Auth::id())
+                  ->where('status', true);
         })
-        ->where('status', true)
         ->when($this->niveau_id, function($query) {
-            $query->whereExists(function($q) {
-                $q->select('id')
-                    ->from('teacher_niveaux')
-                    ->where('user_id', Auth::id())
-                    ->where('niveau_id', $this->niveau_id);
+            $query->whereHas('teachers', function($q) {
+                $q->where('user_id', Auth::id())
+                  ->whereHas('teacherNiveaux', function($n) {
+                      $n->where('niveau_id', $this->niveau_id);
+                  });
             });
         })
         ->orderBy('name')

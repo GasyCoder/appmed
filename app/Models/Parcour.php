@@ -6,17 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Parcour extends Model
 {
-    // Table name (optional if the table name matches the plural form of the model name)
     protected $table = 'parcours';
 
-    // Mass assignable attributes
     protected $fillable = [
         'sigle',
         'name',
         'status',
     ];
 
-    // Casting attributes
     protected $casts = [
         'status' => 'boolean',
     ];
@@ -33,7 +30,6 @@ class Parcour extends Model
 
     public function teachers()
     {
-        return $this->belongsToMany(User::class, 'teacher_parcours', 'parcour_id', 'user_id');
+        return $this->belongsToMany(User::class, 'parcour_user');
     }
-
 }

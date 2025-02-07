@@ -547,7 +547,7 @@ async function openPdfViewer(data) {
  */
 async function incrementViewCount(documentId) {
     try {
-        const response = await fetchWithTimeout(`/etudiant/document/${documentId}/increment-view`, {
+        const response = await fetchWithTimeout(`/document/${documentId}/increment-view`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

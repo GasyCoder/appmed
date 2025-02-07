@@ -1,7 +1,7 @@
 {{-- livewire.teacher.forms.upload-file --}}
 <div>
     <div class="flex items-center justify-between mb-3">
-        <label class="text-base font-semibold">Documents</label>
+        <label class="text-base font-semibold text-gray-700 dark:text-gray-300">Documents</label>
         @if($file)
             <span class="text-sm text-green-600">{{ count($file) }} document(s) sélectionné(s)</span>
         @endif

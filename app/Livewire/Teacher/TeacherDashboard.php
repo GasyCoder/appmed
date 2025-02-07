@@ -23,6 +23,8 @@ class TeacherDashboard extends Component
 
     public function render()
     {
+        $user = auth()->user();
+
         $stats = [
             'total_uploads' => Document::where('uploaded_by', auth()->id())->count(),
             'public_documents' => Document::where('uploaded_by', auth()->id())
@@ -33,6 +35,8 @@ class TeacherDashboard extends Component
                 ->count(),
             'total_downloads' => Document::where('uploaded_by', auth()->id())
                 ->sum('download_count'),
+            'niveaux_count' => $user->teacherNiveaux()->count(),
+            'parcours_count' => $user->teacherParcours()->count()
         ];
 
         $recentDocuments = Document::where('uploaded_by', auth()->id())

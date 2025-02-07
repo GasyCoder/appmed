@@ -105,6 +105,7 @@ class Document extends Model
     public function incrementViewCount()
     {
         $this->increment('view_count');
+        $this->save();
     }
 
     // Types de fichiers autorisés
@@ -169,5 +170,24 @@ class Document extends Model
     public function getExtensionAttribute()
     {
         return strtolower(pathinfo($this->file_path, PATHINFO_EXTENSION));
+    }
+
+    // Sécurisation des fichiers (optionnel)
+    public function secureFileUpload($file)
+    {
+        // Enregistrer le fichier de manière sécurisée
+        $path = $file->storeAs('documents', $file->getClientOriginalName(), 'public');
+        $this->file_path = $path;
+        $this->file_size = $file->getSize();
+        $this->file_type = $file->getMimeType();
+        $this->save();
+    }
+
+    public function deleteFile()
+    {
+        if ($this->fileExists()) {
+            Storage::disk('public')->delete($this->file_path);
+        }
+        $this->delete();
     }
 }

@@ -1,11 +1,14 @@
-<div class="bg-white shadow-sm rounded-lg p-4 mb-6">
+<div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4 mb-6">
     <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div class="flex flex-1 gap-4">
             <input
                 type="text"
                 wire:model.live="search"
                 placeholder="Rechercher un semestre..."
-                class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 flex-1"
+                class="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+                       text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400
+                       shadow-sm focus:border-indigo-500 dark:focus:border-indigo-400
+                       focus:ring-indigo-500 dark:focus:ring-indigo-400 flex-1"
             >
         </div>
         <button

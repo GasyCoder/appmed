@@ -94,28 +94,54 @@
         <x-dropdown align="right" width="48">
             <x-slot name="trigger">
                 <div class="flex items-center gap-3 p-1.5 cursor-pointer">
-                    <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-                        <span class="text-sm font-medium text-indigo-600 dark:text-indigo-300">
-                            {{ substr(Auth::user()->name, 0, 1) }}
-                        </span>
+                    <div class="relative">
+                        @if (Laravel\Jetstream\Jetstream::managesProfilePhotos() && Auth::user()->profile_photo_url)
+                            <img class="w-8 h-8 rounded-full object-cover ring-2 ring-white dark:ring-gray-800 transition-transform hover:scale-105" 
+                                 src="{{ Auth::user()->profile_photo_url }}" 
+                                 alt="{{ Auth::user()->name }}" />
+                        @else
+                            <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 ring-2 ring-white dark:ring-gray-800 flex items-center justify-center transition-transform hover:scale-105">
+                                <span class="text-sm font-medium text-indigo-600 dark:text-indigo-300">
+                                    {{ substr(Auth::user()->name, 0, 1) }}
+                                </span>
+                            </div>
+                        @endif
+                        <!-- Indicateur de statut actif avec animation -->
+                        <div class="absolute -bottom-0.5 -right-0.5">
+                            <div class="h-2.5 w-2.5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                            <div class="absolute inset-0 h-2.5 w-2.5 bg-green-500 rounded-full animate-ping opacity-75"></div>
+                        </div>
                     </div>
                 </div>
             </x-slot>
 
             <x-slot name="content">
-                <div class="block px-4 py-2 text-xs text-gray-400 dark:text-gray-500">
+                <!-- En-tête du dropdown -->
+                <div class="block px-4 py-2 text-xs text-gray-400 dark:text-gray-500 dark:bg-gray-800">
                     {{ __('Gestion du compte') }}
                 </div>
-
-                <x-dropdown-link href="{{ route('profile.show') }}" class="dark:text-gray-300 dark:hover:bg-gray-700">
-                    {{ __('Profile') }}
+            
+                <!-- Lien Profile -->
+                <x-dropdown-link href="{{ route('profile.show') }}" 
+                    class="flex items-center gap-2 bg-transparent dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    {{ __('Profil') }}
                 </x-dropdown-link>
-
-                <div class="border-t border-gray-200 dark:border-gray-700"></div>
-
-                <form method="POST" action="{{ route('logout') }}" x-data>
+            
+                <!-- Séparateur -->
+                <div class="border-t border-gray-200 dark:border-gray-600/50 dark:bg-gray-800"></div>
+            
+                <!-- Formulaire de déconnexion -->
+                <form method="POST" action="{{ route('logout') }}" x-data class="dark:bg-gray-800">
                     @csrf
-                    <x-dropdown-link href="{{ route('logout') }}" @click.prevent="$root.submit();" class="dark:text-gray-300 dark:hover:bg-gray-700">
+                    <x-dropdown-link href="{{ route('logout') }}" 
+                        @click.prevent="$root.submit();"
+                        class="flex items-center gap-2 bg-transparent dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
                         {{ __('Déconnexion') }}
                     </x-dropdown-link>
                 </form>

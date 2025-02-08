@@ -44,18 +44,49 @@
                             </svg>
                             Accueil
                         </a>
-
-                        <a href="{{ route('admin.users') }}"
+                        {{-- <a href="{{ route('admin.users') }}"
                         class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors {{ request()->routeIs('admin.users') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/75' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}"
                         wire:navigate>
                             <svg class="flex-shrink-0 w-5 h-5 mr-3 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                             </svg>
                             Utilisateurs
-                        </a>
+                        </a> --}}
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open"
+                                    class="flex items-center justify-between w-full px-4 py-2.5 text-sm font-medium text-left text-gray-700 rounded-lg hover:bg-gray-100 focus:outline-none">
+                                <div class="flex items-center">
+                                    <svg class="flex-shrink-0 w-5 h-5 mr-3 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    </svg>
+                                    Utilisateurs
+                                </div>
+                                <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': open }"
+                                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <!-- Sous-menu -->
+                            <div x-show="open"
+                                 x-transition:enter="transition ease-out duration-100"
+                                 x-transition:enter-start="transform opacity-0 scale-95"
+                                 x-transition:enter-end="transform opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-75"
+                                 x-transition:leave-start="transform opacity-100 scale-100"
+                                 x-transition:leave-end="transform opacity-0 scale-95"
+                                 class="pl-12 mt-1 space-y-1">
+                                <a href="{{ route('admin.teachers')}}" wire:navigate
+                                    class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-50">
+                                    Enseignants
+                                </a>
+                                <a href="{{ route('admin.students')}}" wire:navigate
+                                    class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-50">
+                                    Etudiants
+                                </a>
+                            </div>
+                        </div>
                     </nav>
                 </div>
-
                 <div class="mb-4">
                     <p class="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Configuration</p>
                     <nav class="mt-3 space-y-1">
@@ -186,7 +217,6 @@
                 </div>
             @endrole
         </div>
-
         <!-- Profile Section -->
         <div class="border-t border-gray-200 dark:border-gray-700 p-4">
             <div class="flex items-center space-x-3">

@@ -10,47 +10,37 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 
-class UsersManagement extends Component
+class UsersStudent extends Component
 {
     use WithPagination;
 
     // Propriétés de recherche et filtrage
     public $search = '';
-    public $role = '';
     public $perPage = 10;
 
     // Propriétés du modal
     public $showUserModal = false;
 
-    // Propriétés du formulaire utilisateur
+    // Propriétés du formulaire étudiant
     public $userId;
     public $name = '';
     public $email = '';
     public $password = '';
-    public $selectedRole = '';
     public $status = true;
-
-    // Propriétés pour étudiant
     public $niveau_id;
     public $parcour_id;
 
-    // Propriétés pour enseignant
-    public $selectedTeacherNiveaux = [];
-    public $selectedTeacherParcours = [];
-
     // Propriétés du profil
-    public $grade;
     public $sexe;
     public $telephone;
     public $departement;
     public $ville;
     public $adresse;
-
-    // État du chargement
+    public $niveau_filter = '';
+    public $parcour_filter = '';
     public $isLoading = false;
 
     // Écouteurs d'événements
@@ -71,24 +61,16 @@ class UsersManagement extends Component
             'name' => 'required|string|min:3|max:255',
             'email' => ['required', 'email', Rule::unique('users')->ignore($this->userId)],
             'password' => $this->userId ? 'nullable|min:8' : 'required|min:8',
-            'selectedRole' => 'required|in:teacher,student',
             'status' => 'boolean',
+            'niveau_id' => 'required|exists:niveaux,id',
+            'parcour_id' => 'required|exists:parcours,id',
 
             // Règles pour le profil
-            'grade' => 'nullable|string|max:255',
             'sexe' => 'nullable|in:homme,femme',
             'telephone' => 'nullable|string|max:20',
             'departement' => 'nullable|string|max:255',
             'ville' => 'nullable|string|max:255',
             'adresse' => 'nullable|string|max:255',
-
-            // Règles conditionnelles pour étudiant
-            'niveau_id' => Rule::when($this->selectedRole === 'student', 'required|exists:niveaux,id'),
-            'parcour_id' => Rule::when($this->selectedRole === 'student', 'required|exists:parcours,id'),
-
-            // Règles conditionnelles pour enseignant
-            'selectedTeacherNiveaux' => Rule::when($this->selectedRole === 'teacher', 'required|array|min:1'),
-            'selectedTeacherParcours' => Rule::when($this->selectedRole === 'teacher', 'required|array|min:1'),
         ];
     }
 
@@ -99,15 +81,12 @@ class UsersManagement extends Component
         'email.email' => 'L\'email doit être valide',
         'email.unique' => 'Cet email est déjà utilisé',
         'password.required' => 'Le mot de passe est requis',
-        'selectedRole.required' => 'Le rôle est requis',
-        'niveau_id.required' => 'Le niveau est requis pour un étudiant',
-        'parcour_id.required' => 'Le parcours est requis pour un étudiant',
-        'selectedTeacherNiveaux.required' => 'Sélectionnez au moins un niveau d\'enseignement',
-        'selectedTeacherParcours.required' => 'Sélectionnez au moins un parcours d\'enseignement',
+        'niveau_id.required' => 'Le niveau est requis',
+        'parcour_id.required' => 'Le parcours est requis',
     ];
 
-    // Création ou mise à jour d'un utilisateur
-    public function createUser()
+    // Création ou mise à jour d'un étudiant
+    public function createStudent()
     {
         $this->isLoading = true;
         $validatedData = $this->validate();
@@ -119,8 +98,8 @@ class UsersManagement extends Component
                 'name' => $this->name,
                 'email' => $this->email,
                 'status' => $this->status,
-                'niveau_id' => $this->selectedRole === 'student' ? $this->niveau_id : null,
-                'parcour_id' => $this->selectedRole === 'student' ? $this->parcour_id : null,
+                'niveau_id' => $this->niveau_id,
+                'parcour_id' => $this->parcour_id,
             ];
 
             if (!$this->userId || $this->password) {
@@ -136,7 +115,6 @@ class UsersManagement extends Component
 
             // Gestion du profil
             $profileData = [
-                'grade' => $this->grade,
                 'sexe' => $this->sexe,
                 'telephone' => $this->telephone,
                 'departement' => $this->departement,
@@ -150,25 +128,20 @@ class UsersManagement extends Component
                 $user->profil()->create($profileData);
             }
 
-            // Gestion des rôles et relations
-            $user->syncRoles([$this->selectedRole]);
-
-            if ($this->selectedRole === 'teacher') {
-                $user->teacherNiveaux()->sync($this->selectedTeacherNiveaux);
-                $user->teacherParcours()->sync($this->selectedTeacherParcours);
-            }
+            // Assignation du rôle étudiant
+            $user->assignRole('student');
 
             DB::commit();
 
             $this->reset();
             $this->dispatch('notify', [
-                'message' => $this->userId ? 'Utilisateur mis à jour avec succès' : 'Utilisateur créé avec succès',
+                'message' => $this->userId ? 'Étudiant mis à jour avec succès' : 'Étudiant créé avec succès',
                 'type' => 'success'
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Erreur lors de la création/mise à jour de l\'utilisateur:', [
+            Log::error('Erreur lors de la création/mise à jour de l\'étudiant:', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -182,11 +155,12 @@ class UsersManagement extends Component
         }
     }
 
-    // Édition d'un utilisateur
-    public function editUser($userId)
+    // Édition d'un étudiant
+    public function editStudent($userId)
     {
         try {
-            $user = User::with(['roles', 'teacherNiveaux', 'teacherParcours', 'profil'])
+            $user = User::with(['niveau', 'parcour', 'profil'])
+                       ->role('student')
                        ->findOrFail($userId);
 
             $this->userId = $user->id;
@@ -195,11 +169,9 @@ class UsersManagement extends Component
             $this->status = $user->status;
             $this->niveau_id = $user->niveau_id;
             $this->parcour_id = $user->parcour_id;
-            $this->selectedRole = $user->roles->first()?->name;
 
             // Charger les données du profil
             if ($user->profil) {
-                $this->grade = $user->profil->grade;
                 $this->sexe = $user->profil->sexe;
                 $this->telephone = $user->profil->telephone;
                 $this->departement = $user->profil->departement;
@@ -207,46 +179,41 @@ class UsersManagement extends Component
                 $this->adresse = $user->profil->adresse;
             }
 
-            if ($user->hasRole('teacher')) {
-                $this->selectedTeacherNiveaux = $user->teacherNiveaux->pluck('id')->toArray();
-                $this->selectedTeacherParcours = $user->teacherParcours->pluck('id')->toArray();
-            }
-
             $this->showUserModal = true;
 
         } catch (\Exception $e) {
-            Log::error('Erreur lors du chargement de l\'utilisateur:', [
+            Log::error('Erreur lors du chargement de l\'étudiant:', [
                 'error' => $e->getMessage(),
                 'user_id' => $userId
             ]);
 
             $this->dispatch('notify', [
-                'message' => 'Erreur lors du chargement de l\'utilisateur',
+                'message' => 'Erreur lors du chargement de l\'étudiant',
                 'type' => 'error'
             ]);
         }
     }
 
-    // Supprimer un utilisateur
+    // Supprimer un étudiant
     public function deleteUser($userId)
     {
         try {
-            $user = User::findOrFail($userId);
+            $user = User::role('student')->findOrFail($userId);
             $user->delete();
 
             $this->dispatch('notify', [
-                'message' => 'Utilisateur supprimé avec succès',
+                'message' => 'Étudiant supprimé avec succès',
                 'type' => 'success'
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la suppression de l\'utilisateur:', [
+            Log::error('Erreur lors de la suppression de l\'étudiant:', [
                 'error' => $e->getMessage(),
                 'user_id' => $userId
             ]);
 
             $this->dispatch('notify', [
-                'message' => 'Erreur lors de la suppression de l\'utilisateur',
+                'message' => 'Erreur lors de la suppression de l\'étudiant',
                 'type' => 'error'
             ]);
         }
@@ -258,11 +225,11 @@ class UsersManagement extends Component
         $this->dispatch('showDeleteConfirmation', ['userId' => $userId]);
     }
 
-    // Changer le statut d'un utilisateur
+    // Changer le statut d'un étudiant
     public function toggleUserStatus($userId)
     {
         try {
-            $user = User::findOrFail($userId);
+            $user = User::role('student')->findOrFail($userId);
             $user->update(['status' => !$user->status]);
 
             $this->dispatch('notify', [
@@ -282,54 +249,42 @@ class UsersManagement extends Component
     public function resetForm()
     {
         $this->reset([
-            'userId', 'name', 'email', 'password', 'selectedRole',
+            'userId', 'name', 'email', 'password',
             'niveau_id', 'parcour_id', 'status', 'showUserModal',
-            'grade', 'sexe', 'telephone', 'departement', 'ville', 'adresse',
-            'selectedTeacherNiveaux', 'selectedTeacherParcours'
+            'sexe', 'telephone', 'departement', 'ville', 'adresse'
         ]);
         $this->resetValidation();
-    }
-
-    // Mise à jour du rôle sélectionné
-    public function updatedSelectedRole()
-    {
-        if ($this->selectedRole !== 'student') {
-            $this->reset(['niveau_id', 'parcour_id']);
-        }
-        if ($this->selectedRole !== 'teacher') {
-            $this->reset(['selectedTeacherNiveaux', 'selectedTeacherParcours']);
-        }
     }
 
     // Rendu du composant
     public function render()
     {
-        $users = User::query()
-            ->with(['roles', 'niveau', 'parcour', 'profil', 'teacherNiveaux', 'teacherParcours'])
-            ->whereHas('roles', function ($query) {
-                $query->whereIn('name', ['teacher', 'student']);
-            })
+        $students = User::query()
+            ->with(['niveau', 'parcour', 'profil'])
+            ->role('student')
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', "%{$this->search}%")
                       ->orWhere('email', 'like', "%{$this->search}%")
                       ->orWhereHas('profil', function ($p) {
-                          $p->where('grade', 'like', "%{$this->search}%")
-                            ->orWhere('departement', 'like', "%{$this->search}%");
+                          $p->where('departement', 'like', "%{$this->search}%");
                       });
                 });
             })
-            ->when($this->role, function ($query) {
-                $query->role($this->role);
+            ->when($this->niveau_filter, function ($query) {
+                $query->where('niveau_id', $this->niveau_filter);
+            })
+            ->when($this->parcour_filter, function ($query) {
+                $query->where('parcour_id', $this->parcour_filter);
             })
             ->orderByDesc('created_at')
             ->paginate($this->perPage);
 
-        return view('livewire.admin.users-management', [
-            'users' => $users,
+        return view('livewire.admin.users-student', [
+            'students' => $students,
             'niveaux' => Niveau::where('status', true)->get(),
             'parcours' => Parcour::where('status', true)->get(),
-            'roles' => Role::whereIn('name', ['teacher', 'student'])->get() // Ajout des rôles
+            'type' => 'student'
         ]);
     }
 }

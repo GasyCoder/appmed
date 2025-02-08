@@ -23,7 +23,14 @@ class TeacherDashboard extends Component
 
     public function render()
     {
-        $user = auth()->user();
+        // Charger l'utilisateur avec les relations nécessaires
+        $user = auth()->user()->load([
+            'teacherNiveaux.semestres' => function($query) {
+                $query->where('status', true)
+                      ->orderBy('name');
+            },
+            'profil'
+        ]);
 
         $stats = [
             'total_uploads' => Document::where('uploaded_by', auth()->id())->count(),
@@ -51,6 +58,31 @@ class TeacherDashboard extends Component
             ->take(6)
             ->get();
 
-        return view('livewire.teacher.teacher-dashboard', compact('stats', 'recentDocuments', 'monthlyStats'));
+        // Préparer les niveaux et semestres pour chaque niveau
+        $niveauxSemestres = $user->teacherNiveaux->map(function($niveau) {
+            return [
+                'id' => $niveau->id,
+                'name' => $niveau->name,
+                'semestres' => $niveau->semestres->map(function($semestre) {
+                    return [
+                        'id' => $semestre->id,
+                        'name' => $semestre->name,
+                        'is_active' => $semestre->is_active,
+                        'documents_count' => Document::where('uploaded_by', auth()->id())
+                            ->where('niveau_id', $semestre->niveau_id)
+                            ->where('semestre_id', $semestre->id)
+                            ->count()
+                    ];
+                })
+            ];
+        });
+
+        return view('livewire.teacher.teacher-dashboard', compact(
+            'stats', 
+            'recentDocuments', 
+            'monthlyStats',
+            'user',
+            'niveauxSemestres'
+        ));
     }
 }

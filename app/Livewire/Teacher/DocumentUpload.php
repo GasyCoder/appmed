@@ -36,12 +36,28 @@ class DocumentUpload extends Component
 
     public $is_actif = true;
     public $semestres_selected = [];
+    const MAX_FILES = 6;
+
+    public function mount()
+    {
+        $this->file = [];
+        $this->titles = [];
+        $this->file_status = [];
+        
+        if ($this->niveau_id) {
+            $this->updatedNiveauId();
+        }
+    }
 
     protected $messages = [
+        'file' => 'Veuillez sélectionner un fichier valide.',
         'file.required' => 'Veuillez sélectionner au moins un fichier.',
+        'file.array' => 'Le format des fichiers est invalide.',
+        'file.max' => 'Vous ne pouvez pas téléverser plus de ' . self::MAX_FILES . ' fichiers à la fois.',
         'file.*.file' => 'Chaque élément doit être un fichier valide.',
         'file.*.max' => 'La taille maximale autorisée pour chaque fichier est de 10MB.',
         'file.*.mimes' => 'Les types de fichiers acceptés sont : PDF, Word, Excel, PowerPoint, Images.',
+        'file.*.uploaded' => 'Échec du téléversement du fichier. Veuillez réessayer.',
         'titles.*.required' => 'Un titre est requis pour chaque fichier.',
         'titles.*.min' => 'Chaque titre doit contenir au moins 3 caractères.',
         'titles.*.max' => 'Chaque titre ne peut pas dépasser 255 caractères.',
@@ -57,8 +73,37 @@ class DocumentUpload extends Component
     public function updatedFile()
     {
         if (!empty($this->file)) {
-            $this->titles = array_fill(0, count($this->file), '');
-            $this->file_status = array_fill(0, count($this->file), true);
+            $this->validate([
+                'file' => 'array|max:' . self::MAX_FILES,
+                'file.*' => 'file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpeg,jpg,png'
+            ]);
+
+            foreach ($this->file as $index => $file) {
+                if (!isset($this->titles[$index])) {
+                    $this->titles[$index] = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                }
+                if (!isset($this->file_status[$index])) {
+                    $this->file_status[$index] = true;
+                }
+            }
+        }
+    }
+
+    public function removeFile($index)
+    {
+        if (isset($this->file[$index])) {
+            unset($this->file[$index]);
+            $this->file = array_values($this->file);
+            
+            if (isset($this->titles[$index])) {
+                unset($this->titles[$index]);
+                $this->titles = array_values($this->titles);
+            }
+            
+            if (isset($this->file_status[$index])) {
+                unset($this->file_status[$index]);
+                $this->file_status = array_values($this->file_status);
+            }
         }
     }
 
@@ -111,14 +156,6 @@ class DocumentUpload extends Component
         ->get();
     }
 
-    // Hooks Livewire
-    public function mount()
-    {
-        if (!Auth::user() || !Auth::user()->roles->contains('name', 'teacher')) {
-            return redirect()->route('dashboard');
-        }
-    }
-
     public function updatedNiveauId()
     {
         // Reset selections
@@ -135,9 +172,19 @@ class DocumentUpload extends Component
     // Méthode principale d'upload
     public function uploadDocument()
     {
+        if (count($this->file) > self::MAX_FILES) {
+            session()->flash('error', 'Vous ne pouvez pas téléverser plus de ' . self::MAX_FILES . ' fichiers à la fois.');
+            return;
+        }
+
         $this->validate([
-            'file' => 'required|array',
-            'file.*' => 'file|max:10240|mimes:pdf,doc,docx,dotx,doc,dot,ppt,pptx,xls,xlsx,jpeg,jpg,png',
+            'file' => 'required|array|max:' . self::MAX_FILES,
+            'file.*' => [
+                'required',
+                'file',
+                'max:10240',
+                'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpeg,jpg,png'
+            ],
             'titles.*' => 'required|string|min:3|max:255',
             'niveau_id' => 'required|exists:niveaux,id',
             'parcour_id' => 'required|exists:parcours,id',

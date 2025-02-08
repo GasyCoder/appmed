@@ -10,44 +10,57 @@
                     </svg>
                     Niveau d'enseignement
                 </label>
- 
+
                 <div class="relative">
                     <select
                         wire:model.live="niveau_id"
                         class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 
-                               bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
-                               focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-400 
-                               focus:border-indigo-500 dark:focus:border-indigo-400 rounded-md"
+                            bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                            focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-400 
+                            focus:border-indigo-500 dark:focus:border-indigo-400 rounded-md"
                     >
                         <option value="">-- Sélectionner un niveau --</option>
                         @foreach($this->teacherNiveaux as $niveau)
                             <option value="{{ $niveau->id }}">{{ $niveau->name }}</option>
                         @endforeach
                     </select>
- 
-                    @if($niveau_id && count($this->semestresActifs) > 0)
-                    <div class="mt-2 space-y-2">
-                        <!-- En-tête avec le nombre de semestres -->
-                        <div class="flex items-center justify-between bg-green-50 dark:bg-green-900/50 px-3 py-2 rounded-md">
-                            <span class="text-sm text-green-700 dark:text-green-300">
-                                {{ count($this->semestresActifs) }} semestre(s) actif(s)
-                            </span>
-                            <span class="font-bold text-xs bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
-                                @foreach($this->semestresActifs as $semestre)
-                                    {{ $semestre->name }},
-                                @endforeach
-                            </span>
+
+                    <!-- Indicateur de chargement -->
+                    <div wire:loading wire:target="niveau_id" class="mt-2">
+                        <div class="flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/50 px-3 py-2 rounded-md">
+                            <svg class="animate-spin h-5 w-5 text-indigo-500 dark:text-indigo-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-sm text-indigo-700 dark:text-indigo-300">Chargement des semestres...</span>
                         </div>
                     </div>
-                    @elseif($niveau_id)
-                        <div class="mt-2 flex items-center bg-yellow-50 dark:bg-yellow-900/50 px-3 py-2 rounded-md">
-                            <svg class="w-5 h-5 text-yellow-400 dark:text-yellow-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                            </svg>
-                            <span class="text-sm text-yellow-700 dark:text-yellow-300">Aucun semestre actif pour ce niveau</span>
+
+                    <!-- Affichage des semestres (caché pendant le chargement) -->
+                    <div wire:loading.remove wire:target="niveau_id">
+                        @if($niveau_id && count($this->semestresActifs) > 0)
+                        <div class="mt-2 space-y-2">
+                            <div class="flex items-center justify-between bg-green-50 dark:bg-green-900/50 px-3 py-2 rounded-md">
+                                <span class="text-sm text-green-700 dark:text-green-300">
+                                    {{ count($this->semestresActifs) }} semestre(s) actif(s)
+                                </span>
+                                <span class="font-bold text-xs bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
+                                    @foreach($this->semestresActifs as $semestre)
+                                        {{ $semestre->name }}{{ !$loop->last ? ',' : '' }}
+                                    @endforeach
+                                </span>
+                            </div>
                         </div>
-                    @endif
- 
+                        @elseif($niveau_id)
+                            <div class="mt-2 flex items-center bg-yellow-50 dark:bg-yellow-900/50 px-3 py-2 rounded-md">
+                                <svg class="w-5 h-5 text-yellow-400 dark:text-yellow-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                <span class="text-sm text-yellow-700 dark:text-yellow-300">Aucun semestre actif pour ce niveau</span>
+                            </div>
+                        @endif
+                    </div>
+
                     @error('niveau_id')
                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
@@ -74,8 +87,7 @@
                                focus:border-indigo-500 dark:focus:border-indigo-400 rounded-md
                                disabled:bg-gray-100 dark:disabled:bg-gray-800 
                                disabled:text-gray-500 dark:disabled:text-gray-400"
-                        @if(!$niveau_id) disabled @endif
-                    >
+                        @if(!$niveau_id) disabled @endif>
                         <option value="">-- Sélectionner un parcours --</option>
                         @foreach($this->teacherParcours as $parcour)
                             <option value="{{ $parcour->id }}">{{ $parcour->name }}</option>

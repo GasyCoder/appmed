@@ -221,13 +221,13 @@
                                                 class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200 ease-in-out {{ $document->is_actif ? 'translate-x-5' : 'translate-x-0' }}"
                                             ></span>
                                         </button>
-                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{
+                                        {{-- <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{
                                             $document->is_actif
                                                 ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
                                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                                         }}">
                                             {{ $document->is_actif ? 'Partagé' : 'Non partagé' }}
-                                        </span>
+                                        </span> --}}
                                     </div>
                                 </td>
 

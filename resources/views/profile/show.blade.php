@@ -1,16 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="font-semibold text-xl dark:text-gray-100 claire:text-gray-800 leading-tight">
             {{ __('Profile') }}
         </h2>
     </x-slot>
 
     <div>
-        <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8 dark:text-gray-300 claire:text-gray-700">
             @if (Laravel\Fortify\Features::canUpdateProfileInformation())
                 @livewire('profile.update-profile-information-form')
 
-                <x-section-border />
+                <x-section-border class="dark:border-gray-700 claire:border-gray-200" />
             @endif
 
             @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::updatePasswords()))
@@ -18,7 +18,7 @@
                     @livewire('profile.update-password-form')
                 </div>
 
-                <x-section-border />
+                <x-section-border class="dark:border-gray-700 claire:border-gray-200" />
             @endif
 
             @if (Laravel\Fortify\Features::canManageTwoFactorAuthentication())
@@ -26,7 +26,7 @@
                     @livewire('profile.two-factor-authentication-form')
                 </div>
 
-                <x-section-border />
+                <x-section-border class="dark:border-gray-700 claire:border-gray-200" />
             @endif
 
             <div class="mt-10 sm:mt-0">
@@ -34,7 +34,7 @@
             </div>
 
             @if (Laravel\Jetstream\Jetstream::hasAccountDeletionFeatures())
-                <x-section-border />
+                <x-section-border class="dark:border-gray-700 claire:border-gray-200" />
 
                 <div class="mt-10 sm:mt-0">
                     @livewire('profile.delete-user-form')

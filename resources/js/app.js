@@ -1,10 +1,18 @@
 import './bootstrap';
-import Alpine from 'alpinejs';
+import focus from '@alpinejs/focus';
+import collapse from '@alpinejs/collapse';
 
-// Ne pas initialiser Alpine directement
-window.Alpine = Alpine;
+document.addEventListener('alpine:init', () => {
+    Alpine.plugin(focus);
+    Alpine.plugin(collapse);
 
-// Plugins
-Alpine.plugin(focus);
-Alpine.plugin(collapse);
-Alpine.plugin(persist);
+    Alpine.data('fileUpload', () => ({
+        files: [],
+        handleFileSelect() {
+            this.files = [...this.$refs.fileInput.files];
+        },
+        formatFileSize(bytes) {
+            return Math.round(bytes / 1024) + ' KB';
+        }
+    }));
+});

@@ -1,5 +1,5 @@
 <div>
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-6">
+    <div class="max-w-7xl mx-auto sm:px-3 lg:px-4 py-3">
         <!-- Bouton Retour -->
         <div class="mb-2">
             <a href="{{ route('document.teacher') }}" wire:navigate

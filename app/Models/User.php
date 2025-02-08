@@ -87,7 +87,11 @@ class User extends Authenticatable
     // 🔹 Relations pour enseignants
     public function teacherNiveaux()
     {
-        return $this->belongsToMany(Niveau::class, 'niveau_user');
+        return $this->belongsToMany(Niveau::class, 'niveau_user')
+                    ->with(['semestres' => function($query) {
+                        $query->where('status', true)
+                            ->orderBy('name');
+                    }]);
     }
 
     public function teacherParcours()
@@ -108,4 +112,34 @@ class User extends Authenticatable
     {
         return $this->hasMany(Document::class, 'uploaded_by');
     }
+
+    public function canAccessDocument($path): bool
+    {
+        // Admin a accès à tout
+        if ($this->roles->contains('name', 'admin')) {
+            return true;
+        }
+
+        // Enseignant a accès à ses propres documents
+        if ($this->roles->contains('name', 'teacher')) {
+            return Document::where('file_path', $path)
+                ->where(function($query) {
+                    $query->where('uploaded_by', $this->id)
+                        ->orWhereIn('niveau_id', $this->teacherNiveaux->pluck('id'));
+                })
+                ->exists();
+        }
+
+        // Étudiant a accès aux documents actifs de son niveau et parcours
+        if ($this->roles->contains('name', 'student')) {
+            return Document::where('file_path', $path)
+                ->where('niveau_id', $this->niveau_id)
+                ->where('parcour_id', $this->parcour_id)
+                ->where('is_actif', true)
+                ->exists();
+        }
+
+        return false;
+    }
+    
 }

@@ -102,10 +102,10 @@ class Document extends Model
         $this->increment('download_count');
     }
 
+
     public function incrementViewCount()
     {
         $this->increment('view_count');
-        $this->save();
     }
 
     // Types de fichiers autorisés

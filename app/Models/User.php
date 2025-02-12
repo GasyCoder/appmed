@@ -67,6 +67,16 @@ class User extends Authenticatable
         ];
     }
 
+    public function niveau()
+    {
+        return $this->belongsTo(Niveau::class);
+    }
+
+    public function parcour()
+    {
+        return $this->belongsTo(Parcour::class);
+    }
+
     // 🔹 Relation avec Profil
     public function profil()
     {

@@ -43,37 +43,6 @@ class UserWithProfileSeeder extends Seeder
             $m1Teacher->teacherParcours()->attach($parcourMG->id);
         }
 
-        // Enseignants M2
-        $m2Teacher = User::create([
-            'name' => 'Dr. Rabe',
-            'email' => 'rabe@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-            'status' => true,
-        ]);
-
-        $m2Teacher->assignRole('teacher');
-
-        Profil::create([
-            'user_id' => $m2Teacher->id,
-            'sexe' => 'femme',
-            'grade' => 'Professeur',
-            'telephone' => '0320000003',
-            'adresse' => '78 Rue Rabe',
-            'ville' => 'Antananarivo',
-            'departement' => 'Médecine Spécialisée',
-        ]);
-
-        $niveauM2 = Niveau::where('sigle', 'M2')->first();
-        $parcourMS = Parcour::where('sigle', 'MS')->first();
-
-        if ($niveauM2) {
-            $m2Teacher->teacherNiveaux()->attach($niveauM2->id);
-        }
-        if ($parcourMS) {
-            $m2Teacher->teacherParcours()->attach($parcourMS->id);
-        }
-
         // Étudiants M1
         $studentM1 = User::create([
             'name' => 'Rasoa',
@@ -96,26 +65,5 @@ class UserWithProfileSeeder extends Seeder
             'departement' => 'Étudiant',
         ]);
 
-        // Étudiants M2
-        $studentM2 = User::create([
-            'name' => 'Randria',
-            'email' => 'randria@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-            'status' => true,
-            'niveau_id' => $niveauM2?->id,
-            'parcour_id' => $parcourMS?->id,
-        ]);
-
-        $studentM2->assignRole('student');
-
-        Profil::create([
-            'user_id' => $studentM2->id,
-            'sexe' => 'homme',
-            'telephone' => '0330000002',
-            'adresse' => '56 Rue Randria',
-            'ville' => 'Antananarivo',
-            'departement' => 'Étudiant',
-        ]);
     }
 }

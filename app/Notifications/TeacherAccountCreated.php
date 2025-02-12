@@ -14,11 +14,13 @@ class TeacherAccountCreated extends Notification implements ShouldQueue
     use Queueable;
 
     protected $token;
+    protected $temporaryPassword;
     protected $validityInHours = 48;
 
-    public function __construct($token)
+    public function __construct($token, $temporaryPassword = null)
     {
         $this->token = $token;
+        $this->temporaryPassword = $temporaryPassword;
     }
 
     public function via($notifiable)
@@ -37,13 +39,18 @@ class TeacherAccountCreated extends Notification implements ShouldQueue
             ]
         );
 
+        // Récupérer le grade et le nom
+        $grade = optional($notifiable->profil)->grade;
+        $nameWithGrade = $grade ? "{$grade}. {$notifiable->name}" : $notifiable->name;
+
         return (new MailMessage)
-                ->subject('Bienvenue sur la plateforme de la faculté de Médecine')
-                ->greeting('Bonjour ' . $notifiable->name . ',')
-                ->line('Bienvenue sur la plateforme de la faculté de Médecine.')
-                ->line('Votre compte a été activé. Veuillez créer votre propre mot de passe en cliquant sur le bouton ci-dessous.')
-                ->action('Créer mon mot de passe', $url)
-                ->line('Attention : ce lien est valable pendant 48 heures uniquement.')
-                ->line('Si vous n\'avez pas demandé la création de ce compte, aucune action n\'est requise de votre part.');
+            ->subject('Bienvenue sur la plateforme de la faculté de Médecine')
+            ->markdown('emails.teacher-account-created', [
+                'url' => $url,
+                'name' => $nameWithGrade,
+                'email' => $notifiable->email,
+                'temporaryPassword' => $this->temporaryPassword,
+                'validityHours' => $this->validityInHours
+            ]);
     }
 }

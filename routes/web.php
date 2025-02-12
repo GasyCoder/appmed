@@ -57,7 +57,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/dashboard', AdminDashboard::class)->name('adminEspace');
         Route::get('/etudiants', UsersStudent::class)->name('admin.students');
         Route::get('/enseignants', UsersTeacher::class)->name('admin.teachers');
-        Route::get('/documents', DocumentsManagement::class)->name('admin.documents');
         Route::get('/niveaux', Niveaux::class)->name('admin.niveau');
         Route::get('/parcours', Parcours::class)->name('admin.parcour');
         Route::get('/semestres', Semestres::class)->name('admin.semestre');

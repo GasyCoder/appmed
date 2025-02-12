@@ -163,4 +163,10 @@ class User extends Authenticatable
         return false;
     }
 
+    public function getFullNameWithGradeAttribute()
+    {
+        $grade = optional($this->profil)->grade;
+        return $grade ? "{$grade}. {$this->name}" : $this->name;
+    }
+
 }

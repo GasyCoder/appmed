@@ -46,7 +46,7 @@ class UsersTeacher extends Component
     public $adresse;
     public $niveau_filter = '';
     public $parcour_filter = '';
-
+    public $activeTab = 'info';
     public $isLoading = false;
 
     // Écouteurs d'événements
@@ -66,7 +66,7 @@ class UsersTeacher extends Component
         return [
             'name' => 'required|string|min:3|max:255',
             'email' => ['required', 'email', Rule::unique('users')->ignore($this->userId)],
-            'password' => $this->userId ? 'nullable|min:8' : 'required|min:8',
+            // 'password' => $this->userId ? 'nullable|min:8' : 'required|min:8',
             'status' => 'boolean',
 
             // Règles pour le profil
@@ -89,7 +89,7 @@ class UsersTeacher extends Component
         'email.required' => 'L\'email est requis',
         'email.email' => 'L\'email doit être valide',
         'email.unique' => 'Cet email est déjà utilisé',
-        'password.required' => 'Le mot de passe est requis',
+        // 'password.required' => 'Le mot de passe est requis',
         'selectedTeacherNiveaux.required' => 'Sélectionnez au moins un niveau d\'enseignement',
         'selectedTeacherParcours.required' => 'Sélectionnez au moins un parcours d\'enseignement',
     ];
@@ -98,39 +98,34 @@ class UsersTeacher extends Component
     public function createTeacher()
     {
         $this->isLoading = true;
-        $validatedData = $this->validate();
-    
+
         try {
             DB::beginTransaction();
-    
-            // Générer un token sécurisé pour la réinitialisation du mot de passe
+
+            // Générer un token sécurisé pour la création du mot de passe
             $token = Str::random(64);
-    
+
+            // Générer un mot de passe temporaire lisible
+            $temporaryPassword = Str::random(8); // mot de passe temporaire de 8 caractères
+
             // Préparation des données de l'utilisateur
             $userData = [
                 'name' => $this->name,
                 'email' => $this->email,
                 'status' => $this->status,
+                'password' => Hash::make($temporaryPassword)  // Mot de passe temporaire hashé
             ];
-    
-            // Gestion du mot de passe selon le contexte (création ou modification)
-            if (!$this->userId) {
-                // Nouveau compte : mot de passe temporaire
-                $userData['password'] = Hash::make(Str::random(16));
-            } elseif ($this->password) {
-                // Modification avec nouveau mot de passe
-                $userData['password'] = Hash::make($this->password);
-            }
-    
-            // Création ou mise à jour de l'utilisateur
+
             if ($this->userId) {
+                // Mise à jour d'un utilisateur existant
                 $user = User::findOrFail($this->userId);
                 $user->update($userData);
+                $message = 'Enseignant mis à jour avec succès';
             } else {
                 // Création d'un nouvel utilisateur
                 $user = User::create($userData);
-                
-                // Enregistrement du token pour la réinitialisation du mot de passe
+
+                // Enregistrement du token pour la création du mot de passe
                 DB::table('password_reset_tokens')->updateOrInsert(
                     ['email' => $user->email],
                     [
@@ -138,11 +133,16 @@ class UsersTeacher extends Component
                         'created_at' => now()
                     ]
                 );
-    
-                // Envoi de l'email de bienvenue avec le lien de création de mot de passe
-                $user->notify(new TeacherAccountCreated($token));
+
+                // Attribution du rôle enseignant
+                $user->assignRole('teacher');
+
+                // Envoi de l'email avec le mot de passe temporaire et le lien de réinitialisation
+                $user->notify(new TeacherAccountCreated($token, $temporaryPassword));
+
+                $message = 'Compte enseignant créé avec succès. Un email contenant le mot de passe temporaire et un lien de réinitialisation a été envoyé.';
             }
-    
+
             // Création ou mise à jour du profil
             $profileData = [
                 'grade' => $this->grade,
@@ -152,60 +152,41 @@ class UsersTeacher extends Component
                 'ville' => $this->ville,
                 'adresse' => $this->adresse,
             ];
-    
+
             if ($user->profil) {
                 $user->profil->update($profileData);
             } else {
                 $user->profil()->create($profileData);
             }
-    
-            // Attribution du rôle enseignant et synchronisation des niveaux/parcours
-            $user->assignRole('teacher');
+
+            // Synchronisation des niveaux et parcours
             $user->teacherNiveaux()->sync($this->selectedTeacherNiveaux);
             $user->teacherParcours()->sync($this->selectedTeacherParcours);
-    
-            // Validation de la transaction
+
             DB::commit();
-    
-            // Réinitialisation du formulaire
+
+            // Réinitialisation et notification
             $this->reset();
-    
-            // Message de succès
+            $this->showUserModal = false;
+
             $this->dispatch('notify', [
-                'message' => $this->userId 
-                    ? 'Enseignant mis à jour avec succès' 
-                    : 'Compte enseignant créé avec succès. Un email a été envoyé pour la création du mot de passe.',
+                'message' => $message,
                 'type' => 'success'
             ]);
-    
+
         } catch (\Exception $e) {
-            // Annulation de la transaction en cas d'erreur
             DB::rollBack();
-    
-            // Journalisation de l'erreur
-            Log::error('Erreur lors de la création/mise à jour de l\'enseignant:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'user_data' => [
-                    'name' => $this->name,
-                    'email' => $this->email,
-                    'grade' => $this->grade,
-                    'departement' => $this->departement
-                ]
-            ]);
-    
-            // Message d'erreur
+            Log::error('Erreur création enseignant:', ['error' => $e->getMessage()]);
+
             $this->dispatch('notify', [
                 'message' => 'Une erreur est survenue lors de la création du compte enseignant.',
                 'type' => 'error'
             ]);
-    
         } finally {
-            // Désactivation de l'indicateur de chargement
             $this->isLoading = false;
         }
     }
-    
+
     // Édition d'un enseignant
     public function editTeacher($userId)
     {

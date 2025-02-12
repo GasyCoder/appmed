@@ -2,8 +2,8 @@
 <div class="space-y-4">
     @forelse($documents as $document)
         <div class="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-200">
-            <div class="p-5">
-                <div class="flex items-center gap-5">
+            <div class="p-4 sm:p-5">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5">
                     <!-- Document Icon -->
                     <div class="flex-shrink-0">
                         <div class="p-3 bg-gradient-to-br from-blue-50 dark:from-blue-900/50 to-indigo-50 dark:to-indigo-900/50 
@@ -17,16 +17,16 @@
                             </span>
                         </div>
                     </div>
- 
+
                     <!-- Document Info -->
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $document->title }}</h3>
-                        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
+                        <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{{ $document->title }}</h3>
+                        <div class="mt-2 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                             <span class="flex items-center gap-1.5">
                                 <svg class="h-4 w-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24">
                                     <path stroke="currentColor" stroke-width="2" fill="none" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                 </svg>
-                                {{ $document->teacher->profil->grade }} {{ $document->uploader->name }}
+                                <span class="truncate">{{ $document->teacher->profil->grade }} {{ $document->uploader->name }}</span>
                             </span>
                             <span class="flex items-center gap-1.5">
                                 <svg class="h-4 w-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24">
@@ -48,9 +48,9 @@
                             </span>
                         </div>
                     </div>
- 
+
                     <!-- Actions -->
-                    <div class="flex-shrink-0">
+                    <div class="flex-shrink-0 w-full sm:w-auto mt-3 sm:mt-0">
                         <button
                             onclick="openPdfViewer({
                                 url: '{{ Storage::url($document->file_path) }}',
@@ -58,7 +58,7 @@
                                 title: '{{ $document->title }}',
                                 teacherName: '{{ $document->teacher->name ?? "Non assigné" }}'
                             })"
-                            class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-medium
+                            class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-medium
                                     bg-gradient-to-r from-blue-50 dark:from-blue-900/50 to-indigo-50 dark:to-indigo-900/50 
                                     text-blue-700 dark:text-blue-300
                                     hover:from-blue-100 dark:hover:from-blue-800 hover:to-indigo-100 dark:hover:to-indigo-800
@@ -75,16 +75,16 @@
             </div>
         </div>
     @empty
-        <div class="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+        <div class="flex flex-col items-center justify-center py-8 sm:py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
             <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-full mb-4">
-                <svg class="h-8 w-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                 </svg>
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Aucun document trouvé</h3>
-            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Aucun document trouvé</h3>
+            <p class="mt-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm px-4">
                 Modifiez vos critères de recherche pour trouver des documents.
             </p>
         </div>
     @endforelse
- </div>
+</div>

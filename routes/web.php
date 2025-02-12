@@ -4,6 +4,7 @@ use App\Models\Document;
 use App\Livewire\Admin\Niveaux;
 use App\Livewire\Admin\Parcours;
 use App\Livewire\Admin\Semestres;
+use App\Livewire\Pages\ComingSoon;
 use App\Livewire\Teacher\Documents;
 use App\Livewire\Admin\UsersStudent;
 use App\Livewire\Admin\UsersTeacher;
@@ -74,6 +75,15 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             Route::get('/documents', Documents::class)->name('document.teacher');
             Route::get('/documents/upload', DocumentUpload::class)->name('document.upload');
             Route::get('/documents/{document}/edit', DocumentEdit::class)->name('document.edit');
+
+            Route::get('/emploi-du-temps', ComingSoon::class)
+                ->name('timetable');
+
+            Route::get('/programmes', ComingSoon::class)
+                ->name('programs');
+
+            Route::get('/scolarites', ComingSoon::class)
+                ->name('scolarites');
     });
 
     /*

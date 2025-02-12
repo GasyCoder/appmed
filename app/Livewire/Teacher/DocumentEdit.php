@@ -86,7 +86,6 @@ class DocumentEdit extends Component
         }
     }
 
-    // Propriété calculée pour les semestres actifs
     public function getSemestresActifsProperty()
     {
         if (!$this->niveau_id) {
@@ -103,28 +102,32 @@ class DocumentEdit extends Component
     public function getTeacherNiveauxProperty()
     {
         return Niveau::query()
-            ->whereHas('teachers', fn($q) =>
-                $q->where('users.id', Auth::id())
-                  ->where('status', true)
-            )
+            ->whereHas('teachers', function($q) {
+                $q->where('niveau_user.user_id', Auth::id());
+            })
+            ->where('status', true)
             ->orderBy('name')
             ->get();
     }
 
     public function getTeacherParcoursProperty()
     {
+        if (!$this->niveau_id) {
+            return collect();
+        }
+
+        $user = Auth::user();
+
         return Parcour::query()
-            ->whereHas('teachers', fn($q) =>
-                $q->where('users.id', Auth::id())
-            )
+            ->whereHas('teachers', function($q) use ($user) {
+                $q->where('parcour_user.user_id', $user->id);
+            })
             ->where('status', true)
-            ->when($this->niveau_id, function($q) {
-                $q->whereExists(function($sub) {
-                    $sub->select('id')
-                        ->from('teacher_niveaux')
-                        ->where('user_id', Auth::id())
-                        ->where('niveau_id', $this->niveau_id);
-                });
+            ->whereExists(function($query) use ($user) {
+                $query->select(DB::raw(1))
+                    ->from('niveau_user')
+                    ->where('user_id', $user->id)
+                    ->where('niveau_id', $this->niveau_id);
             })
             ->orderBy('name')
             ->get();
@@ -132,14 +135,25 @@ class DocumentEdit extends Component
 
     public function updatedNiveauId()
     {
-        $this->parcour_id = $this->teacherParcours->first()?->id ?? '';
+        // Réinitialiser la sélection
+        $this->parcour_id = '';
+        $this->semestres_selected = [];
 
-        // Mettre à jour automatiquement les semestres actifs
+        // Récupérer les parcours disponibles
+        $availableParcours = $this->teacherParcours;
+
+        // Sélectionner le premier parcours si disponible
+        if ($availableParcours->isNotEmpty()) {
+            $this->parcour_id = $availableParcours->first()->id;
+        }
+
+        // Mettre à jour les semestres
         if ($this->niveau_id) {
             $this->semestres_selected = $this->semestresActifs->pluck('id')->toArray();
-        } else {
-            $this->semestres_selected = [];
         }
+
+        // Rafraîchir l'interface
+        $this->dispatch('parcours-updated');
     }
 
     public function updatedNewFile()
@@ -188,22 +202,28 @@ class DocumentEdit extends Component
         try {
             DB::beginTransaction();
 
+            // Vérifier les semestres
             if (empty($this->semestres_selected)) {
                 throw new \Exception('Aucun semestre actif disponible pour ce niveau.');
             }
 
-            // Supprimer les documents existants avec le même file_path
+            // Supprimer l'ancien document
             Document::where('file_path', $this->document->file_path)
                    ->where('uploaded_by', Auth::id())
                    ->delete();
 
+            // Préparer les données de mise à jour
             $updateData = [
                 'title' => $this->title,
                 'niveau_id' => $this->niveau_id,
                 'parcour_id' => $this->parcour_id,
-                'is_actif' => $this->is_actif
+                'is_actif' => $this->is_actif,
+                'uploaded_by' => Auth::id(),
+                'download_count' => $this->document->download_count,
+                'view_count' => $this->document->view_count
             ];
 
+            // Gérer le fichier
             if ($this->newFile) {
                 // Supprimer l'ancien fichier
                 if (Storage::disk('public')->exists($this->document->file_path)) {
@@ -216,19 +236,17 @@ class DocumentEdit extends Component
                     $updateData = array_merge($updateData, $fileData);
                 }
             } else {
+                // Garder les anciennes données du fichier
                 $updateData['file_path'] = $this->document->file_path;
                 $updateData['protected_path'] = $this->document->protected_path;
                 $updateData['file_type'] = $this->document->file_type;
                 $updateData['file_size'] = $this->document->file_size;
             }
 
-            // Créer une nouvelle entrée pour chaque semestre sélectionné
+            // Créer une entrée pour chaque semestre sélectionné
             foreach ($this->semestres_selected as $semestre_id) {
                 Document::create(array_merge($updateData, [
-                    'semestre_id' => $semestre_id,
-                    'uploaded_by' => Auth::id(),
-                    'download_count' => $this->document->download_count,
-                    'view_count' => $this->document->view_count,
+                    'semestre_id' => $semestre_id
                 ]));
             }
 

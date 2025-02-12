@@ -32,6 +32,14 @@ class TeacherDashboard extends Component
             'profil'
         ]);
 
+        // Récupérer la dernière connexion depuis la table `sessions`
+        $loginActivities = DB::table('sessions')
+        ->where('user_id', auth()->id())
+        ->orderBy('last_activity', 'desc')
+        ->take(5) // Limite à 5 dernières connexions
+        ->get();
+
+
         $stats = [
             'total_uploads' => Document::where('uploaded_by', auth()->id())->count(),
             'public_documents' => Document::where('uploaded_by', auth()->id())
@@ -78,11 +86,12 @@ class TeacherDashboard extends Component
         });
 
         return view('livewire.teacher.teacher-dashboard', compact(
-            'stats', 
-            'recentDocuments', 
+            'stats',
+            'recentDocuments',
             'monthlyStats',
             'user',
-            'niveauxSemestres'
+            'niveauxSemestres',
+            'loginActivities'
         ));
     }
 }

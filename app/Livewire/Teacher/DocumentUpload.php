@@ -43,7 +43,7 @@ class DocumentUpload extends Component
         $this->file = [];
         $this->titles = [];
         $this->file_status = [];
-        
+
         if ($this->niveau_id) {
             $this->updatedNiveauId();
         }
@@ -94,12 +94,12 @@ class DocumentUpload extends Component
         if (isset($this->file[$index])) {
             unset($this->file[$index]);
             $this->file = array_values($this->file);
-            
+
             if (isset($this->titles[$index])) {
                 unset($this->titles[$index]);
                 $this->titles = array_values($this->titles);
             }
-            
+
             if (isset($this->file_status[$index])) {
                 unset($this->file_status[$index]);
                 $this->file_status = array_values($this->file_status);
@@ -129,9 +129,11 @@ class DocumentUpload extends Component
     public function getTeacherNiveauxProperty()
     {
         return Niveau::whereHas('teachers', function($q) {
-            $q->where('users.id', Auth::id())
-                ->where('status', true);
-        })->orderBy('name')->get();
+            $q->where('users.id', Auth::id());
+        })
+        ->where('status', true)
+        ->orderBy('name')
+        ->get();
     }
 
     public function getTeacherParcoursProperty()
@@ -139,34 +141,43 @@ class DocumentUpload extends Component
         if (!$this->niveau_id) {
             return collect();
         }
-    
-        return Parcour::whereHas('teachers', function($query) {
-            $query->where('user_id', Auth::id())
-                  ->where('status', true);
-        })
-        ->when($this->niveau_id, function($query) {
-            $query->whereHas('teachers', function($q) {
-                $q->where('user_id', Auth::id())
-                  ->whereHas('teacherNiveaux', function($n) {
-                      $n->where('niveau_id', $this->niveau_id);
-                  });
-            });
-        })
-        ->orderBy('name')
-        ->get();
+
+        $user = Auth::user();
+
+        return Parcour::whereHas('teachers', function($query) use ($user) {
+                $query->where('users.id', $user->id);
+            })
+            ->where('status', true)
+            ->whereExists(function ($query) use ($user) {
+                $query->select(DB::raw(1))
+                      ->from('niveau_user')
+                      ->where('user_id', $user->id)
+                      ->where('niveau_id', $this->niveau_id);
+            })
+            ->orderBy('name')
+            ->get();
     }
 
     public function updatedNiveauId()
     {
-        // Reset selections
-        $this->parcour_id = $this->teacherParcours->first()->id ?? '';
+        $this->parcour_id = '';
+        $this->semestres_selected = [];
 
-        // Récupérer automatiquement les semestres actifs
+        // Récupérer les parcours disponibles
+        $availableParcours = $this->teacherParcours;
+
+        // Sélectionner le premier parcours si disponible
+        if ($availableParcours->isNotEmpty()) {
+            $this->parcour_id = $availableParcours->first()->id;
+        }
+
+        // Mettre à jour les semestres
         if ($this->niveau_id) {
             $this->semestres_selected = $this->semestresActifs->pluck('id')->toArray();
-        } else {
-            $this->semestres_selected = [];
         }
+
+        // Émettre un événement pour rafraîchir l'interface
+        $this->dispatch('parcours-updated');
     }
 
     // Méthode principale d'upload

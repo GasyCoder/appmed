@@ -31,9 +31,11 @@ class Niveau extends Model
         return $this->hasMany(Document::class);
     }
 
+
     public function teachers()
     {
-        return $this->belongsToMany(User::class, 'niveau_user', 'niveau_id', 'user_id');
+        return $this->belongsToMany(User::class, 'niveau_user')
+                    ->withTimestamps();
     }
 
     public function semestres()

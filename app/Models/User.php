@@ -74,20 +74,28 @@ class User extends Authenticatable
     }
 
     // 🔹 Relations avec Niveau et Parcour
-    public function niveau()
+    public function teachers()
     {
-        return $this->belongsTo(Niveau::class);
+        return $this->belongsToMany(User::class, 'parcour_user');
     }
 
-    public function parcour()
+    public function niveaux()
     {
-        return $this->belongsTo(Parcour::class);
+        return $this->belongsToMany(Niveau::class, 'niveau_user')
+                    ->withTimestamps();
     }
 
-    // 🔹 Relations pour enseignants
+    public function parcours()
+    {
+        return $this->belongsToMany(Parcour::class, 'parcour_user')
+                    ->withTimestamps();
+    }
+
     public function teacherNiveaux()
     {
         return $this->belongsToMany(Niveau::class, 'niveau_user')
+                    ->where('status', true)
+                    ->withTimestamps()
                     ->with(['semestres' => function($query) {
                         $query->where('status', true)
                             ->orderBy('name');
@@ -96,7 +104,10 @@ class User extends Authenticatable
 
     public function teacherParcours()
     {
-        return $this->belongsToMany(Parcour::class, 'parcour_user');
+        return $this->belongsToMany(Parcour::class, 'parcour_user')
+                    ->where('status', true)
+                    ->withTimestamps()
+                    ->orderBy('name');
     }
 
     public function getTeacherStatsAttribute()
@@ -141,5 +152,5 @@ class User extends Authenticatable
 
         return false;
     }
-    
+
 }

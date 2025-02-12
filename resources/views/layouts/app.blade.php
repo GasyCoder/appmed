@@ -21,7 +21,7 @@
                @include('sidebar-menu')
                <!-- Page Content -->
                <main class="flex-1 lg:pl-72">
-                   <div class="py-6 px-4 sm:px-6 lg:px-8 rounded-lg shadow">
+                   <div class="py-3 px-2 sm:px-3 lg:px-4">
                        {{ $slot }}
                    </div>
                </main>

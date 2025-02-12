@@ -11,12 +11,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 
 // Constantes
 const VIEWER_CONFIG = {
-    WIDTH: 1000,
-    HEIGHT: 600,
+    WIDTH: window.innerWidth <= 768 ? window.innerWidth : 1000,
+    HEIGHT: window.innerWidth <= 768 ? window.innerHeight - 120 : 600,
     DURATION: 800,
     BATCH_SIZE: 5,
     FETCH_TIMEOUT: 30000,
-    PDF_SCALE: 1.5
+    PDF_SCALE: window.innerWidth <= 768 ? 1.2 : 1.5
 };
 
 const CURRENT_USER = 'Faculté de médecine Majunga';
@@ -98,6 +98,18 @@ function initializeFlipbook(flipbook, options = {}) {
         }
     });
 }
+
+function handleResize() {
+    const flipbook = $('#flipbook');
+    if (flipbook.turn('is')) {
+        const width = window.innerWidth <= 768 ? window.innerWidth : 1000;
+        const height = window.innerWidth <= 768 ? window.innerHeight - 120 : 600;
+        
+        flipbook.turn('size', width, height);
+    }
+}
+
+window.addEventListener('resize', _.debounce(handleResize, 250));
 
 /**
  * Charge et traite un fichier PowerPoint

@@ -10,15 +10,15 @@ return new class extends Migration
     {
         Schema::create('niveau_user', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained();
-            $table->foreignId('niveau_id')->constrained();
+            $table->foreignId('niveau_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
 
         Schema::create('parcour_user', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained();
-            $table->foreignId('parcour_id')->constrained();
+            $table->foreignId('parcour_id')->constrained('parcours')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

@@ -30,6 +30,7 @@ class Parcour extends Model
 
     public function teachers()
     {
-        return $this->belongsToMany(User::class, 'parcour_user');
+        return $this->belongsToMany(User::class, 'parcour_user')
+                    ->withTimestamps();
     }
 }

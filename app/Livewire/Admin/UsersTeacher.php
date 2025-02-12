@@ -41,7 +41,7 @@ class UsersTeacher extends Component
     public $grade;
     public $sexe;
     public $telephone;
-    public $departement;
+    public $departement = null;
     public $ville;
     public $adresse;
     public $niveau_filter = '';

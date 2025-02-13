@@ -4,7 +4,7 @@
             <!-- Card principal -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
                 <!-- En-tête avec dégradé -->
-                <div class="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 dark:from-blue-900/50 dark:to-indigo-900/50 p-6 text-center">
+                <div class="shadow-xl bg-gradient-to-r from-blue-500/50 to-indigo-500/10 dark:from-blue-900/50 dark:to-indigo-900/50 p-2 text-center">
                     <img width="100" height="90" src="{{ asset('assets/image/logo_med.png') }}"
                          alt="Faculté de Médecine"
                          class="mx-auto transform transition-transform hover:scale-105">
@@ -17,7 +17,7 @@
                 </div>
 
                 <!-- Messages d'erreur/succès -->
-                <div class="px-6 pt-4">
+                <div class="px-6 pt-2">
                     <x-validation-errors class="mb-4" />
                     @session('status')
                         <div class="p-4 mb-4 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 flex items-center space-x-2">

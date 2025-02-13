@@ -18,3 +18,5 @@
     </div>
     <livewire:pdf-viewer :key="'pdf-viewer-'.uniqid()" />
 </div>
+@push('scripts')
+@endpush

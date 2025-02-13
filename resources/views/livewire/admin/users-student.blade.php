@@ -13,9 +13,6 @@
                             Niveau/Parcours
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Département
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Statut
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -44,9 +41,6 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                 <div>{{ $student->niveau?->name ?? 'Non défini' }}</div>
                                 <div>{{ $student->parcour?->name ?? 'Non défini' }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {{ $student->profil?->departement ?? 'Non défini' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <button wire:click="toggleUserStatus({{ $student->id }})" wire:loading.attr="disabled"

@@ -19,7 +19,7 @@ class PdfViewer extends Component
     public function viewDocument($documentId)
     {
         try {
-            $document = Document::with('teacher')->findOrFail($documentId);
+            $document = Document::with(['teacher', 'views'])->findOrFail($documentId);
 
             if (!$document->canAccess(auth()->user())) {
                 throw new \Exception('Accès non autorisé');
@@ -40,11 +40,19 @@ class PdfViewer extends Component
                 'id' => $document->id,
                 'title' => $document->title,
                 'teacherName' => $document->teacher->name ?? "Non assigné",
-                'originalExtension' => strtolower(pathinfo($filePath, PATHINFO_EXTENSION))
+                'originalExtension' => $extension,
             ];
 
-            $document->incrementViewCount();
             $this->showModal = true;
+
+            // Enregistrer la vue avec le nouveau système
+            $document->registerView();
+
+            // Mettre à jour l'interface
+            $this->dispatch('viewsUpdated', [
+                'documentId' => $document->id,
+                'viewCount' => $document->fresh()->view_count
+            ]);
 
         } catch (\Exception $e) {
             $this->dispatch('notify', [

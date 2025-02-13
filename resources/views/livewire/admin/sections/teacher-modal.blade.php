@@ -95,27 +95,44 @@
                         <div x-show="activeTab === 'profile'">
                             <div class="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label for="grade" class="block text-sm font-medium text-gray-700">Grade</label>
-                                    <select wire:model="grade" id="grade"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                        <option value="">Sélectionner un grade</option>
+                                    <label class="block text-sm font-medium text-gray-700 mb-3">Grade</label>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                         @foreach(\App\Models\Profil::getGrades() as $grade)
-                                            <option value="{{ $grade }}">{{ $grade }}</option>
+                                            <label class="inline-flex items-center p-2 border rounded-md cursor-pointer hover:bg-gray-50 transition-colors duration-200">
+                                                <input type="radio"
+                                                       wire:model="grade"
+                                                       name="grade"
+                                                       value="{{ $grade }}"
+                                                       class="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                                <span class="ml-2 text-sm font-medium text-gray-700">{{ $grade }}</span>
+                                            </label>
                                         @endforeach
-                                    </select>
+                                    </div>
                                     @error('grade')
                                         <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                     @enderror
                                 </div>
 
                                 <div>
-                                    <label for="sexe" class="block text-sm font-medium text-gray-700">Genre</label>
-                                    <select wire:model="sexe" id="sexe"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                        <option value="">Sélectionner un genre</option>
-                                        <option value="homme">Homme</option>
-                                        <option value="femme">Femme</option>
-                                    </select>
+                                    <label class="block text-sm font-medium text-gray-700 mb-3">Genre</label>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <label class="inline-flex items-center p-2 border rounded-md cursor-pointer hover:bg-gray-50 transition-colors duration-200">
+                                            <input type="radio"
+                                                   wire:model="sexe"
+                                                   name="sexe"
+                                                   value="homme"
+                                                   class="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                            <span class="ml-2 text-sm font-medium text-gray-700">Homme</span>
+                                        </label>
+                                        <label class="inline-flex items-center p-2 border rounded-md cursor-pointer hover:bg-gray-50 transition-colors duration-200">
+                                            <input type="radio"
+                                                   wire:model="sexe"
+                                                   name="sexe"
+                                                   value="femme"
+                                                   class="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                            <span class="ml-2 text-sm font-medium text-gray-700">Femme</span>
+                                        </label>
+                                    </div>
                                     @error('sexe')
                                         <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                     @enderror
@@ -133,7 +150,9 @@
                                 </div>
 
                                 <div>
-                                    <label for="departement" class="block text-sm font-medium text-gray-700">Département</label>
+                                    <label for="departement" class="block text-sm font-medium text-gray-700">
+                                        Spécialité
+                                    </label>
                                     <input type="text"
                                            wire:model="departement"
                                            id="departement"

@@ -220,7 +220,7 @@ class DocumentUpload extends Component
 
             DB::commit();
             session()->flash('success', count($this->file) . ' document(s) téléversé(s) avec succès');
-            return redirect()->route('document.upload');
+            return redirect()->route('document.teacher');
 
         } catch (\Exception $e) {
             DB::rollBack();

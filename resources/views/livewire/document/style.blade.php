@@ -3,85 +3,58 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap');
 
+/* ========== VARIABLES & RESET ========== */
 :root {
+    /* Couleurs */
     --primary: #0345fc;
-    --primary-darker: #0056b3;
     --secondary: #ff0000;
-    --bg-dark: rgba(10, 15, 30, 0.98);
-    --text-light: #ffffff;
+    --dark: #1a1a1a;
+    --light: #ffffff;
+    --gray: #f5f5f5;
+
+    /* Dimensions par défaut */
+    --desktop-width: 1200px;
+    --desktop-height: 800px;
+    --tablet-width: 90vw;
+    --mobile-width: 95vw;
+
+    /* Espacement */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+
+    /* Transitions */
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+
+    /* Z-index layers */
+    --z-modal: 1000;
+    --z-overlay: 2000;
+    --z-dropdown: 3000;
+    --z-tooltip: 4000;
 }
 
-* {
+/* ========== RESET GÉNÉRAL ========== */
+*, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* Loading Overlay */
-.loading-overlay {
-    display: none;
+/* ========== STYLES DE BASE ========== */
+body.modal-open {
+    overflow: hidden;
     position: fixed;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
-    background: var(--bg-dark);
-    backdrop-filter: blur(10px);
-    z-index: 2000;
 }
 
-.loading-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: white;
-    width: clamp(280px, 90%, 400px);
-}
-
-.loading-spinner {
-    width: clamp(40px, 8vw, 60px);
-    height: clamp(40px, 8vw, 60px);
-    margin: 0 auto 20px;
-    border: 4px solid transparent;
-    border-top: 4px solid #3498db;
-    border-right: 4px solid #3498db;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-.loading-text h3 {
-    font-size: clamp(18px, 4vw, 24px);
-    margin-bottom: clamp(8px, 2vw, 10px);
-    font-weight: 500;
-}
-
-.loading-text p {
-    font-size: clamp(14px, 3vw, 16px);
-    color: #a0aec0;
-    margin-bottom: clamp(12px, 3vw, 15px);
-}
-
-.progress-bar {
-    width: clamp(250px, 90%, 300px);
-    height: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 0 auto;
-}
-
-.progress-fill {
-    width: 0%;
-    height: 100%;
-    background: #3498db;
-    border-radius: 2px;
-    transition: width 0.3s ease;
-}
-
-/* Modal & Content */
+/* ========== MODAL PRINCIPAL ========== */
 .modal {
     display: none;
     position: fixed;
@@ -89,9 +62,9 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.8);
-    z-index: 1000;
-    animation: modalFadeIn 0.3s ease;
+    background: rgba(0,0,0,0.9);
+    z-index: var(--z-modal);
+    overflow: auto;
 }
 
 .modal-content {
@@ -101,80 +74,57 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: clamp(0.5rem, 2vw, 1rem);
+    justify-content: flex-start;
+    padding: 2rem;
+    overflow-y: auto;
 }
 
-.close-modal {
-    position: absolute;
-    right: clamp(10px, 3vw, 20px);
-    top: clamp(10px, 3vw, 20px);
-    width: clamp(36px, 5vw, 50px);
-    height: clamp(36px, 5vw, 50px);
-    font-size: clamp(24px, 4vw, 40px);
-    cursor: pointer;
-    z-index: 1001;
-    color: var(--secondary);
-    background: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-    border: 2px solid var(--secondary);
-}
-
-/* Flipbook Styles */
-.flipbook {
-    width: min(100vw - 20px, 1000px);
-    height: min(calc(100vh - 120px), 600px);
-    border-radius: 8px;
-    overflow: hidden;
+/* ========== CONTENEUR FLIPBOOK ========== */
+.flipbook-container {
     position: relative;
+    width: 100%;
+    height: auto;
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--spacing-lg);
     margin: 0 auto;
 }
 
-.flipbook::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 25%;
-    transform: translate(-50%, -50%);
-    width: clamp(100px, 20vw, 150px);
-    height: clamp(100px, 20vw, 150px);
-    background-size: contain;
-    opacity: 0.1;
-    pointer-events: none;
+.flipbook {
+    position: relative;
+    background: var(--light);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin: 0 auto;
+    transform-origin: center top;
 }
 
-.flipbook .hard {
-    background: #060346 !important;
-    color: #fff;
-    font-weight: bold;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(16px, 3vw, 20px);
-}
-
-.flipbook .page {
+/* ========== PAGES DU FLIPBOOK ========== */
+.page {
     background: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    box-shadow: inset -1px 0 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Cover Styles */
+.doc-info {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.page img {
+    object-fit: contain;
+}
+
+/* ========== PAGE DE COUVERTURE ========== */
 .cover-page {
     background: linear-gradient(135deg, #1e3c72, #2a5298);
     color: white;
 }
 
 .cover-container {
-    padding: clamp(1.5rem, 4vw, 3rem);
+    padding: 3rem;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -183,28 +133,27 @@
 
 .cover-header {
     text-align: center;
-    margin-bottom: clamp(1rem, 3vw, 2rem);
+    margin-bottom: 2rem;
 }
 
 .university {
-    font-size: clamp(0.9rem, 2.5vw, 1rem);
+    font-size: 1rem;
     font-weight: bold;
     margin-bottom: 0.5rem;
     letter-spacing: 1px;
 }
 
 .fac-university {
-    font-size: clamp(0.6rem, 2vw, 0.7rem);
+    font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 2px;
     opacity: 0.9;
 }
 
 .logo-book {
-    width: clamp(60px, 15vw, 80px);
+    width: 100px;
     height: auto;
-    margin: 10px auto;
-    display: block;
+    margin: var(--spacing-lg) auto;
 }
 
 .cover-body {
@@ -216,38 +165,52 @@
 }
 
 .document-title {
-    font-size: clamp(1.2rem, 3vw, 1.6rem);
+    font-size: 1.6rem;
     font-weight: bold;
-    margin-bottom: clamp(1rem, 3vw, 2rem);
+    margin-bottom: 2rem;
     line-height: 1.2;
     text-transform: capitalize;
 }
 
-.cover-footer {
-    text-align: center;
-    margin-top: clamp(1rem, 3vw, 2rem);
+.document-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    font-size: 1.1rem;
 }
 
-/* Navigation */
+.cover-footer {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.auteur-name {
+    font-size: 0.9rem;
+    font-weight: 400;
+    margin-bottom: 0.2rem;
+}
+
+.document-page {
+    font-size: 0.6rem;
+    opacity: 0.8;
+}
+
+/* ========== NAVIGATION ========== */
 .navigation {
-    position: fixed;
-    bottom: clamp(15px, 4vw, 20px);
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
     display: flex;
     align-items: center;
-    gap: clamp(8px, 2vw, 15px);
-    padding: clamp(8px, 2vw, 10px) clamp(15px, 3vw, 20px);
-    border-radius: 30px;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     background: rgba(44, 62, 80, 0.95);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    animation: navAppear 0.5s ease 0.3s both;
-    z-index: 1002;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: var(--z-dropdown);
 }
 
 .nav-btn {
-    width: clamp(32px, 5vw, 45px);
-    height: clamp(32px, 5vw, 45px);
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     border: none;
     background: #34495e;
@@ -256,538 +219,244 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: var(--transition-fast);
 }
 
-.nav-btn svg {
-    width: clamp(16px, 3vw, 24px);
-    height: clamp(16px, 3vw, 24px);
+.nav-btn:hover {
+    background: #f1c40f;
+    color: #34495e;
+    transform: scale(1.1);
 }
 
-.page-info {
-    color: white;
-    font-size: clamp(12px, 2.5vw, 16px);
-    min-width: clamp(25px, 4vw, 30px);
-    text-align: center;
-    font-weight: 500;
-    background: #34495e;
-    border-radius: 100%;
-    padding: 5px clamp(8px, 2vw, 10px);
-}
-
-/* Slide Content */
-.slide-content {
-    width: 100%;
-    height: 100%;
-    padding: clamp(1rem, 3vw, 2rem);
-    background: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-}
-
-.slide-number {
-    font-size: clamp(0.7rem, 2vw, 0.8rem);
-    color: #666;
-    margin-bottom: clamp(0.5rem, 2vw, 1rem);
-}
-
-.slide-text {
-    font-size: clamp(1rem, 2.5vw, 1.2rem);
-    color: #333;
-    line-height: 1.4;
-}
-
-/* Additional Responsive Adjustments */
-@media (max-width: 480px) {
-    .close-modal {
-        width: 32px;
-        height: 32px;
-        font-size: 20px;
-        right: 8px;
-        top: 8px;
-    }
-
-    .navigation {
-        padding: 6px 10px;
-        gap: 6px;
-    }
-
-    .nav-btn {
-        width: 28px;
-        height: 28px;
-    }
-
-    .nav-btn svg {
-        width: 14px;
-        height: 14px;
-    }
-
-    .document-title {
-        font-size: 1rem;
-    }
-
-    .progress-bar {
-        width: 85%;
-    }
-}
-
-@media (min-width: 769px) {
-    .close-modal:hover {
-        transform: scale(1.1);
-        background: var(--secondary);
-        color: white;
-    }
-
-    .nav-btn:hover {
-        background: #f1c40f;
-        color: #34495e;
-        transform: scale(1.1);
-    }
-
-    .flipbook {
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-}
-
-/* Animations */
-@keyframes modalFadeIn {
-    from { background: rgba(0,0,0,0); }
-    to { background: rgba(0,0,0,0.8); }
-}
-
-@keyframes navAppear {
-    from {
-        transform: translate(-50%, 20px);
-        opacity: 0;
-    }
-    to {
-        transform: translate(-50%, 0);
-        opacity: 1;
-    }
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-@keyframes flipbookAppear {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-/* Ajout des styles manquants au code précédent */
-
-/* Document Meta Styles */
-.document-meta {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(0.5rem, 2vw, 1rem);
-    font-size: clamp(0.8rem, 2.5vw, 1.1rem);
-}
-
-.auteur-name {
-    font-size: clamp(0.7rem, 2vw, 0.9rem);
-    font-weight: 400;
-    margin-bottom: 0.2rem;
-}
-
-.document-page {
-    font-size: clamp(0.5rem, 1.5vw, 0.6rem);
-    opacity: 0.8;
-}
-
-.doc-info {
-    font-size: clamp(10px, 2vw, 12px);
-    opacity: 0.8;
-}
-
-/* Error States */
-.error-page, .error-slide {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: clamp(1rem, 3vw, 2rem);
-    text-align: center;
-    background: #fff5f5;
-    color: #e53e3e;
-}
-
-.error-content {
-    max-width: 90%;
-}
-
-.error-content h3 {
-    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
-    margin-bottom: clamp(0.5rem, 2vw, 1rem);
-}
-
-.error-content p {
-    font-size: clamp(0.7rem, 2vw, 0.9rem);
-    color: #666;
-}
-
-/* End Content */
-.end-content {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: clamp(1rem, 3vw, 2rem);
-    text-align: center;
-    color: white;
-}
-
-.end-text {
-    font-size: clamp(1rem, 3vw, 1.6rem);
-    font-weight: 500;
-    margin-bottom: clamp(0.8rem, 2vw, 1rem);
-}
-
-/* PDF Page Specific */
-.flipbook .page img {
-    max-width: 100%;
-    height: auto;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto;
-}
-
-/* Loading Indicator Responsiveness */
-#loadingIndicator {
-    width: clamp(280px, 90%, 400px);
-    padding: clamp(15px, 4vw, 20px);
-}
-
-.spinner {
-    font-size: clamp(14px, 3vw, 16px);
-    gap: clamp(8px, 2vw, 10px);
-}
-
-.spinner::before {
-    width: clamp(16px, 3vw, 20px);
-    height: clamp(16px, 3vw, 20px);
-}
-
-/* Touch Device Optimizations */
-@media (hover: none) and (pointer: coarse) {
-    .nav-btn {
-        min-width: 40px;
-        min-height: 40px;
-        padding: 10px;
-    }
-
-    .close-modal {
-        min-width: 44px;
-        min-height: 44px;
-    }
-}
-
-/* Portrait Mobile Adjustments */
-@media (max-width: 480px) and (orientation: portrait) {
-    .flipbook {
-        height: calc(100vh - 160px);
-    }
-
-    .navigation {
-        bottom: 10px;
-    }
-}
-
-/* Landscape Mobile Adjustments */
-@media (max-height: 480px) and (orientation: landscape) {
-    .flipbook {
-        height: calc(100vh - 100px);
-    }
-
-    .cover-container {
-        padding: 1rem;
-    }
-
-    .logo-book {
-        width: 40px;
-    }
-}
-
-/* High DPI Screens */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-    .flipbook .page img {
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: crisp-edges;
-    }
-}
-
-/* Print Prevention */
-@media print {
-    .modal, .flipbook, .navigation {
-        display: none !important;
-    }
-}
-
-/* Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-    .modal,
-    .navigation,
-    .close-modal,
-    .nav-btn,
-    .loading-spinner,
-    .progress-fill {
-        animation: none;
-        transition: none;
-    }
-}
-
-/* Ajout des derniers styles manquants */
-
-/* View Transitions */
-.view-transition {
-    transition: transform 0.3s ease-in-out;
-}
-
-/* Page Content Styles */
-.page-content {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-    padding: clamp(0.5rem, 2vw, 1rem);
-}
-
-.page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: clamp(1rem, 3vw, 1.5rem);
-}
-
-/* Page Numbers */
 .page-number {
-    position: absolute;
-    bottom: clamp(0.5rem, 2vw, 1rem);
-    right: clamp(0.5rem, 2vw, 1rem);
-    font-size: clamp(0.6rem, 1.5vw, 0.8rem);
-    color: #666;
-}
-
-/* Double Page Layout */
-.double-page {
-    display: flex;
-    justify-content: space-between;
-    gap: clamp(1rem, 3vw, 2rem);
-}
-
-.page-left, .page-right {
-    flex: 1;
-    min-width: 0;
-}
-
-/* Image Handling in Pages */
-.page-image {
-    max-width: 100%;
-    height: auto;
-    margin: clamp(0.5rem, 2vw, 1rem) auto;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.image-caption {
+    min-width: 40px;
     text-align: center;
-    font-size: clamp(0.7rem, 1.5vw, 0.9rem);
-    color: #666;
-    margin-top: 0.5rem;
+    color: var(--light);
+    font-weight: 500;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(52, 73, 94, 0.5);
+    border-radius: 20px;
 }
 
-/* Page Edge Effect */
-.page-edge {
+/* ========== BOUTON FERMETURE ========== */
+.close-modal {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: linear-gradient(to right, rgba(0,0,0,0.1), transparent);
-}
-
-.page-edge-right {
-    right: 0;
-    transform: scaleX(-1);
-}
-
-/* Zoom Controls */
-.zoom-controls {
-    position: fixed;
-    right: clamp(10px, 3vw, 20px);
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 1002;
-}
-
-.zoom-btn {
-    width: clamp(32px, 5vw, 40px);
-    height: clamp(32px, 5vw, 40px);
+    right: var(--spacing-lg);
+    top: var(--spacing-lg);
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    background: rgba(44, 62, 80, 0.9);
-    color: white;
-    border: none;
+    background: var(--light);
+    color: var(--secondary);
+    border: 2px solid var(--secondary);
+    font-size: 2rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: var(--transition-fast);
+    z-index: var(--z-dropdown);
 }
 
-/* Touch Gestures */
-.touch-hint {
+.close-modal:hover {
+    background: var(--secondary);
+    color: var(--light);
+    transform: scale(1.1);
+}
+
+/* ========== LOADING OVERLAY ========== */
+.loading-overlay {
     position: fixed;
-    bottom: clamp(70px, 10vh, 100px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: clamp(12px, 2.5vw, 14px);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    z-index: 1003;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--dark);
+    z-index: var(--z-overlay);
+    display: none;
 }
 
-.touch-hint.visible {
-    opacity: 1;
-}
-
-/* Accessibility */
-.screen-reader-only {
+.loading-content {
     position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--light);
+    width: 90%;
+    max-width: 400px;
 }
 
-/* Loading States */
-.page-loading {
-    position: relative;
-    min-height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f8f9fa;
-}
-
-.page-loading::after {
-    content: '';
-    width: clamp(30px, 5vw, 40px);
-    height: clamp(30px, 5vw, 40px);
-    border: 3px solid #eee;
-    border-top-color: #3498db;
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto var(--spacing-lg);
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
 
-/* Error States Enhancement */
-.page-error {
-    padding: clamp(1rem, 3vw, 2rem);
-    text-align: center;
-    background: #fff5f5;
-    border: 1px solid #fed7d7;
-    border-radius: 8px;
-    margin: clamp(0.5rem, 2vw, 1rem);
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    margin: var(--spacing-md) 0;
+    overflow: hidden;
 }
 
-.page-error-icon {
-    color: #e53e3e;
-    font-size: clamp(24px, 5vw, 32px);
-    margin-bottom: clamp(0.5rem, 2vw, 1rem);
+.progress-fill {
+    width: 0%;
+    height: 100%;
+    background: var(--primary);
+    border-radius: 2px;
+    transition: width var(--transition-normal);
 }
 
-/* Performance Optimizations */
-.hardware-accelerated {
+/* ========== RESPONSIVE DESIGN ========== */
+/* PC */
+@media (min-width: 1024px) {
+    .flipbook {
+        width: var(--desktop-width) !important;
+        height: var(--desktop-height) !important;
+        max-width: 90vw;
+        max-height: 85vh;
+    }
+
+    .flipbook-container {
+        padding: var(--spacing-xl);
+    }
+
+    .page {
+        width: 100% !important;
+        height: 100% !important;
+    }
+}
+
+/* Tablette */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .flipbook {
+        width: var(--tablet-width) !important;
+        height: auto !important;
+        aspect-ratio: 4/3;
+    }
+
+    .document-title {
+        font-size: 1.5rem;
+    }
+
+    .navigation {
+        padding: var(--spacing-sm) var(--spacing-lg);
+    }
+
+    .page {
+        width: 100% !important;
+        height: 100% !important;
+    }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    .flipbook {
+        width: var(--mobile-width) !important;
+        height: auto !important;
+        aspect-ratio: 3/4;
+    }
+
+    .modal-content {
+        padding: var(--spacing-md);
+    }
+
+    .navigation {
+        position: fixed;
+        bottom: var(--spacing-lg);
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .nav-btn {
+        width: 35px;
+        height: 35px;
+    }
+
+    .document-title {
+        font-size: 1.2rem;
+    }
+
+    .close-modal {
+        right: var(--spacing-md);
+        top: var(--spacing-md);
+        width: 40px;
+        height: 40px;
+        font-size: 1.5rem;
+    }
+
+    .page {
+        width: 100% !important;
+        height: 100% !important;
+    }
+}
+
+/* Mode paysage mobile */
+@media (max-height: 480px) and (orientation: landscape) {
+    .flipbook {
+        height: 60vh !important;
+    }
+
+    .navigation {
+        bottom: var(--spacing-sm);
+    }
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ========== OPTIMISATIONS ========== */
+.flipbook, .page {
+    -webkit-transform: translateZ(0);
     transform: translateZ(0);
     backface-visibility: hidden;
     perspective: 1000px;
 }
 
-/* Mobile-specific Enhancements */
-@media (max-width: 480px) {
-    .zoom-controls {
-        display: none;
-    }
-    
-    .touch-hint {
-        padding: 6px 12px;
-        font-size: 12px;
-    }
-
-    .page-loading {
-        min-height: 150px;
-    }
+/* ========== UTILITAIRES ========== */
+.hidden {
+    display: none !important;
 }
 
-/* Tablet Optimizations */
-@media (min-width: 481px) and (max-width: 768px) {
-    .double-page {
-        flex-direction: column;
-    }
+.fade {
+    transition: opacity var(--transition-normal);
 }
 
-/* Orientation Changes */
-@media screen and (orientation: landscape) {
-    .navigation {
-        bottom: 5px;
-    }
-    
-    .touch-hint {
-        bottom: 50px;
-    }
+.fade-enter {
+    opacity: 0;
 }
 
-/* Dark Mode Enhancements */
-@media (prefers-color-scheme: dark) {
-    .page-loading {
-        background: #2d3748;
-    }
-    
-    .page-error {
-        background: #2a2f45;
-        border-color: #e53e3e;
-    }
-    
-    .image-caption {
-        color: #a0aec0;
-    }
+.fade-enter-active {
+    opacity: 1;
 }
 
-/* Keyboard Navigation */
-.keyboard-navigation:focus {
-    outline: 2px solid #3498db;
-    outline-offset: 2px;
-}
-
-/* Print Styles Enhancement */
+/* ========== PROTECTION IMPRESSION ========== */
 @media print {
-    .no-print {
+    .modal,
+    .flipbook,
+    .navigation {
         display: none !important;
     }
-    
-    .page-break-after {
-        page-break-after: always;
-    }
 }
-
 </style>
 @endpush

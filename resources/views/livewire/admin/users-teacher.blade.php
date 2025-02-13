@@ -10,9 +10,6 @@
                             Enseignant
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Grade
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Niveaux et Parcours
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -36,13 +33,10 @@
                                         </span>
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $teacher->name }}</div>
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $teacher->profil?->grade. '. ' .$teacher->name }}</div>
                                         <div class="text-sm text-gray-500 dark:text-gray-400">{{ $teacher->email }}</div>
                                     </div>
                                 </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {{ $teacher->profil?->grade ?? 'Non défini' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                 <div class="space-y-1">

@@ -8,10 +8,11 @@ use Laravel\Jetstream\HasProfilePhoto;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -31,6 +32,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'niveau_id',
+        'parcour_id',
+        'status',
+        'email_verified_at',
     ];
 
     /**
@@ -64,6 +69,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'status' => 'boolean',
         ];
     }
 

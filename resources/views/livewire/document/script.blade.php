@@ -9,14 +9,40 @@
 // Configuration de PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+const VIEWPORT_CONFIG = {
+    get isMobile() {
+        return window.innerWidth <= 768;
+    },
+    get isLandscape() {
+        return window.innerWidth > window.innerHeight;
+    },
+    get viewportWidth() {
+        return this.isMobile ? window.innerWidth : 1000;
+    },
+    get viewportHeight() {
+        return this.isMobile
+            ? (this.isLandscape ? window.innerHeight - 80 : window.innerHeight - 120)
+            : 600;
+    },
+    get pdfScale() {
+        return this.isMobile ? (this.isLandscape ? 1.0 : 0.8) : 1.5;
+    }
+};
+
 // Constantes
 const VIEWER_CONFIG = {
-    WIDTH: window.innerWidth <= 768 ? window.innerWidth : 1000,
-    HEIGHT: window.innerWidth <= 768 ? window.innerHeight - 120 : 600,
+    get WIDTH() {
+        return VIEWPORT_CONFIG.viewportWidth;
+    },
+    get HEIGHT() {
+        return VIEWPORT_CONFIG.viewportHeight;
+    },
     DURATION: 800,
     BATCH_SIZE: 5,
     FETCH_TIMEOUT: 30000,
-    PDF_SCALE: window.innerWidth <= 768 ? 1.2 : 1.5
+    get PDF_SCALE() {
+        return VIEWPORT_CONFIG.pdfScale;
+    }
 };
 
 const CURRENT_USER = 'Faculté de médecine Majunga';
@@ -76,7 +102,7 @@ function getFileExtension(data) {
 /**
  * Initialise le flipbook avec les options optimisées
  */
-function initializeFlipbook(flipbook, options = {}) {
+ function initializeFlipbook(flipbook, options = {}) {
     return flipbook.turn({
         width: VIEWER_CONFIG.WIDTH,
         height: VIEWER_CONFIG.HEIGHT,
@@ -85,6 +111,8 @@ function initializeFlipbook(flipbook, options = {}) {
         acceleration: true,
         gradients: true,
         elevation: 50,
+        responsive: true,
+        display: VIEWPORT_CONFIG.isMobile ? 'single' : 'double',
         when: {
             turning: function(event, page, view) {
                 $('#currentPage').text(page);
@@ -94,6 +122,9 @@ function initializeFlipbook(flipbook, options = {}) {
                     flipbook.turn('peel', 'br');
                 }
             },
+            resize: function(event, page, view) {
+                handleResize();
+            },
             ...options
         }
     });
@@ -102,14 +133,39 @@ function initializeFlipbook(flipbook, options = {}) {
 function handleResize() {
     const flipbook = $('#flipbook');
     if (flipbook.turn('is')) {
-        const width = window.innerWidth <= 768 ? window.innerWidth : 1000;
-        const height = window.innerWidth <= 768 ? window.innerHeight - 120 : 600;
-        
+        let width, height;
+
+        if (window.innerWidth >= 1024) {
+            // Mode desktop
+            width = Math.min(1000, window.innerWidth * 0.9);
+            height = Math.min(700, window.innerHeight * 0.8);
+        } else if (window.innerWidth >= 768) {
+            // Mode tablette
+            width = window.innerWidth * 0.9;
+            height = window.innerHeight * 0.7;
+        } else {
+            // Mode mobile
+            width = window.innerWidth * 0.95;
+            height = window.innerHeight - 150;
+        }
+
         flipbook.turn('size', width, height);
+
+        // Ajuster le zoom si nécessaire
+        if (window.innerWidth < 768) {
+            flipbook.turn('zoom', 0.8);
+        } else {
+            flipbook.turn('zoom', 1);
+        }
     }
 }
 
+// Ajoutez des écouteurs d'événements pour l'orientation
 window.addEventListener('resize', _.debounce(handleResize, 250));
+window.addEventListener('orientationchange', () => {
+    setTimeout(handleResize, 100);
+});
+
 
 /**
  * Charge et traite un fichier PowerPoint

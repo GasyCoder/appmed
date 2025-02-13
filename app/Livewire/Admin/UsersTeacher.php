@@ -13,6 +13,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+use App\Notifications\UserAccountCreated;
 use App\Notifications\TeacherAccountCreated;
 
 class UsersTeacher extends Component
@@ -106,20 +107,28 @@ class UsersTeacher extends Component
             $token = Str::random(64);
 
             // Générer un mot de passe temporaire lisible
-            $temporaryPassword = Str::random(8); // mot de passe temporaire de 8 caractères
+            $temporaryPassword = Str::random(8);
 
             // Préparation des données de l'utilisateur
             $userData = [
                 'name' => $this->name,
                 'email' => $this->email,
                 'status' => $this->status,
-                'password' => Hash::make($temporaryPassword)  // Mot de passe temporaire hashé
+                'password' => Hash::make($temporaryPassword),
+                'email_verified_at' => now()  // Email vérifié par défaut
             ];
 
             if ($this->userId) {
                 // Mise à jour d'un utilisateur existant
                 $user = User::findOrFail($this->userId);
+                unset($userData['password']); // Ne pas mettre à jour le mot de passe
+                unset($userData['email_verified_at']); // Ne pas mettre à jour la vérification email
                 $user->update($userData);
+
+                // Synchronisation des niveaux et parcours
+                $user->teacherNiveaux()->sync($this->selectedTeacherNiveaux);
+                $user->teacherParcours()->sync($this->selectedTeacherParcours);
+
                 $message = 'Enseignant mis à jour avec succès';
             } else {
                 // Création d'un nouvel utilisateur
@@ -137,10 +146,14 @@ class UsersTeacher extends Component
                 // Attribution du rôle enseignant
                 $user->assignRole('teacher');
 
-                // Envoi de l'email avec le mot de passe temporaire et le lien de réinitialisation
-                $user->notify(new TeacherAccountCreated($token, $temporaryPassword));
+                // Synchronisation des niveaux et parcours
+                $user->teacherNiveaux()->sync($this->selectedTeacherNiveaux);
+                $user->teacherParcours()->sync($this->selectedTeacherParcours);
 
-                $message = 'Compte enseignant créé avec succès. Un email contenant le mot de passe temporaire et un lien de réinitialisation a été envoyé.';
+                // Envoi de l'email avec le mot de passe temporaire
+                $user->notify(new UserAccountCreated($token, $temporaryPassword));
+
+                $message = 'Compte enseignant créé avec succès. Un email a été envoyé.';
             }
 
             // Création ou mise à jour du profil
@@ -159,29 +172,59 @@ class UsersTeacher extends Component
                 $user->profil()->create($profileData);
             }
 
-            // Synchronisation des niveaux et parcours
-            $user->teacherNiveaux()->sync($this->selectedTeacherNiveaux);
-            $user->teacherParcours()->sync($this->selectedTeacherParcours);
-
             DB::commit();
 
-            // Réinitialisation et notification
+            // Réinitialisation et fermeture du modal
             $this->reset();
             $this->showUserModal = false;
 
-            $this->dispatch('notify', [
-                'message' => $message,
-                'type' => 'success'
+            // Alert de succès avec animation
+            $this->alert('success', 'Succès !', [
+                'position' => 'center',
+                'timer' => 2000,
+                'toast' => true, // Changé en true pour un style plus compact
+                'timerProgressBar' => true,
+                'showConfirmButton' => false,
+                'text' => $this->userId
+                    ? 'Enseignant mis à jour avec succès.'
+                    : 'Compte enseignant créé. Un email a été envoyé.',
+                'width' => '400', // Largeur réduite
+                'padding' => '1em', // Padding réduit
+                'customClass' => [
+                    'popup' => 'custom-alert',
+                    'title' => 'text-lg font-semibold mb-2',
+                    'text' => 'text-sm'
+                ]
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Erreur création enseignant:', ['error' => $e->getMessage()]);
-
-            $this->dispatch('notify', [
-                'message' => 'Une erreur est survenue lors de la création du compte enseignant.',
-                'type' => 'error'
+            Log::error('Erreur création enseignant:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
+
+            // Alert d'erreur
+            $this->alert('error', 'Erreur', [
+                'position' => 'center',
+                'timer' => 2000,
+                'toast' => true,
+                'timerProgressBar' => true,
+                'showConfirmButton' => true,
+                'showCancelButton' => false,
+                'confirmButtonText' => 'OK',
+                'text' => 'Une erreur est survenue lors de la création.',
+                'width' => '400',
+                'padding' => '1em',
+                'customClass' => [
+                    'popup' => 'custom-alert',
+                    'title' => 'text-lg font-semibold mb-2',
+                    'text' => 'text-sm'
+                ]
+            ]);
+
+
+
         } finally {
             $this->isLoading = false;
         }
@@ -282,7 +325,7 @@ class UsersTeacher extends Component
     public function resetForm()
     {
         $this->reset([
-            'userId', 'name', 'email', 'password', 'status', 'showUserModal',
+            'userId', 'name', 'email', 'status', 'showUserModal',
             'grade', 'sexe', 'telephone', 'departement', 'ville', 'adresse',
             'selectedTeacherNiveaux', 'selectedTeacherParcours'
         ]);

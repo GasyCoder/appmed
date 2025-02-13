@@ -19,9 +19,9 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Actif
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {{-- <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Statut
-                        </th>
+                        </th> --}}
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Actions
                         </th>
@@ -52,7 +52,7 @@
                                     ></span>
                                 </button>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-300">
+                            {{-- <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-300">
                                 <button
                                     wire:click="toggleSemestreStatus({{ $semestre->id }})"
                                     wire:loading.attr="disabled"
@@ -66,7 +66,7 @@
                                         ring-0 transition ease-in-out duration-200 {{ $semestre->status ? 'translate-x-5' : 'translate-x-0' }}"
                                     ></span>
                                 </button>
-                            </td>
+                            </td> --}}
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center gap-3">
                                     <button wire:click="editSemestre({{ $semestre->id }})"

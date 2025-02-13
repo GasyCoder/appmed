@@ -102,12 +102,6 @@ class Document extends Model
         $this->increment('download_count');
     }
 
-
-    public function incrementViewCount()
-    {
-        $this->increment('view_count');
-    }
-
     // Types de fichiers autorisés
     public static function getAllowedFileTypes()
     {
@@ -142,10 +136,33 @@ class Document extends Model
         return url(Storage::url($this->file_path));
     }
 
+    public function views()
+    {
+        return $this->hasMany(DocumentView::class);
+    }
+
     public function registerView(): void
     {
-        $this->increment('view_count');
-        $this->save();
+        if (auth()->check()) {
+            try {
+                // Créer une nouvelle vue uniquement si elle n'existe pas déjà
+                $this->views()->firstOrCreate([
+                    'user_id' => auth()->id()
+                ]);
+
+                // Mettre à jour le compteur total de vues
+                $this->view_count = $this->views()->count();
+                $this->save();
+
+                // Émettre un événement pour la mise à jour en temps réel
+                event('document.viewed', [
+                    'document_id' => $this->id,
+                    'view_count' => $this->view_count
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Erreur lors de l\'enregistrement de la vue: ' . $e->getMessage());
+            }
+        }
     }
 
     public function isPdf(): bool

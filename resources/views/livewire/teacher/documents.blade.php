@@ -100,7 +100,6 @@
                             </a>
                         </div>
                     </div>
-
                     <!-- Section des filtres avec toggle -->
                     <div x-data="{ showFilters: false }">
                         <!-- Bouton Toggle -->
@@ -187,181 +186,184 @@
 
         <!-- Liste des documents -->
         <div class="bg-white dark:bg-gray-800 shadow rounded-xl overflow-hidden">
-        <!-- Version desktop -->
-        <div class="hidden lg:block overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <!-- Document Column -->
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <div class="flex items-center gap-2 cursor-pointer" wire:click="sortBy('title')">
-                                <span>Document</span>
-                                @if($sortField === 'title')
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        @if($sortDirection === 'asc')
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
-                                        @else
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                        @endif
-                                    </svg>
-                                @endif
-                            </div>
-                        </th>
 
-                        <!-- Information Column -->
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Information
-                        </th>
+            <!-- Version desktop -->
+            <div class="hidden lg:block overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <!-- Document Column -->
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <div class="flex items-center gap-2 cursor-pointer" wire:click="sortBy('title')">
+                                    <span>Document</span>
+                                    @if($sortField === 'title')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            @if($sortDirection === 'asc')
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                                            @else
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                            @endif
+                                        </svg>
+                                    @endif
+                                </div>
+                            </th>
 
-                        <!-- Status Column -->
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <div class="flex items-center gap-2 cursor-pointer" wire:click="sortBy('is_actif')">
-                                <span>Statut</span>
-                                @if($sortField === 'is_actif')
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        @if($sortDirection === 'asc')
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
-                                        @else
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                        @endif
-                                    </svg>
-                                @endif
-                            </div>
-                        </th>
+                            <!-- Information Column -->
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Information
+                            </th>
 
-                        <!-- Statistics Column -->
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Statistiques
-                        </th>
+                            <!-- Status Column -->
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <div class="flex items-center gap-2 cursor-pointer" wire:click="sortBy('is_actif')">
+                                    <span>Partagé</span>
+                                    @if($sortField === 'is_actif')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            @if($sortDirection === 'asc')
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                                            @else
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                            @endif
+                                        </svg>
+                                    @endif
+                                </div>
+                            </th>
 
-                        <!-- Actions Column -->
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
+                            <!-- Statistics Column -->
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Statistiques
+                            </th>
 
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                    @forelse($myDocuments as $document)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
-                            <!-- Document Cell -->
-                            <td class="px-6 py-4">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-12 w-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                                        @php
-                                            $extension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
-                                        @endphp
-                                        @include('livewire.teacher.forms.file-icons')
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $document->title }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                                            Ajouté le {{ $document->created_at->format('d/m/Y à H:i') }}
+                            <!-- Actions Column -->
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                        @forelse($myDocuments as $document)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                                <!-- Document Cell -->
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-12 w-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                            @php
+                                                $extension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
+                                            @endphp
+                                            @include('livewire.teacher.forms.file-icons')
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $document->title }}</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                Ajouté le {{ $document->created_at->format('d/m/Y à H:i') }}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </td>
+                                </td>
 
-                            <!-- Information Cell -->
-                            <td class="px-6 py-4">
-                                <div class="text-sm">
-                                    <div class="font-medium text-gray-900 dark:text-white">{{ $document->niveau->name }}</div>
-                                    <div class="text-gray-500 dark:text-gray-400">{{ $document->parcour->name }}</div>
-                                    <div class="text-gray-500 dark:text-gray-400">{{ $document->semestre->name }}</div>
-                                </div>
-                            </td>
-
-                            <!-- Status Cell -->
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <button
-                                        wire:click="toggleStatus({{ $document->id }})"
-                                        wire:loading.attr="disabled"
-                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:ring-offset-2 {{ $document->is_actif ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-200 dark:bg-gray-600' }}"
-                                        role="switch">
-                                        <span class="sr-only">Changer le statut</span>
-                                        <span
-                                            aria-hidden="true"
-                                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200 ease-in-out {{ $document->is_actif ? 'translate-x-5' : 'translate-x-0' }}"
-                                        ></span>
-                                    </button>
-                                </div>
-                            </td>
-
-                            <!-- Statistics Cell -->
-                            <td class="px-6 py-4">
-                                <div class="flex flex-col gap-2">
-                                    <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                        <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                        </svg>
-                                        <span>{{ $document->view_count }} vues</span>
+                                <!-- Information Cell -->
+                                <td class="px-6 py-4">
+                                    <div class="text-sm">
+                                        <div class="font-medium text-gray-900 dark:text-white">{{ $document->niveau->name }}</div>
+                                        <div class="text-gray-500 dark:text-gray-400">{{ $document->parcour->name }}</div>
+                                        <div class="text-gray-500 dark:text-gray-400">{{ $document->semestre->name }}</div>
                                     </div>
-                                    <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                        <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5c0-1.1.9-2 2-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15c0 1.1-.9 2-2 2h-2M8 7H6a2 2 0 00-2 2v10c0 1.1.9 2 2 2h8a2 2 0 002-2v-2"/>
-                                        </svg>
-                                        <span>{{ $document->formatted_size }}</span>
+                                </td>
+
+                                <!-- Status Cell -->
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <button
+                                            wire:click="toggleStatus({{ $document->id }})"
+                                            wire:loading.attr="disabled"
+                                            class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:ring-offset-2 {{ $document->is_actif ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-200 dark:bg-gray-600' }}"
+                                            role="switch">
+                                            <span class="sr-only">Changer le statut</span>
+                                            <span
+                                                aria-hidden="true"
+                                                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200 ease-in-out {{ $document->is_actif ? 'translate-x-5' : 'translate-x-0' }}"
+                                            ></span>
+                                        </button>
                                     </div>
-                                </div>
-                            </td>
+                                </td>
 
-                            <!-- Actions Cell -->
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex items-center space-x-3">
-                                    <!-- Preview Button -->
-                                    <button
-                                        onclick="window.open('{{ $document->getSecureUrl() }}', '_blank')"
-                                        class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 transition-colors duration-200"
-                                        title="Prévisualiser">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                        </svg>
-                                    </button>
+                                <!-- Statistics Cell -->
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                            <span>
+                                                {{ $document->view_count }} {{ Str::plural('vue', $document->view_count) }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5c0-1.1.9-2 2-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15c0 1.1-.9 2-2 2h-2M8 7H6a2 2 0 00-2 2v10c0 1.1.9 2 2 2h8a2 2 0 002-2v-2"/>
+                                            </svg>
+                                            <span>{{ $document->formatted_size }}</span>
+                                        </div>
+                                    </div>
+                                </td>
 
-                                    <!-- Edit Button -->
-                                    <a href="{{ route('document.edit', $document) }}"
-                                    class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition-colors duration-200"
-                                    title="Modifier">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                        </svg>
-                                    </a>
+                                <!-- Actions Cell -->
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex items-center space-x-3">
+                                        <!-- Preview Button -->
+                                        <button
+                                            onclick="window.open('{{ $document->getSecureUrl() }}', '_blank')"
+                                            class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 transition-colors duration-200"
+                                            title="Prévisualiser">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        </button>
 
-                                    <!-- Delete Button -->
-                                    <button
-                                        wire:click="deleteDocument({{ $document->id }})"
-                                        wire:confirm="Êtes-vous sûr de vouloir supprimer ce document ?"
-                                        class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 transition-colors duration-200"
-                                        title="Supprimer">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        <!-- Edit Button -->
+                                        <a href="{{ route('document.edit', $document) }}"
+                                        class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition-colors duration-200"
+                                        title="Modifier">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </a>
+
+                                        <!-- Delete Button -->
+                                        <button
+                                            wire:click="deleteDocument({{ $document->id }})"
+                                            wire:confirm="Êtes-vous sûr de vouloir supprimer ce document ?"
+                                            class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 transition-colors duration-200"
+                                            title="Supprimer">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="px-6 py-10 text-center">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                         </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-6 py-10 text-center">
-                                <div class="flex flex-col items-center justify-center">
-                                    <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                    <p class="mt-2 text-gray-500 dark:text-gray-400">Aucun document trouvé</p>
-                                    <a href="{{ route('document.upload') }}" wire:navigate
-                                    class="mt-3 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                        Ajouter un document
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                                        <p class="mt-2 text-gray-500 dark:text-gray-400">Aucun document trouvé</p>
+                                        <a href="{{ route('document.upload') }}" wire:navigate
+                                        class="mt-3 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                            Ajouter un document
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
 
             <!-- Version mobile/tablet -->
             <div class="lg:hidden">
@@ -490,6 +492,7 @@
             <div class="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-700">
                 {{ $myDocuments->links() }}
             </div>
+
         </div>
     </div>
 </div>

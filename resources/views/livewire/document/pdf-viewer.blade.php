@@ -54,3 +54,10 @@
     @include('livewire.document.style')
 </div>
 @include('livewire.document.script')
+<script>
+    function openPdfViewer(documentData) {
+    // Émettre l'événement Livewire
+    Livewire.dispatch('view-document', { documentId: documentData.id });
+}
+</script>
+

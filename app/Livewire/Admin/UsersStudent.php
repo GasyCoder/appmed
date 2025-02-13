@@ -7,15 +7,19 @@ use App\Models\Niveau;
 use App\Models\Profil;
 use App\Models\Parcour;
 use Livewire\Component;
+use Illuminate\Support\Str;
 use Livewire\WithPagination;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+use App\Notifications\UserAccountCreated;
+use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class UsersStudent extends Component
 {
     use WithPagination;
+    use LivewireAlert;
 
     // Propriétés de recherche et filtrage
     public $search = '';
@@ -28,7 +32,6 @@ class UsersStudent extends Component
     public $userId;
     public $name = '';
     public $email = '';
-    public $password = '';
     public $status = true;
     public $niveau_id;
     public $parcour_id;
@@ -60,7 +63,7 @@ class UsersStudent extends Component
         return [
             'name' => 'required|string|min:3|max:255',
             'email' => ['required', 'email', Rule::unique('users')->ignore($this->userId)],
-            'password' => $this->userId ? 'nullable|min:8' : 'required|min:8',
+            // 'password' => $this->userId ? 'nullable|min:8' : 'required|min:8',
             'status' => 'boolean',
             'niveau_id' => 'required|exists:niveaux,id',
             'parcour_id' => 'required|exists:parcours,id',
@@ -80,7 +83,7 @@ class UsersStudent extends Component
         'email.required' => 'L\'email est requis',
         'email.email' => 'L\'email doit être valide',
         'email.unique' => 'Cet email est déjà utilisé',
-        'password.required' => 'Le mot de passe est requis',
+        // 'password.required' => 'Le mot de passe est requis',
         'niveau_id.required' => 'Le niveau est requis',
         'parcour_id.required' => 'Le parcours est requis',
     ];
@@ -89,31 +92,59 @@ class UsersStudent extends Component
     public function createStudent()
     {
         $this->isLoading = true;
-        $validatedData = $this->validate();
 
         try {
             DB::beginTransaction();
 
+            // Générer un token sécurisé pour la création du mot de passe
+            $token = Str::random(64);
+
+            // Générer un mot de passe temporaire lisible
+            $temporaryPassword = Str::random(8);
+
+            // Préparation des données de l'utilisateur
             $userData = [
                 'name' => $this->name,
                 'email' => $this->email,
                 'status' => $this->status,
                 'niveau_id' => $this->niveau_id,
                 'parcour_id' => $this->parcour_id,
+                'password' => Hash::make($temporaryPassword),  // Mot de passe temporaire hashé
+                'email_verified_at' => now()  // Email vérifié par défaut
             ];
 
-            if (!$this->userId || $this->password) {
-                $userData['password'] = Hash::make($this->password);
-            }
-
             if ($this->userId) {
+                // Mise à jour d'un utilisateur existant
                 $user = User::findOrFail($this->userId);
+                unset($userData['password']); // Ne pas mettre à jour le mot de passe lors d'une mise à jour
+                unset($userData['email_verified_at']); // Ne pas mettre à jour la vérification email
                 $user->update($userData);
+                $message = 'Étudiant mis à jour avec succès';
+                $type = 'success';
             } else {
+                // Création d'un nouvel utilisateur
                 $user = User::create($userData);
+
+                // Enregistrement du token pour la création du mot de passe
+                DB::table('password_reset_tokens')->updateOrInsert(
+                    ['email' => $user->email],
+                    [
+                        'token' => Hash::make($token),
+                        'created_at' => now()
+                    ]
+                );
+
+                // Attribution du rôle étudiant
+                $user->assignRole('student');
+
+                // Envoi de l'email avec le mot de passe temporaire et le lien de réinitialisation
+                $user->notify(new UserAccountCreated($token, $temporaryPassword));
+
+                $message = 'Compte étudiant créé avec succès. Un email a été envoyé.';
+                $type = 'success';
             }
 
-            // Gestion du profil
+            // Création ou mise à jour du profil
             $profileData = [
                 'sexe' => $this->sexe,
                 'telephone' => $this->telephone,
@@ -128,32 +159,63 @@ class UsersStudent extends Component
                 $user->profil()->create($profileData);
             }
 
-            // Assignation du rôle étudiant
-            $user->assignRole('student');
-
             DB::commit();
 
+            // Réinitialisation et fermeture du modal
             $this->reset();
-            $this->dispatch('notify', [
-                'message' => $this->userId ? 'Étudiant mis à jour avec succès' : 'Étudiant créé avec succès',
-                'type' => 'success'
+            $this->showUserModal = false;
+
+            // Alert de succès avec animation
+            $this->alert('success', 'Succès !', [
+                'position' => 'center',
+                'timer' => 3000,
+                'toast' => true, // Changé en true pour un style plus compact
+                'timerProgressBar' => true,
+                'showConfirmButton' => false,
+                'text' => $this->userId
+                    ? 'Étudiant mis à jour avec succès.'
+                    : 'Compte étudiant créé. Un email a été envoyé.',
+                'width' => '400', // Largeur réduite
+                'padding' => '1em', // Padding réduit
+                'customClass' => [
+                    'popup' => 'custom-alert',
+                    'title' => 'text-lg font-semibold mb-2',
+                    'text' => 'text-sm'
+                ]
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Erreur lors de la création/mise à jour de l\'étudiant:', [
+            Log::error('Erreur création étudiant:', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
-            $this->dispatch('notify', [
-                'message' => 'Une erreur est survenue',
-                'type' => 'error'
+            // Alert d'erreur
+            $this->alert('error', 'Erreur', [
+                'position' => 'center',
+                'timer' => 2000,
+                'toast' => true,
+                'timerProgressBar' => true,
+                'showConfirmButton' => true,
+                'showCancelButton' => false,
+                'confirmButtonText' => 'OK',
+                'text' => 'Une erreur est survenue lors de la création.',
+                'width' => '400',
+                'padding' => '1em',
+                'customClass' => [
+                    'popup' => 'custom-alert',
+                    'title' => 'text-lg font-semibold mb-2',
+                    'text' => 'text-sm'
+                ]
             ]);
+
+
         } finally {
             $this->isLoading = false;
         }
     }
+
 
     // Édition d'un étudiant
     public function editStudent($userId)
@@ -249,7 +311,7 @@ class UsersStudent extends Component
     public function resetForm()
     {
         $this->reset([
-            'userId', 'name', 'email', 'password',
+            'userId', 'name', 'email',
             'niveau_id', 'parcour_id', 'status', 'showUserModal',
             'sexe', 'telephone', 'departement', 'ville', 'adresse'
         ]);

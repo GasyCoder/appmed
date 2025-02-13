@@ -17,8 +17,7 @@
     <!-- PDF Modal -->
     <div id="pdfModal" class="modal">
         <div class="modal-content">
-            <button class="close-modal">&times;</button> <!-- Bouton placé à l'intérieur du modal-content -->
-
+            <button class="close-modal">&times;</button>
             <!-- Flipbook Container -->
             <div id="flipbook" class="flipbook"></div>
             <br>
@@ -50,14 +49,173 @@
             </div>
         </div>
     </div>
-
-    @include('livewire.document.style')
 </div>
-@include('livewire.document.script')
-<script>
-    function openPdfViewer(documentData) {
-    // Émettre l'événement Livewire
-    Livewire.dispatch('view-document', { documentId: documentData.id });
-}
-</script>
 
+@push('styles')
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fff;
+    margin: 2% auto;
+    padding: 20px;
+    width: 90%;
+    max-width: 1200px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.close-modal {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #666;
+}
+
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-content {
+    text-align: center;
+    padding: 20px;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+.loading-text {
+    margin-top: 20px;
+}
+
+.progress-bar {
+    width: 300px;
+    height: 6px;
+    background-color: #f3f3f3;
+    border-radius: 3px;
+    margin: 10px auto;
+    overflow: hidden;
+}
+
+.progress-fill {
+    width: 0%;
+    height: 100%;
+    background-color: #3498db;
+    transition: width 0.3s ease;
+}
+
+.navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.nav-btn {
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    background-color: #f3f4f6;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background-color: #e5e7eb;
+}
+
+.page-number {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Styles pour le flipbook */
+.flipbook {
+    margin: 0 auto;
+}
+
+.flipbook .page {
+    background-color: white;
+}
+
+.cover-page {
+    background: linear-gradient(to bottom right, #f3f4f6, #fff);
+    padding: 2rem;
+    text-align: center;
+}
+
+.end-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 2rem;
+    text-align: center;
+}
+
+/* Mode sombre */
+.dark .modal-content {
+    background-color: #1f2937;
+    color: #fff;
+}
+
+.dark .nav-btn {
+    background-color: #374151;
+}
+
+.dark .nav-btn:hover {
+    background-color: #4b5563;
+}
+
+.dark .loading-overlay {
+    background-color: rgba(31, 41, 55, 0.9);
+}
+
+.dark .progress-bar {
+    background-color: #374151;
+}
+
+.dark .progress-fill {
+    background-color: #60a5fa;
+}
+</style>
+@endpush
+
+@include('livewire.document.script')

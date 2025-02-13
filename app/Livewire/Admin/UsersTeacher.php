@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Niveau;
 use App\Models\Profil;
 use App\Models\Parcour;
+use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Illuminate\Support\Str;
 use Livewire\WithPagination;
@@ -19,6 +20,7 @@ use App\Notifications\TeacherAccountCreated;
 class UsersTeacher extends Component
 {
     use WithPagination;
+    use LivewireAlert;
 
     // Propriétés de recherche et filtrage
     public $search = '';

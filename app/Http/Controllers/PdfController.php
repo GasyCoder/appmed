@@ -21,6 +21,9 @@ class PdfController extends Controller
             return response()->json(['error' => 'File not found.'], Response::HTTP_NOT_FOUND);
         }
 
+        // Increment view count
+        $this->incrementView($filename);
+
         // Récupérer le document et les informations de l'enseignant
         $document = Document::where('file_path', 'like', '%' . $filename)->first();
         $teacherInfo = null;
@@ -58,6 +61,9 @@ class PdfController extends Controller
             ];
         }
 
+        // Increment view count
+        $this->incrementView($filename);
+
         $css = file_get_contents(public_path('assets/css/flipbook.css'));
         return view('pdf.viewer', [
             'filename' => $filename,
@@ -65,5 +71,13 @@ class PdfController extends Controller
             'teacherInfo' => $teacherInfo,
             'document' => $document
         ]);
+    }
+
+    private function incrementView($filename)
+    {
+        $document = Document::where('file_path', 'like', '%' . $filename)->first();
+        if ($document) {
+            $document->registerView();
+        }
     }
 }

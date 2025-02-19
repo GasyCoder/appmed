@@ -28,7 +28,7 @@
 
             <div class="flex items-center justify-end mt-4">
                 <x-button>
-                    Réinitialiser le mot de passe
+                    {{ __('Reset Password') }}
                 </x-button>
             </div>
         </form>

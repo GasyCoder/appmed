@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\Document;
+use App\Livewire\Programmes;
 use App\Livewire\Admin\Niveaux;
+use App\Livewire\Admin\Calendar;
 use App\Livewire\Admin\Parcours;
 use App\Livewire\Admin\Semestres;
 use App\Livewire\Pages\ComingSoon;
@@ -11,12 +13,16 @@ use App\Livewire\Admin\UsersTeacher;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Admin\AdminDashboard;
 use App\Livewire\Teacher\DocumentEdit;
-use App\Livewire\Admin\UsersManagement;
+use App\Http\Controllers\PdfController;
 use App\Livewire\Student\EnseignantView;
 use App\Livewire\Teacher\DocumentUpload;
+use App\Livewire\Student\ScheduleStudent;
 use App\Livewire\Student\StudentDocument;
+use App\Livewire\Teacher\ScheduleTeacher;
+use App\Livewire\Student\DashboardStudent;
 use App\Livewire\Teacher\TeacherDashboard;
-use App\Livewire\Admin\DocumentsManagement;
+use App\Http\Controllers\Auth\RegisterFormController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,6 +31,23 @@ use App\Livewire\Admin\DocumentsManagement;
 */
 Route::redirect('/', '/login');
 Route::redirect('/register', '/login');
+
+// routes/web.php
+Route::middleware('guest')->group(function () {
+    Route::get('/inscription', [EmailVerificationController::class, 'index'])
+        ->name('inscription');
+
+    Route::post('/inscription/verify', [EmailVerificationController::class, 'verifyEmailStudent'])
+        ->name('email.verify');
+
+    Route::get('/inscription/formulaire/{token}', [RegisterFormController::class, 'showRegistrationForm'])
+        ->name('register.form');
+
+    Route::post('/inscription/formulaire/{token}', [RegisterFormController::class, 'register'])
+        ->name('register.store');
+});
+
+
 
 Route::get('/set-password/{token}', function ($token) {
     return view('auth.set-password', ['token' => $token]);
@@ -46,6 +69,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         };
     })->name('dashboard');
 
+    Route::get('/view-pdf/{filename}', [PdfController::class, 'viewer'])->name('pdf.viewer');
+    Route::get('/pdf-content/{filename}', [PdfController::class, 'show'])->name('pdf.content');
+
     /*
     |--------------------------------------------------------------------------
     | Routes Administrateur
@@ -60,6 +86,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/niveaux', Niveaux::class)->name('admin.niveau');
         Route::get('/parcours', Parcours::class)->name('admin.parcour');
         Route::get('/semestres', Semestres::class)->name('admin.semestre');
+
+        Route::get('/timetable', Calendar::class)
+        ->name('admin.timetable');
     });
 
     /*
@@ -75,14 +104,14 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             Route::get('/documents/upload', DocumentUpload::class)->name('document.upload');
             Route::get('/documents/{document}/edit', DocumentEdit::class)->name('document.edit');
 
-            Route::get('/emploi-du-temps', ComingSoon::class)
-                ->name('timetable');
+            Route::get('/emploi-du-temps', ScheduleTeacher::class)
+                ->name('teacher.timetable');
 
             Route::get('/programmes', ComingSoon::class)
-                ->name('programs');
+                ->name('teacher.programs');
 
             Route::get('/scolarites', ComingSoon::class)
-                ->name('scolarites');
+                ->name('teacher.scolarites');
     });
 
     /*
@@ -93,10 +122,23 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::prefix('student')
         ->middleware('role:student')
         ->group(function () {
-            Route::get('/dashboard', StudentDocument::class)->name('studentEspace');
+
+            Route::get('/dashboard', DashboardStudent::class)->name('studentEspace');
+
+            Route::get('/mes-cours', StudentDocument::class)->name('student.document');
+
             Route::get('/mes-enseignants', EnseignantView::class)->name('student.myTeacher');
+
+            Route::get('/emploi-du-temps', ScheduleStudent::class)->name('student.timetable');
+
+            Route::get('/programmes', ComingSoon::class)->name('student.programs');
+
+            Route::get('/scolarites', ComingSoon::class)->name('student.scolarites');
         });
 
+
+    Route::get('/nos-programmes', Programmes::class)
+            ->name('programs');
 
     // Route commune pour l'incrémentation des vues des documents
     Route::post('/document/{document}/increment-view', function(Document $document) {

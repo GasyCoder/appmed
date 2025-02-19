@@ -43,4 +43,5 @@ class Niveau extends Model
         return $this->hasMany(Semestre::class);
     }
 
+
 }

@@ -15,11 +15,11 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolePermissionSeeder::class,
-            AdminSeeder::class,
-            NiveauSeeder::class,        // Les niveaux doivent être créés avant
-            ParcoursSeeder::class,      // Les parcours doivent être créés avant
+            // AdminSeeder::class,
+            NiveauSeeder::class,     
+            ParcoursSeeder::class,      
             SemestreSeeder::class,
-            UserWithProfileSeeder::class, // Les utilisateurs en dernier car ils dépendent des autres tables
+            // UserWithProfileSeeder::class, 
             ProgrammeSeeder::class,
             AuthorizedEmailSeeder::class,
         ]);

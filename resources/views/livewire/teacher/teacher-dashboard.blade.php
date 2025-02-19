@@ -1,6 +1,5 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- Hero Section avec Profil -->
-    <div class="relative rounded-sm overflow-hidden bg-gradient-to-br from-blue-600 to-red-400 dark:from-blue-800 dark:to-red-100">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <div class="bg-gradient-to-r from-indigo-600 to-indigo-800 dark:from-indigo-800 dark:to-indigo-900 p-6">
         <div class="absolute inset-0 bg-grid-white/[0.05] dark:bg-grid-white/[0.02]"></div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div class="relative z-10 flex flex-col items-center gap-8 md:flex-row md:items-center">

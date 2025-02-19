@@ -1,6 +1,3 @@
-{{-- @php
-    $extension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
-@endphp --}}
 {{-- ivewire.teacher.forms.file-icons --}}
 @if(in_array($extension, ['pdf']))
 <svg class="h-8 w-8 text-red-400" fill="currentColor" viewBox="0 0 384 512">

@@ -1,0 +1,708 @@
+/* Reset et styles de base */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.cover-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.cover-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+}
+
+.cover-body {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 0;
+}
+
+.teacher-info {
+    text-align: center;
+    margin-top: auto;
+    margin-bottom: 2rem;
+}
+
+
+.university {
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    letter-spacing: 1px;
+}
+
+.fac-university {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.9;
+}
+
+.logo-book {
+    width: 80px; /* Ajuster selon la taille souhaitée */
+    height: auto;
+    margin: 10px auto; /* Centrage horizontal */
+    display: block;
+}
+
+
+.auteur-name {
+    font-size: 0.9rem;
+    font-weight: 400;
+    margin-bottom: 0.2rem;
+}
+
+.cover-footer {
+    text-align: center;
+    margin-top: auto;
+    padding-bottom: 2rem;
+}
+
+.page-count {
+    font-size: 1rem;
+    color: #6B7280;
+}
+
+.teacher-grade {
+    font-size: 1rem;
+    color: #4B5563;
+    margin-bottom: 0.25rem;
+}
+
+.teacher-name {
+    font-size: 1.25rem;
+    color: #1F2937;
+    font-weight: 500;
+}
+
+.document-title {
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 2rem;
+    line-height: 1.2;
+    text-align: center;
+    text-transform: capitalize;
+}
+
+/* Container principal */
+.viewer-container {
+    position: fixed;
+    top: 0;
+    left: 260px; /* Largeur de la sidebar + un peu d'espace */
+    right: 0;
+    width: calc(100% - 260px); /* Ajuster la largeur en fonction de la sidebar */
+    height: 100vh;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Style du flipbook et son container */
+#flipbook-container {
+    flex: 1;
+    width: 100%;
+    max-width: 95vw;
+    max-height: 95vh;
+    height: calc(100vh - 120px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 2000px;
+    padding: 0 20px;
+    margin: 0;
+    transform: none; /* Supprimer le transform précédent */
+}
+
+#flipbook {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: all 0.3s ease;
+    transform-origin: center center;
+}
+
+
+.end-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    background-color: #f8fafc;
+}
+
+.end-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.end-header .university {
+    font-size: 1.25rem;
+    color: #1f2937;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.end-header .fac-university {
+    font-size: 1.1rem;
+    color: #4b5563;
+}
+
+.end-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 1.5rem;
+}
+
+.end-text {
+    font-size: 1.5rem;
+    color: #1f2937;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.end-footer {
+    text-align: center;
+    margin-top: auto;
+    padding-top: 2rem;
+}
+
+.page-info {
+    font-size: 1rem;
+    color: #6b7280;
+}
+
+.doc-title {
+    font-size: 1.2rem;
+    color: #4b5563;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+
+/* Style des pages */
+.page {
+    background-color: white !important;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.page canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* Style de la couverture */
+.hard {
+    color: #374151;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+}
+
+.cover-content {
+    width: 100%;
+    height: 100%;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    background: #85b9ed;
+}
+
+.cover-header {
+    width: 100%;
+    text-align: center;
+}
+
+.logo-book {
+    width: 120px;
+    height: auto;
+    margin-bottom: 2rem;
+}
+
+.cover-content h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 1rem 0;
+    padding: 0 1rem;
+    word-break: break-word;
+}
+
+.page-count {
+    font-size: 1rem;
+    color: #6b7280;
+    margin-top: 1rem;
+}
+
+/* Numérotation des pages */
+.page-number {
+    position: absolute;
+    bottom: 1rem;
+    width: 100%;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 1rem;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+}
+
+.zoom-level {
+    min-width: 4rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #374151;
+    font-weight: 500;
+}
+
+.control-btn {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    border-radius: 0.375rem;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+
+.control-btn:hover {
+    background-color: #f3f4f6;
+}
+
+
+.fullscreen-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* Style pour le mode plein écran */
+.viewer-container:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+}
+
+.viewer-container:-moz-full-screen {
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+}
+
+.viewer-container:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+}
+
+/* Contrôles de navigation */
+.controls {
+    position: fixed;
+    bottom: 1rem;
+    left: calc(50% + 130px); /* Centrer par rapport à l'espace disponible */
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1rem;
+    background: #6feb253d;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 50px;
+    z-index: 1000;
+    margin: 0;
+}
+
+.controls button {
+    background: transparent;
+    border: none;
+    /* padding: 0.75rem 1.5rem; */
+    color: #374151;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.controls button:hover {
+    background: #f3f4f6;
+}
+
+.controls button svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Loading container */
+.loading-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    color: #374151;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Message d'erreur */
+.error-message {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.error-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.error-container h3 {
+    color: #ef4444;
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.error-container p {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+}
+
+.retry-button {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-weight: 500;
+}
+
+.retry-button:hover {
+    background: #2563eb;
+}
+
+/* Effets de page */
+.page-wrapper {
+    perspective: 2000px;
+}
+
+.page.odd:hover {
+    box-shadow: inset -20px 0 50px rgba(0, 0, 0, 0.05);
+}
+
+.page.even:hover {
+    box-shadow: inset 20px 0 50px rgba(0, 0, 0, 0.05);
+}
+
+/* Media Queries */
+@media screen and (max-width: 1600px) {
+    #flipbook-container {
+        padding-left: 100px;
+        transform: translateX(-50px);
+    }
+}
+
+@media screen and (max-width: 1024px) {
+
+    .viewer-container {
+        left: 0;
+        width: 100%;
+    }
+
+    #flipbook-container {
+        max-width: 100vw;
+        padding: 0 10px;
+    }
+
+
+    .controls {
+        left: 50%;
+    }
+
+    .cover-content h1 {
+        font-size: 1.5rem;
+    }
+
+    .logo-book {
+        width: 100px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .controls {
+        bottom: 1rem;
+        padding: 0.5rem;
+    }
+
+    .controls button {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    .cover-content {
+        padding: 1rem;
+    }
+
+    .cover-content h1 {
+        font-size: 1.2rem;
+    }
+
+    .logo-book {
+        width: 80px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .controls {
+        width: 90%;
+    }
+
+    .controls button {
+        flex: 1;
+        justify-content: center;
+        font-size: 0.75rem;
+    }
+
+    .controls button span {
+        display: none;
+    }
+}
+
+/* Animations fluides */
+.turn-page {
+    transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+
+#soundToggle {
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#soundToggle:hover {
+    background-color: #f3f4f6;
+    border-radius: 50%;
+}
+
+.hidden {
+    display: none;
+}
+
+
+/* Amélioration des styles pour le PowerPoint */
+.slide-content {
+    width: 100%;
+    height: 100%;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.slide-header {
+    text-align: right;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.slide-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+/* Amélioration des titres */
+.slide-title {
+    font-size: 1.75rem;
+    font-weight: bold;
+    color: #2563eb;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.slide-heading {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e40af;
+    margin: 1rem 0 0.5rem;
+    line-height: 1.3;
+}
+
+.slide-paragraph {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #334155;
+    margin-bottom: 0.75rem;
+}
+
+/* Meilleure liste */
+.slide-list-item {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #334155;
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+}
+
+.slide-list-item:before {
+    content: '•';
+    position: absolute;
+    left: 0.5rem;
+    color: #3b82f6;
+}
+
+.level-1 { margin-left: 1rem; }
+.level-2 { margin-left: 2rem; }
+.level-3 { margin-left: 3rem; }
+.level-4 { margin-left: 4rem; }
+
+/* Amélioration des placeholders d'image */
+.slide-image-placeholder {
+    background-color: #f8fafc;
+    border: 1px dashed #94a3b8;
+    border-radius: 0.25rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 1rem auto;
+    width: 80%;
+    max-width: 300px;
+    height: auto;
+    aspect-ratio: 4/3;
+}
+
+.image-icon {
+    width: 32px;
+    height: 32px;
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+}
+
+.image-text {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+/* Ajout de styles pour différents types de contenu */
+.slide-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0.5rem 0;
+}
+
+.slide-column {
+    flex: 1;
+    min-width: 45%;
+}
+
+/* Textes avec alignements */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+/* Textes spéciaux */
+.highlight-text {
+    font-weight: bold;
+    color: #1e40af;
+}
+
+/* Ajustements spécifiques pour les grands titres */
+.large-title {
+    font-size: 1.4rem;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    text-align: center;
+    margin: 0.5rem 0;
+    word-wrap: break-word;
+}

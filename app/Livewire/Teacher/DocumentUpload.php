@@ -4,6 +4,7 @@ namespace App\Livewire\Teacher;
 
 use App\Models\Niveau;
 use App\Models\Parcour;
+use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use App\Models\Document;
 use App\Models\Semestre;
@@ -19,24 +20,25 @@ class DocumentUpload extends Component
 {
     use WithFileUploads;
     use WithPagination;
+    use LivewireAlert;
 
     // Règles pour les fichiers
     #[Rule(['array'])]
-    #[Rule(['file', 'max:10240', 'mimes:pdf,doc,docx,dotx,dot,ppt,pptx,xls,xlsx,jpeg,jpg,png'], as: 'file.*')]
     public $file = [];
     public $file_status = [];
     public $titles = [];
 
     // Règles pour les sélections
-    #[Rule(['required', 'exists:niveaux,id'])]
     public $niveau_id = '';
-
-    #[Rule(['required', 'exists:parcours,id'])]
     public $parcour_id = '';
-
     public $is_actif = true;
     public $semestres_selected = [];
     const MAX_FILES = 6;
+
+    public $isUploading = false;
+    public $uploadProgress = 0;
+    public $successMessage = '';
+    public $errorMessage = '';
 
     public function mount()
     {
@@ -48,26 +50,6 @@ class DocumentUpload extends Component
             $this->updatedNiveauId();
         }
     }
-
-    protected $messages = [
-        'file' => 'Veuillez sélectionner un fichier valide.',
-        'file.required' => 'Veuillez sélectionner au moins un fichier.',
-        'file.array' => 'Le format des fichiers est invalide.',
-        'file.max' => 'Vous ne pouvez pas téléverser plus de ' . self::MAX_FILES . ' fichiers à la fois.',
-        'file.*.file' => 'Chaque élément doit être un fichier valide.',
-        'file.*.max' => 'La taille maximale autorisée pour chaque fichier est de 10MB.',
-        'file.*.mimes' => 'Les types de fichiers acceptés sont : PDF, Word, Excel, PowerPoint, Images.',
-        'file.*.uploaded' => 'Échec du téléversement du fichier. Veuillez réessayer.',
-        'titles.*.required' => 'Un titre est requis pour chaque fichier.',
-        'titles.*.min' => 'Chaque titre doit contenir au moins 3 caractères.',
-        'titles.*.max' => 'Chaque titre ne peut pas dépasser 255 caractères.',
-        'niveau_id.required' => 'Le niveau est requis.',
-        'niveau_id.exists' => 'Le niveau sélectionné est invalide.',
-        'parcour_id.required' => 'Le parcours est requis.',
-        'parcour_id.exists' => 'Le parcours sélectionné est invalide.',
-        'semestres_selected.required' => 'Au moins un semestre actif est requis.',
-        'semestres_selected.min' => 'Au moins un semestre actif est requis.',
-    ];
 
     // Méthodes pour la gestion des fichiers
     public function updatedFile()
@@ -180,11 +162,11 @@ class DocumentUpload extends Component
         $this->dispatch('parcours-updated');
     }
 
-    // Méthode principale d'upload
+    // Méthode principale d'upload - Optimisée pour éviter le rechargement
     public function uploadDocument()
     {
         if (count($this->file) > self::MAX_FILES) {
-            session()->flash('error', 'Vous ne pouvez pas téléverser plus de ' . self::MAX_FILES . ' fichiers à la fois.');
+            $this->alert('error', 'Vous ne pouvez pas téléverser plus de ' . self::MAX_FILES . ' fichiers à la fois.');
             return;
         }
 
@@ -202,12 +184,20 @@ class DocumentUpload extends Component
             'semestres_selected' => 'required|array|min:1',
         ]);
 
+        $this->isUploading = true;
+        $this->uploadProgress = 0;
+        $this->successMessage = '';
+        $this->errorMessage = '';
+
         try {
             DB::beginTransaction();
 
             if (empty($this->semestres_selected)) {
                 throw new \Exception('Aucun semestre actif disponible pour ce niveau.');
             }
+
+            $totalFiles = count($this->file);
+            $filesProcessed = 0;
 
             foreach ($this->file as $index => $uploadedFile) {
                 if (empty($this->titles[$index])) {
@@ -216,10 +206,37 @@ class DocumentUpload extends Component
 
                 $filePath = $this->storeDocument($uploadedFile, $this->titles[$index]);
                 $this->createDocument($this->titles[$index], $uploadedFile, $filePath, $index);
+
+                $filesProcessed++;
+                $this->uploadProgress = intval(($filesProcessed / $totalFiles) * 100);
+                $this->dispatch('upload-progress-updated', progress: $this->uploadProgress);
             }
 
             DB::commit();
-            session()->flash('success', count($this->file) . ' document(s) téléversé(s) avec succès');
+
+            $this->alert('success', count($this->file) . ' document(s) téléversé(s) avec succès', [
+                'position' => 'top-end', // Position changé pour un meilleur UX
+                'timer' => 4000, // Timer réduit pour une meilleure réactivité
+                'toast' => true, // Style compact
+                'timerProgressBar' => true,
+                'showConfirmButton' => false,
+                'width' => '400px', // Largeur ajustée pour une meilleure présentation
+                'padding' => '1.5em', // Padding ajusté pour une meilleure lisibilité
+                'icon' => 'success', // Ajout d'une icône de succès
+                'background' => '#f0f9ff', // Couleur de fond personnalisée pour une meilleure esthétique
+                'customClass' => [
+                    'popup' => 'custom-alert',
+                    'title' => 'text-lg font-semibold mb-2',
+                    'text' => 'text-sm'
+                ],
+                'showClass' => [
+                    'popup' => 'animate__animated animate__fadeInDown' // Animation d'apparition
+                ],
+                'hideClass' => [
+                    'popup' => 'animate__animated animate__fadeOutUp' // Animation de disparition
+                ]
+            ]);
+
             return redirect()->route('document.teacher');
 
         } catch (\Exception $e) {
@@ -228,7 +245,14 @@ class DocumentUpload extends Component
                 'error' => $e->getMessage(),
                 'user' => Auth::id()
             ]);
-            session()->flash('error', $e->getMessage());
+            $this->alert('error', $e->getMessage(), [
+                'position' => 'center',
+                'timer' => 5000,
+                'toast' => false,
+            ]);
+        } finally {
+            $this->isUploading = false;
+            $this->uploadProgress = 100;
         }
     }
 
@@ -265,6 +289,16 @@ class DocumentUpload extends Component
                 'updated_at' => now(),
             ]);
         }
+    }
+
+    public function resetErrorMessage()
+    {
+        $this->errorMessage = '';
+    }
+
+    public function resetSuccessMessage()
+    {
+        $this->successMessage = '';
     }
 
     public function render()

@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'heyzine' => [
+    'client_id' => env('HEYZINE_CLIENT_ID', '4beeb058f8393e0c'),
+        'api_key' => env('HEYZINE_API_KEY', '2dda1e0c00287951dabffaec8afda8f9676cd88c.4beeb058f8393e0c'),
+    ],
 ];

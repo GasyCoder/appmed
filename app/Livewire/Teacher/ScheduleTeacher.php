@@ -5,6 +5,7 @@ namespace App\Livewire\Teacher;
 use Carbon\Carbon;
 use App\Models\Lesson;
 use App\Models\Niveau;
+use App\Models\Parcour;
 use Livewire\Component;
 use App\Models\Semestre;
 use App\Models\Programme;
@@ -34,6 +35,8 @@ class ScheduleTeacher extends Component
     public $selectedNiveau = '';
     public $currentDateTime;
     public $typeCours;
+    public $niveau;
+    public $parcour;
     public $timeRange = [
         'start' => '08:00',
         'end' => '18:00'
@@ -189,6 +192,7 @@ class ScheduleTeacher extends Component
                     $calendarData[$timeKey][] = [
                         'type' => 'lesson',
                         'id' => $lesson->id,
+                        'teacher' => $lesson->teacher->getFullNameWithGradeAttribute(),
                         'niveau' => $lesson->niveau->name,
                         'parcour' => $lesson->parcour->name,
                         'salle' => $lesson->salle,
@@ -225,10 +229,15 @@ class ScheduleTeacher extends Component
                 }
             }
         }
+        // Récupérer les informations du niveau et du parcours
+        $currentNiveau = Niveau::find($this->niveau);
+        $currentParcour = Parcour::find($this->parcour);
 
         return [
             'timeSlots' => $timeSlots,
             'calendar' => $calendarData,
+            'currentNiveau' => $currentNiveau ? $currentNiveau->sigle : '', // Changé de name à sigle
+            'currentParcour' => $currentParcour ? $currentParcour->sigle : '', // Changé de name à sigle
             'currentDay' => $this->getCurrentDayName(),
             'summary' => [
                 'total_lessons' => $lessons->count(),

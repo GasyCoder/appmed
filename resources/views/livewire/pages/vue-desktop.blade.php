@@ -1,30 +1,29 @@
-<div class="hidden lg:block bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
+{{-- vue pour desktop (version optimisée avec full color) --}}
+<div class="hidden lg:block bg-white dark:bg-gray-900 rounded-xl shadow-sm overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table class="min-w-full">
             {{-- En-tête du tableau --}}
-            <thead class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <tr>
-                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 tracking-wider w-24 border-r border-gray-200 dark:border-gray-700">
+            <thead>
+                <tr class="border-b border-gray-200 dark:border-gray-700">
+                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 tracking-wider w-20 border-r border-gray-200 dark:border-gray-700">
                         Horaire
                     </th>
-                    @foreach($weekDays as $dayName)
-                        <th class="px-6 py-4 text-center font-medium tracking-wider relative group">
-                            <span class="block text-sm text-gray-900 dark:text-white mb-1">{{ $dayName }}</span>
+                    @foreach($weekDays as $dayNumber => $dayName)
+                        <th class="px-3 py-2.5 text-center tracking-wider border-l">
+                            <span class="block text-xs font-medium text-gray-900 dark:text-white">{{ $dayName }}</span>
                             @if($dayName === $calendarData['currentDay'])
-                                <span class="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full">
-                                    Aujourd'hui
-                                </span>
+                                <div class="w-2 h-2 rounded-full bg-blue-500 mx-auto"></div>
                             @endif
                         </th>
                     @endforeach
                 </tr>
             </thead>
 
-            <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+            <tbody>
                 @foreach($calendarData['timeSlots'] as $slot)
-                    <tr class="group/row hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 w-24">
-                            {{ $slot['start'] }} - {{ $slot['end'] }}
+                    <tr class="@if(strtotime($slot['start']) == strtotime('12:00')) border-t border-gray-300 dark:border-gray-600 @endif">
+                        <td class="px-4 py-1 whitespace-nowrap text-xs font-medium text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 w-20">
+                            {{ $slot['start'] }}
                         </td>
 
                         @foreach($weekDays as $dayNumber => $dayName)
@@ -33,63 +32,73 @@
                                 $currentSlot = collect($calendarData['calendar'][$timeKey] ?? [])->first(function($s) use($dayNumber) {
                                     return isset($s['weekday']) && $s['weekday'] == $dayNumber;
                                 });
+
+                                // Vérifier si ce créneau est occupé par un cours qui s'étend sur plusieurs plages
+                                $isOccupiedByMultiSlotCourse = false;
+                                foreach($calendarData['calendar'] as $otherKey => $otherSlots) {
+                                    if ($otherKey === $timeKey) continue;
+                                    foreach($otherSlots as $otherSlot) {
+                                        if (isset($otherSlot['weekday']) && $otherSlot['weekday'] == $dayNumber
+                                            && $otherSlot['type'] === 'lesson' && isset($otherSlot['rowspan'])
+                                            && $otherSlot['rowspan'] > 1) {
+                                            $otherStartTime = strtotime($otherSlot['start_time']);
+                                            $otherEndTime = strtotime($otherSlot['end_time']);
+                                            $currentStartTime = strtotime($slot['start']);
+
+                                            if ($currentStartTime > $otherStartTime && $currentStartTime < $otherEndTime) {
+                                                $isOccupiedByMultiSlotCourse = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if ($isOccupiedByMultiSlotCourse) break;
+                                }
                             @endphp
 
                             @if($currentSlot && $currentSlot['type'] === 'lesson')
-                            <td class="p-2 relative" rowspan="{{ $currentSlot['rowspan'] }}">
-                                <div class="h-full rounded-lg hover:shadow-lg transition-all duration-200 overflow-hidden group"
-                                    style="background-color: {{ $currentSlot['color'] }}08; border-left: 4px solid {{ $currentSlot['color'] }}">
-
-                                    <div class="p-3 h-full">
+                            <td class="p-1 align-top" @if(isset($currentSlot['rowspan']) && $currentSlot['rowspan'] > 1) rowspan="{{ $currentSlot['rowspan'] }}" @endif>
+                                <div class="rounded h-full p-2 text-white"
+                                    style="background-color: {{ $currentSlot['color'] }};">
+                                    <div class="h-full flex flex-col min-h-[60px]">
                                         <!-- En-tête du cours -->
-                                        <div class="flex items-start justify-between mb-3">
-                                            <div class="flex items-center space-x-2">
-                                                <span class="px-2 py-1 text-xs rounded-md font-medium"
-                                                    style="background-color: {{ $currentSlot['color'] }}15; color: {{ $currentSlot['color'] }}">
-                                                    {{ $currentSlot['type_cours_name'] }}
-                                                </span>
-                                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex items-center space-x-2 mb-2">
+                                                <span class="text-xs text-gray-50 dark:text-gray-50">
                                                     {{ $currentSlot['start_time'] }} - {{ $currentSlot['end_time'] }}
                                                 </span>
                                             </div>
-                                            <span class="px-2.5 py-1 text-xs rounded-md font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                                                {{ $currentSlot['salle'] }}
-                                            </span>
                                         </div>
-
-                                        <!-- Informations du cours -->
+                                        <!-- UE et EC -->
                                         @if(isset($currentSlot['ue']))
-                                            <div class="space-y-1.5 mb-3">
-                                                <div class="font-medium text-gray-900 dark:text-white">
+                                            <div>
+                                                <div class="text-xs font-bold leading-tight">
                                                     {{ $currentSlot['ue']->code }} - {{ $currentSlot['ue']->name }}
                                                 </div>
                                                 @if(isset($currentSlot['ec']))
-                                                    <div class="text-sm text-gray-600 dark:text-gray-300">
+                                                    <div class="text-[10px] opacity-90 leading-tight mt-0.5">
                                                         {{ $currentSlot['ec']->code }} - {{ $currentSlot['ec']->name }}
                                                     </div>
                                                 @endif
                                             </div>
                                         @endif
 
-                                        <!-- Niveau et Parcours -->
-                                        <div class="mt-auto pt-2 border-t border-gray-100 dark:border-gray-800">
-                                            <div class="flex items-center justify-between text-xs">
-                                                <span class="font-medium text-gray-700 dark:text-gray-300">
-                                                    {{ $currentSlot['niveau'] }}
-                                                </span>
-                                                <span class="text-gray-500 dark:text-gray-400">
-                                                    {{ $currentSlot['parcour'] }}
-                                                </span>
+                                        <!-- Infos prof/salle -->
+                                        <div class="mt-2 flex justify-between text-[10px] items-end">
+                                            <div class="truncate opacity-90" title="{{ $currentSlot['teacher'] }}">
+                                                {{ $currentSlot['teacher'] }}
+                                            </div>
+                                            <div class="font-bold flex-shrink-0 ml-1">
+                                                {{ $currentSlot['salle'] }}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </td>
-                            @elseif(!$currentSlot || ($currentSlot['type'] === 'empty'))
-                            <td class="p-2 border-r border-gray-100 dark:border-gray-800">
-                                <div class="h-full min-h-[120px] rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
-                                </div>
-                            </td>
+                            @elseif($isOccupiedByMultiSlotCourse)
+                                <!-- Cette cellule est déjà couverte par un cours multi-horaire -->
+                            @else
+                                <td class="px-1 py-0.5 min-h-[60px]">
+                                </td>
                             @endif
                         @endforeach
                     </tr>

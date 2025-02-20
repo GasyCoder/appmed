@@ -20,6 +20,8 @@ class Lesson extends Model
         'weekday',
         'start_time',
         'end_time',
+        'start_date',
+        'end_date',
         'salle',
         'type_cours',
         'description',

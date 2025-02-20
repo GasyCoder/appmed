@@ -19,6 +19,8 @@ return new class extends Migration
             $table->integer('weekday');  // 1-6 pour Lundi-Samedi
             $table->time('start_time');
             $table->time('end_time');
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
             $table->string('salle');
             $table->string('type_cours')->nullable(); // CM, TD, TP
             $table->text('description')->nullable();

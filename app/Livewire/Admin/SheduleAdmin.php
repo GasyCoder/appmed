@@ -12,9 +12,10 @@ use App\Models\Semestre;
 use App\Models\Programme;
 use Livewire\Attributes\Url;
 use Livewire\WithPagination;
+use App\Notifications\NewSheduleNotification;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 
-class Calendar extends Component
+class SheduleAdmin extends Component
 {
     use WithPagination;
     use LivewireAlert;
@@ -38,6 +39,8 @@ class Calendar extends Component
     public $weekday;
     public $startTime;
     public $endTime;
+    public $startDate;
+    public $endDate;
     public $salle;
     public $typeCours;
     public $description;
@@ -60,7 +63,9 @@ class Calendar extends Component
         'weekday' => 'required|integer|between:1,6',
         'startTime' => 'required|date_format:H:i',
         'endTime' => 'required|date_format:H:i|after:startTime',
-        'salle' => 'required|string',
+        'startDate' => 'required|date',
+        'endDate' => 'required|date|after_or_equal:startDate',
+        'salle' => 'nullable|string',
         'typeCours' => 'required|in:CM,VC',
         'description' => 'nullable|string',
         'selectedUe' => 'required|exists:programmes,id',
@@ -103,6 +108,13 @@ class Calendar extends Component
                     if ($firstParcour) {
                         $this->selectedParcour = $firstParcour->id;
                     }
+                }
+
+                if (!$this->startDate) {
+                    $this->startDate = Carbon::now()->format('Y-m-d');
+                }
+                if (!$this->endDate) {
+                    $this->endDate = Carbon::now()->addMonths(4)->format('Y-m-d'); // Durée d'un semestre
                 }
 
                 // Après avoir sélectionné niveau, semestre et parcours, on peut charger les UEs
@@ -211,7 +223,7 @@ class Calendar extends Component
                 return;
             }
 
-            Lesson::create([
+            $lesson = Lesson::create([
                 'weekday' => $this->weekday,
                 'niveau_id' => $this->selectedNiveau,
                 'parcour_id' => $this->selectedParcour,
@@ -220,12 +232,18 @@ class Calendar extends Component
                 'programme_id' => $this->selectedProgramme,
                 'start_time' => $this->startTime,
                 'end_time' => $this->endTime,
+                'start_date' => $this->startDate,
+                'end_date' => $this->endDate,
                 'salle' => $this->salle,
                 'color' => $this->color,
                 'type_cours' => $this->typeCours,
                 'description' => $this->description,
                 'is_active' => true
             ]);
+
+            // Envoyer la notification à l'enseignant
+            $teacher = User::find($this->selectedTeacher);
+            $teacher->notify(new NewSheduleNotification($lesson));
 
             $this->reset();
             $this->color = '#2563eb';
@@ -497,13 +515,12 @@ class Calendar extends Component
         $lesson = Lesson::find($lessonId);
 
         if (!$lesson) {
-            $this->typeCours = $lesson->type_cours;
             $this->alert('error', 'Cours non trouvé.');
             return;
         }
 
         // Chargez les relations nécessaires en une seule requête
-        $lesson->load(['programme.parent']);
+        $lesson = Lesson::with(['programme.parent'])->find($lessonId);
 
         // Utilisez des propriétés publiques pour le stockage temporaire
         $this->lessonToEdit = $lesson;
@@ -518,6 +535,8 @@ class Calendar extends Component
             'weekday' => $lesson->weekday,
             'startTime' => Carbon::parse($lesson->start_time)->format('H:i'),
             'endTime' => Carbon::parse($lesson->end_time)->format('H:i'),
+            'startDate' => Carbon::parse($lesson->start_date)->format('Y-m-d'),
+            'endDate' => Carbon::parse($lesson->end_date)->format('Y-m-d'),
             'salle' => $lesson->salle,
             'typeCours' => $lesson->type_cours,
             'description' => $lesson->description
@@ -583,6 +602,8 @@ class Calendar extends Component
                 'weekday' => $this->weekday,
                 'start_time' => $this->startTime,
                 'end_time' => $this->endTime,
+                'start_date' => $this->startDate,
+                'end_date' => $this->endDate,
                 'salle' => $this->salle,
                 'color' => $this->color,
                 'type_cours' => $this->typeCours,

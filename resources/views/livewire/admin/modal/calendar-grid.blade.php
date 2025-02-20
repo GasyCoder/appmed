@@ -1,128 +1,165 @@
 {{-- livewire.admin.modal.calendar-grid --}}
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700">
+    <!-- En-tête avec navigation -->
+    <div class="py-3 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-lg font-medium text-gray-800 dark:text-white">Emploi du temps</h2>
+        <div class="flex items-center gap-2">
+            <button class="p-1 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <span class="text-sm text-gray-600 dark:text-gray-300">Semaine du 20 Feb au 26 Feb 2025</span>
+            <button class="p-1 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Grille du calendrier -->
+    <div class="overflow-x-auto bg-gray-50 dark:bg-gray-900">
+        <table class="w-full border-collapse">
+            <thead>
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-20">
-                        Horaire
+                    <th class="bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700 sticky left-0 z-10 w-20 p-3">
+                        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">HORAIRE</span>
                     </th>
                     @foreach($weekDays as $day)
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ $day }}
+                        <th class="py-3 text-center border-b border-gray-200 dark:border-gray-700">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $day }}</span>
                         </th>
                     @endforeach
-                    <th></th>
                 </tr>
             </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody>
                 @foreach($calendarData['timeSlots'] as $slot)
-
-                    <tr>
-                        {{-- Horaire --}}
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
-                            {{ $slot['start'] }} - {{ $slot['end'] }}
+                    <tr class="@if(strtotime($slot['start']) == strtotime('12:00')) border-t-2 border-gray-300 dark:border-gray-600 @endif">
+                        <!-- Horaire (colonne fixe) -->
+                        <td class="py-3 px-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-r border-b border-gray-200 dark:border-gray-700 sticky left-0 z-10 min-w-[80px]">
+                            {{ $slot['start'] }}
                         </td>
 
-                        {{-- Créneaux --}}
+                        <!-- Créneaux pour chaque jour -->
                         @foreach($weekDays as $dayNumber => $dayName)
                             @php
                                 $timeKey = $slot['start'] . ' - ' . $slot['end'];
                                 $currentSlot = collect($calendarData['calendar'][$timeKey] ?? [])->first(function($s) use($dayNumber) {
                                     return isset($s['weekday']) && $s['weekday'] == $dayNumber;
                                 });
+
+                                // Si ce créneau contient un cours
+                                $hasCourse = $currentSlot && $currentSlot['type'] === 'lesson';
+
+                                // Si ce créneau est déjà couvert par un cours s'étalant sur plusieurs plages
+                                $isOccupiedByMultiSlotCourse = false;
+                                foreach($calendarData['calendar'] as $otherKey => $otherSlots) {
+                                    if ($otherKey === $timeKey) continue;
+                                    foreach($otherSlots as $otherSlot) {
+                                        if (isset($otherSlot['weekday']) && $otherSlot['weekday'] == $dayNumber
+                                            && $otherSlot['type'] === 'lesson' && isset($otherSlot['rowspan'])
+                                            && $otherSlot['rowspan'] > 1) {
+                                            $otherStartTime = strtotime($otherSlot['start_time']);
+                                            $otherEndTime = strtotime($otherSlot['end_time']);
+                                            $currentStartTime = strtotime($slot['start']);
+                                            $currentEndTime = strtotime($slot['end']);
+
+                                            if ($currentStartTime >= $otherStartTime && $currentStartTime < $otherEndTime) {
+                                                $isOccupiedByMultiSlotCourse = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if ($isOccupiedByMultiSlotCourse) break;
+                                }
                             @endphp
 
-                            @if($currentSlot && $currentSlot['type'] === 'lesson')
-                            <td class="p-1 md:p-2" rowspan="{{ $currentSlot['rowspan'] }}">
-                                <div class="relative rounded-lg shadow-sm border overflow-hidden transition-all"
-                                    style="background-color: {{ $currentSlot['color'] ?? '#ffffff' }}10; border-color: {{ $currentSlot['color'] ?? '#e5e7eb' }}">
-                                    <!-- Contenu principal -->
-                                    <div class="p-2 md:p-3 space-y-2">
-                                        <!-- En-tête avec les actions -->
-                                        <div class="flex items-center justify-between">
-                                            <!-- Horaire avec la couleur -->
-                                            <div class="text-xs font-medium" style="color: {{ $currentSlot['color'] ?? '#6B7280' }}">
-                                                {{ $currentSlot['start_time'] }} - {{ $currentSlot['end_time'] }}
-                                            </div>
+                            @if($hasCourse)
+                                <td class="p-1 border-b border-r border-gray-100 dark:border-gray-800 @if($dayNumber == date('N')) bg-blue-50/30 dark:bg-blue-900/10 @endif"
+                                    @if(isset($currentSlot['rowspan']) && $currentSlot['rowspan'] > 1) rowspan="{{ $currentSlot['rowspan'] }}" @endif>
+                                    <div class="relative h-full rounded overflow-hidden border-l-4 bg-white dark:bg-gray-800 hover:shadow-md transition-shadow cursor-pointer group min-h-[90px]"
+                                        style="border-left-color: {{ $currentSlot['color'] ?? '#e5e7eb' }}; background-color: {{ $currentSlot['color'] ?? '#ffffff' }}05;">
+                                        <div class="p-2.5 h-full flex flex-col">
+                                            <!-- En-tête avec horaire et actions -->
+                                            <div class="flex items-center justify-between mb-1.5">
+                                                <span class="text-xs font-medium" style="color: {{ $currentSlot['color'] ?? '#6B7280' }}">
+                                                    {{ $currentSlot['start_time'] }} - {{ $currentSlot['end_time'] }}
+                                                </span>
 
-                                            <!-- Actions -->
-                                            <div class="flex items-center space-x-1">
-                                                <button wire:click="editLesson({{ $currentSlot['id'] }})"
-                                                        class="p-1 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                                    </svg>
-                                                </button>
-                                                <button wire:click="confirmDelete({{ $currentSlot['id'] }})"
-                                                        class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <!-- UE et EC avec couleur de fond -->
-                                        @if(isset($currentSlot['ue']))
-                                            <div class="rounded-md p-2"
-                                                style="background-color: {{ $currentSlot['color'] ?? '#f3f4f6' }}15">
-                                                <div class="font-medium text-sm truncate"
-                                                    style="color: {{ $currentSlot['color'] ?? '#111827' }}">
-                                                    {{ $currentSlot['ue']->code }} - {{ $currentSlot['ue']->name }}
+                                                <!-- Actions (visibles au survol) -->
+                                                <div class="hidden group-hover:flex space-x-1">
+                                                    <button wire:click="editLesson({{ $currentSlot['id'] }})"
+                                                            class="p-1 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                                        </svg>
+                                                    </button>
+                                                    <button wire:click="confirmDelete({{ $currentSlot['id'] }})"
+                                                            class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                        </svg>
+                                                    </button>
                                                 </div>
-                                                @if(isset($currentSlot['ec']))
-                                                    <div class="text-xs truncate mt-0.5"
-                                                        style="color: {{ $currentSlot['color'] ?? '#6B7280' }}">
-                                                        {{ $currentSlot['ec']->code }} - {{ $currentSlot['ec']->name }}
+                                            </div>
+
+                                            <!-- Contenu du cours -->
+                                            <div class="space-y-1">
+                                                @if(isset($currentSlot['ue']))
+                                                    <div class="text-xs font-semibold line-clamp-2" style="color: {{ $currentSlot['color'] ?? '#111827' }}">
+                                                        {{ $currentSlot['ue']->code }} - {{ $currentSlot['ue']->name }}
                                                     </div>
+                                                    @if(isset($currentSlot['ec']))
+                                                        <div class="text-xs line-clamp-1 mt-0.5" style="color: {{ $currentSlot['color'] ?? '#6B7280' }}">
+                                                            {{ $currentSlot['ec']->code }} - {{ $currentSlot['ec']->name }}
+                                                        </div>
+                                                    @endif
                                                 @endif
                                             </div>
-                                        @endif
 
-                                        <!-- Informations complémentaires -->
-                                        <div class="flex flex-col space-y-1.5">
-                                            <!-- Enseignant -->
-                                            <div class="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                                                <svg class="w-3.5 h-3.5 mr-1.5 flex-shrink-0"
-                                                    style="color: {{ $currentSlot['color'] ?? '#6B7280' }}"
-                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                                </svg>
-                                                <span class="truncate">{{ $currentSlot['teacher'] }}</span>
-                                            </div>
-
-                                            <!-- Salle avec icône -->
-                                            <div class="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                                                <svg class="w-3.5 h-3.5 mr-1.5 flex-shrink-0"
-                                                    style="color: {{ $currentSlot['color'] ?? '#6B7280' }}"
-                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                                </svg>
-                                                <span class="font-medium">{{ $currentSlot['salle'] }}</span>
+                                            <!-- Informations enseignant/salle -->
+                                            <div class="mt-auto pt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                                <div class="flex items-center" title="{{ $currentSlot['teacher'] }}">
+                                                    <svg class="w-3.5 h-3.5 mr-1.5 flex-shrink-0"
+                                                        style="color: {{ $currentSlot['color'] ?? '#6B7280' }}"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                    </svg>
+                                                    <span class="truncate">{{ $currentSlot['teacher'] }}</span>
+                                                </div>
+                                                <div class="flex items-center mt-1">
+                                                    <svg class="w-3.5 h-3.5 mr-1.5 flex-shrink-0"
+                                                        style="color: {{ $currentSlot['color'] ?? '#6B7280' }}"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                                    </svg>
+                                                    <span class="font-medium">{{ $currentSlot['salle'] }}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </td>
-                            @elseif(!$currentSlot || ($currentSlot['type'] === 'empty' && $currentSlot['available']))
-                                <td class="p-2">
-                                    <div wire:click="$set('showCreateModal', true)"
-                                         class="h-full min-h-[100px] flex items-center justify-center border-2 border-dashed
-                                                border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-500
-                                                dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20
-                                                transition-all cursor-pointer group">
-                                        <span class="text-sm text-gray-400 dark:text-gray-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                                            Disponible
-                                        </span>
+                                </td>
+                            @elseif($isOccupiedByMultiSlotCourse)
+                                <!-- Cette cellule est déjà couverte par un cours multi-horaire -->
+                            @else
+                                <td class="border-b border-r border-gray-100 dark:border-gray-800 @if($dayNumber == date('N')) bg-blue-50/30 dark:bg-blue-900/10 @endif h-[60px]">
+                                    <div class="h-full flex items-center justify-center">
+                                        <div wire:click="$set('showCreateModal', true)"
+                                            class="h-12 w-[90%] flex items-center justify-center border border-dashed
+                                                border-gray-200 dark:border-gray-700 hover:border-indigo-500
+                                                dark:hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20
+                                                transition-all cursor-pointer rounded-md group">
+                                            <span class="text-xs text-gray-400 dark:text-gray-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                                                Disponible
+                                            </span>
+                                        </div>
                                     </div>
                                 </td>
-                            @else
-                                <td class="p-2"></td>
                             @endif
                         @endforeach
                     </tr>
@@ -131,18 +168,24 @@
         </table>
     </div>
 
-    {{-- Légende --}}
-    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
-        <div class="flex items-center space-x-4 text-sm">
-            <span class="flex items-center">
-                <span class="w-3 h-3 rounded-full bg-blue-100 dark:bg-blue-900 mr-2"></span>
-                <span class="text-gray-600 dark:text-gray-300">Cours Magistral (CM)</span>
-            </span>
-            <span class="flex items-center">
-                <span class="w-3 h-3 rounded-full bg-green-100 dark:bg-green-900 mr-2"></span>
-                <span class="text-gray-600 dark:text-gray-300">Visio Conférence (VC)</span>
-            </span>
-        </div>
+    <!-- Légende -->
+    <div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 flex flex-wrap gap-3">
+        <span class="flex items-center">
+            <span class="w-3 h-3 rounded-sm bg-blue-500 mr-1.5"></span>
+            <span class="text-xs text-gray-600 dark:text-gray-300">Cours Magistral</span>
+        </span>
+        <span class="flex items-center">
+            <span class="w-3 h-3 rounded-sm bg-green-500 mr-1.5"></span>
+            <span class="text-xs text-gray-600 dark:text-gray-300">Travaux Dirigés</span>
+        </span>
+        <span class="flex items-center">
+            <span class="w-3 h-3 rounded-sm bg-purple-500 mr-1.5"></span>
+            <span class="text-xs text-gray-600 dark:text-gray-300">Travaux Pratiques</span>
+        </span>
+        <span class="flex items-center">
+            <span class="w-3 h-3 rounded-sm bg-orange-500 mr-1.5"></span>
+            <span class="text-xs text-gray-600 dark:text-gray-300">Visio Conférence</span>
+        </span>
     </div>
 </div>
 
@@ -186,3 +229,31 @@
     </div>
 </div>
 @endif
+
+<!-- CSS nécessaire pour la grille  -->
+<style>
+.grid-cols-time-slots {
+    grid-template-columns: 80px repeat(6, 1fr);
+}
+
+/* Limiter le nombre de lignes */
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .grid-cols-time-slots {
+        grid-template-columns: 60px repeat(6, minmax(120px, 1fr));
+    }
+}
+</style>

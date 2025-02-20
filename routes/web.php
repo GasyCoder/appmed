@@ -8,6 +8,7 @@ use App\Livewire\Admin\Parcours;
 use App\Livewire\Admin\Semestres;
 use App\Livewire\Pages\ComingSoon;
 use App\Livewire\Teacher\Documents;
+use App\Livewire\Admin\SheduleAdmin;
 use App\Livewire\Admin\UsersStudent;
 use App\Livewire\Admin\UsersTeacher;
 use Illuminate\Support\Facades\Route;
@@ -87,7 +88,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/parcours', Parcours::class)->name('admin.parcour');
         Route::get('/semestres', Semestres::class)->name('admin.semestre');
 
-        Route::get('/timetable', Calendar::class)
+        Route::get('/timetable', SheduleAdmin::class)
         ->name('admin.timetable');
     });
 

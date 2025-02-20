@@ -189,8 +189,8 @@ class ScheduleStudent extends Component
         return [
             'timeSlots' => $timeSlots,
             'calendar' => $calendarData,
-            'currentNiveau' => $currentNiveau ? $currentNiveau->name : '',
-            'currentParcour' => $currentParcour ? $currentParcour->name : '',
+            'currentNiveau' => $currentNiveau ? $currentNiveau->sigle : '', // Changé de name à sigle
+            'currentParcour' => $currentParcour ? $currentParcour->sigle : '', // Changé de name à sigle
             'currentDay' => $this->getCurrentDayName(),
             'summary' => [
                 'total_lessons' => $lessons->count(),

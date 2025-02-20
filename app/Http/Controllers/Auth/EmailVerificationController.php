@@ -40,7 +40,9 @@ class EmailVerificationController extends Controller
             'token_expires_at' => now()->addHours(2)
         ]);
 
-        // Rediriger avec le token
-        return redirect()->route('register.form', ['token' => $authorizedEmail->verification_token]);
+        // Rediriger avec le token et un message de succès
+        return redirect()
+            ->route('register.form', ['token' => $authorizedEmail->verification_token])
+            ->with('success', 'Email vérifié avec succès! Complétez votre inscription.');
     }
 }

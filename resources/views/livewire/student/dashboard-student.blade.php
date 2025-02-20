@@ -8,10 +8,10 @@
                     <div class="space-y-2">
                         <h2 class="text-2xl font-bold text-white">Bienvenue, {{ auth()->user()->name }}</h2>
                         <div class="flex items-center space-x-2 text-indigo-100">
-                            <span>{{ $student->niveau->name ?? 'Niveau non défini' }}</span>
+                            <span>{{ $student->niveau->sigle ?? 'Niveau non défini' }}</span>
                             @if($student->parcour)
                                 <span>•</span>
-                                <span>{{ $student->parcour->name }}</span>
+                                <span>{{ $student->parcour->sigle }}</span>
                             @endif
                         </div>
                     </div>

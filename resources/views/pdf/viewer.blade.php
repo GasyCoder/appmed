@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="min-h-screen ">
+    <div class="min-h-screen">
         <!-- Container principal -->
         <div class="viewer-container">
             <!-- Loader -->
@@ -20,7 +20,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M15 18l-6-6 6-6"/>
                     </svg>
-                    <span>Précédent</span>
+                    <span class="hidden-mobile">Précédent</span>
                 </button>
 
                 <button id="soundToggle" class="control-btn" onclick="toggleSound()">
@@ -55,7 +55,7 @@
 
                 <!-- Bouton suivant -->
                 <button id="next" class="control-btn">
-                    <span>Suivant</span>
+                    <span class="hidden-mobile">Suivant</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 18l6-6-6-6"/>
                     </svg>
@@ -80,9 +80,9 @@
                     </button>
                 </div>
             </div>
-
         </div>
     </div>
+
     <style>
         {{ $css }}
     </style>

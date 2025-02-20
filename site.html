@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <style type="text/css">.wrapper-container {
+        display: flex;
+        gap: 10px; /* Espacement entre le formulaire et le message */
+        align-items: flex-start; /* Alignement en haut */
+    }
+
+    .form-container {
+        max-width: 700px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+    }
+
+    .form-row .form-group {
+        width: 48%;
+    }
+
+    label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    select, input, textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    textarea {
+        resize: vertical;
+        height: 80px;
+    }
+
+    .required {
+        color: red;
+    }
+
+    .alert-container {
+
+        width: 100%; /* Largeur du message */
+    }
+
+    .alert {
+        background-color: #f8d7da;
+        color: #721c24;
+        //padding: 8px;
+        border-radius: 4px;
+        text-align: center;
+        font-weight: bold;
+
+        height: 38px;
+        padding: 5px 15px;
+    }
+    .alert-container{
+        justify-content: center;
+        align-items: center;
+     }
+</style>
+<div class="wrapper-container"><!-- Formulaire -->
+<div class="form-container">
+<div class="form-row">
+<div class="form-group"><label>Spécialiste</label> <select name="specialiste"><option selected="selected" value="">Sélectionné</option><option value="Cardiologue">Cardiologue</option><option value="dermatologue">Dermatologue</option><option value="endocrinologue">Endocrinologue</option><option value="gastro-entérologue">Gastro-entérologue</option><option value="ophtalmologiste">Ophtalmologiste</option><option value="neuroradiologie">Neuroradiologie</option> </select></div>
+
+<div class="form-group"><label>Docteur</label> <select name="docteur"><option selected="selected" value="">Sélectionné</option> </select></div>
+</div>
+
+<div class="form-row">
+<div class="form-group"><label>Période de travail</label> <select><option selected="selected" value="">Sélectionné</option><option value="matin">Matin</option><option value="midi">Après-midi</option></select></div>
+
+<div class="form-group"><label>Consultation en direct (Par&nbsp;Vidéo Conférence) <span class="required">*</span></label> <select><option value="Non">Non</option><option value="oui">Oui</option> </select></div>
+</div>
+
+<div class="form-group"><label>Date</label> <input id="date" type="date" /></div>
+
+<div class="form-group"><label>Message <span class="required">*</span></label><textarea></textarea></div>
+
+<div class="form-group"><label>Adresse alternative&nbsp;</label><textarea></textarea></div>
+</div>
+<!-- Message d'alerte en dehors du formulaire -->
+
+<div class="alert-container">
+<div class="alert" id="availability-alert">Veuillez sélectionné la spécialité, le docteur et la date pour voir la disponibilité du docteur.</div>
+</div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const specialisteSelect = document.querySelector("select[name='specialiste']");
+    const docteurSelect = document.querySelector("select[name='docteur']");
+    const alertBox = document.getElementById("availability-alert");
+    const dateSelect = document.getElementById("date");
+
+    // Mapping des docteurs par spécialité
+    const docteurs = {
+        "Cardiologue": ["Dr Cardio"],
+        "dermatologue": ["Dr Dermato"],
+        "endocrinologue": ["Dr Endocri"],
+        "gastro-entérologue": ["Dr Gastro"],
+        "ophtalmologiste": ["Dr Ophthalmo"],
+        "neuroradiologie": ["Dr Neuro"]
+    };
+
+    // Disponibilités des docteurs
+    const disponibilitesDocteurs = {
+        "Dr Cardio": "Disponible : 08h00 - 12h00",
+        "Dr Dermato": "Disponible : 10h00 - 16h00",
+        "Dr Endocri": "Disponible : 14h00 - 18h00",
+        "Dr Gastro": "Aucun créneau disponible",
+        "Dr Ophthalmo": "Disponible : 09h00 - 13h00",
+        "Dr Neuro": "Disponible : 15h00 - 19h00"
+    };
+    const dispo = {
+    "2025-02-21" : {
+                      "Dr Cardio": "Disponible : 08h00 - 12h00",
+                      "Dr Dermato": "Disponible : 10h00 - 16h00",
+                      "Dr Endocri": "Disponible : 14h00 - 18h00",
+                      "Dr Gastro": "Aucun créneau disponible",
+                      "Dr Ophthalmo": "Disponible : 09h00 - 13h00",
+                      "Dr Neuro": "Disponible : 15h00 - 19h00"
+                   }
+    };
+
+    specialisteSelect.addEventListener("change", function () {
+        const specialite = this.value;
+
+        // Réinitialiser le select des docteurs
+        docteurSelect.innerHTML = '<option value="">Sélectionné</option>';
+        document.getElementById("date").value = "";
+
+        // Ajouter les docteurs correspondants
+        if (specialite in docteurs) {
+            docteurs[specialite].forEach(function (docteur) {
+                const option = document.createElement("option");
+                option.value = docteur;
+                option.textContent = docteur;
+                docteurSelect.appendChild(option);
+            });
+        }
+    });
+
+    let selectedDoctor;
+
+    // Mettre à jour le message d’alerte selon le docteur sélectionné
+    docteurSelect.addEventListener("change", function () {
+        selectedDoctor = docteurSelect.value;
+    });
+
+    dateSelect.addEventListener("change", function(){
+        let creneau = dateSelect.value;
+        console.log(creneau);
+        if (selectedDoctor && dispo[creneau]) {
+            alertBox.textContent = dispo[creneau][selectedDoctor];
+
+            // Changer la couleur selon la disponibilité
+            if (disponibilitesDocteurs[selectedDoctor] === "Aucun créneau disponible") {
+                alertBox.style.backgroundColor = "#f8d7da"; // Rouge clair
+                alertBox.style.color = "#721c24";
+            } else {
+                alertBox.style.backgroundColor = "#d4edda"; // Vert clair
+                alertBox.style.color = "#155724";
+            }
+        } else {
+            alertBox.textContent = "Le programme des docteurs pour la date sélectionné n'est pas encore ajouté";
+            alertBox.style.backgroundColor = "#f8f9fa"; // Gris clair
+            alertBox.style.color = "#000";
+        }
+    });
+});
+</script>
+</body>
+</html>

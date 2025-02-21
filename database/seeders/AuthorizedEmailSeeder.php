@@ -48,7 +48,8 @@ class AuthorizedEmailSeeder extends Seeder
             'zarabe.francesca@yahoo.fr',
             'juliotrinah@gmail.com',
             'beasjohnn@gmail.com',
-            'niarison.howard@gmail.com'
+            'niarison.howard@gmail.com',
+            'annierzou@gmail.com'
         ];
 
         foreach ($emails as $email) {

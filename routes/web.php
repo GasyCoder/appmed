@@ -108,9 +108,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             Route::get('/emploi-du-temps', ScheduleTeacher::class)
                 ->name('teacher.timetable');
 
-            Route::get('/programmes', ComingSoon::class)
-                ->name('teacher.programs');
-
             Route::get('/scolarites', ComingSoon::class)
                 ->name('teacher.scolarites');
     });
@@ -132,13 +129,11 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
             Route::get('/emploi-du-temps', ScheduleStudent::class)->name('student.timetable');
 
-            Route::get('/programmes', ComingSoon::class)->name('student.programs');
-
             Route::get('/scolarites', ComingSoon::class)->name('student.scolarites');
         });
 
 
-    Route::get('/nos-programmes', Programmes::class)
+    Route::get('/nos-programmes', ComingSoon::class)
             ->name('programs');
 
     // Route commune pour l'incrémentation des vues des documents

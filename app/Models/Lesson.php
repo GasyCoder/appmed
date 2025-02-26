@@ -48,7 +48,9 @@ class Lesson extends Model
 
     const PERIODS = [
         'S1' => 'Semestre 1',
-        'S2' => 'Semestre 2'
+        'S2' => 'Semestre 2',
+        'S3' => 'Semestre 3',
+        'S4' => 'Semestre 4'
     ];
 
     const WEEKS = [
@@ -172,4 +174,3 @@ class Lesson extends Model
         return $query;
     }
 }
-

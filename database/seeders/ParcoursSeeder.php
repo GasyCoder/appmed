@@ -11,15 +11,10 @@ class ParcoursSeeder extends Seeder
     {
         $parcours = [
             [
-                'sigle' => 'MG',
-                'name' => 'Médecine Générale',
+                'sigle' => 'EPI R.C',
+                'name' => 'Epidémiologie et Recherche Clinique',
                 'status' => true,
             ],
-            [
-                'sigle' => 'MS',
-                'name' => 'Médecine Spécialisée',
-                'status' => true,
-            ]
         ];
 
         foreach ($parcours as $parcour) {

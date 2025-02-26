@@ -1,7 +1,7 @@
 <div>
     <div class="w-full">
         <!-- Dashboard Stats -->
-        <div class="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <!-- Total UEs -->
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
                 <div class="p-6">
@@ -51,7 +51,7 @@
                 </div>
             </div>
 
-            <!-- 1er Regroupement -->
+            <!-- 1er Regroupement (Semestre 1) -->
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
                 <div class="p-6">
                     <div class="flex items-center">
@@ -63,7 +63,7 @@
                         <div class="ml-5 w-0 flex-1">
                             <dl>
                                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                                    1er Regroupement
+                                    S1
                                 </dt>
                                 <dd class="flex items-baseline">
                                     <div class="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -79,7 +79,7 @@
                 </div>
             </div>
 
-            <!-- 2ème Regroupement -->
+            <!-- 2ème Regroupement (Semestre 2) -->
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
                 <div class="p-6">
                     <div class="flex items-center">
@@ -91,7 +91,7 @@
                         <div class="ml-5 w-0 flex-1">
                             <dl>
                                 <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                                    2ème Regroupement
+                                    S2
                                 </dt>
                                 <dd class="flex items-baseline">
                                     <div class="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -106,7 +106,64 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 3ème Regroupement (Semestre 3) -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 p-3 bg-pink-100 dark:bg-pink-900 rounded-full">
+                            <svg class="w-6 h-6 text-pink-600 dark:text-pink-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                    S3
+                                </dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900 dark:text-white">
+                                        {{ $stats['semestre3']['ue'] }} UEs
+                                    </div>
+                                    <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                                        {{ $stats['semestre3']['ec'] }} ECs
+                                    </div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4ème Regroupement (Semestre 4) -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 p-3 bg-teal-100 dark:bg-teal-900 rounded-full">
+                            <svg class="w-6 h-6 text-teal-600 dark:text-teal-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                    S4
+                                </dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900 dark:text-white">
+                                        {{ $stats['semestre4']['ue'] }} UEs
+                                    </div>
+                                    <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                                        {{ $stats['semestre4']['ec'] }} ECs
+                                    </div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+
         <!-- En-tête -->
         <div class="mb-6">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -138,6 +195,8 @@
                     <option value="">Tous les semestres</option>
                     <option value="1">1er Semestre</option>
                     <option value="2">2ème Semestre</option>
+                    <option value="3">3ème Semestre</option>
+                    <option value="4">4ème Semestre</option>
                 </select>
             </div>
         </div>
@@ -152,7 +211,26 @@
                             <span class="bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-md text-sm">
                                 {{ $ue->code }}
                             </span>
-                            <span>{{ $ue->name }}</span>
+                            <!-- Troncature responsive : tronqué sur mobile, complet sur PC -->
+                            <div class="relative group inline-block">
+                                <!-- Texte tronqué visible uniquement sur mobile -->
+                                <span class="md:hidden truncate inline-block max-w-[180px]">
+                                    {{ Str::limit($ue->name, 25) }}
+                                </span>
+
+                                <!-- Texte complet visible sur tablette/desktop -->
+                                <span class="hidden md:inline">
+                                    {{ $ue->name }}
+                                </span>
+
+                                <!-- Tooltip visible uniquement sur mobile au survol -->
+                                <div class="md:hidden absolute z-10 left-0 top-full mt-1 hidden group-hover:block bg-white dark:bg-dark-800 p-2 rounded-md shadow-md border border-gray-200 dark:border-dark-700 text-sm">
+                                    {{ $ue->name }}
+                                </div>
+                            </div>
+                            <span class="ml-2 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-md">
+                                S {{ $ue->semestre_id }}
+                            </span>
                         </h3>
                         <button type="button" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
                             <svg class="h-5 w-5 transform transition-transform duration-200"

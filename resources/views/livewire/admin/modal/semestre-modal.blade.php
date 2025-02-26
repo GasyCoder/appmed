@@ -1,6 +1,6 @@
 {{-- Modal Création/Édition --}}
 @if($showSemestreModal)
-    <div class="fixed inset-0 overflow-y-auto z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div wire:ignore.self class="fixed inset-0 overflow-y-auto z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen p-4 text-center sm:block sm:p-0">
             {{-- Overlay --}}
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>

@@ -49,6 +49,7 @@ function getFileExtension(filename) {
 function toggleFullscreen() {
     const container = document.querySelector('.viewer-container');
     const flipbook = $('#flipbook');
+    const navbar = document.querySelector('nav');
 
     // Sauvegarde de la page actuelle avant changement
     const currentPage = flipbook.turn('page');
@@ -60,6 +61,11 @@ function toggleFullscreen() {
             container.webkitRequestFullscreen();
         } else if (container.msRequestFullscreen) {
             container.msRequestFullscreen();
+        }
+
+        // S'assurer que la navbar reste visible en plein écran
+        if (navbar) {
+            navbar.style.zIndex = '9999';
         }
     } else {
         if (document.exitFullscreen) {
@@ -75,6 +81,7 @@ function toggleFullscreen() {
     setTimeout(() => {
         adjustFlipbookSize();
         flipbook.turn('page', currentPage);
+        ensureNavbarAccessibility();
     }, 150);
 }
 
@@ -1160,6 +1167,26 @@ $(document).ready(function() {
         });
     }
 
+    $('.controls').css({
+        'background': 'rgba(111, 235, 37, 0.8)',
+        'backdrop-filter': 'blur(4px)',
+        'z-index': '25',
+        'bottom': '4px',
+        'padding': '4px 4px',
+        'border-radius': '50px',
+        'box-shadow': '0 4px 10px rgba(0, 0, 0, 0.2)',
+        'opacity': '0.8',
+        'transition': 'opacity 0.3s ease'
+    });
+
+    $('.controls').hover(
+        function() { $(this).css('opacity', '1'); },
+        function() { $(this).css('opacity', '0.8'); }
+    );
+
+    // Ajouter un padding supplémentaire au flipbook-container
+    $('#flipbook-container').css('padding-bottom', '20px');
+
     initializeSound();
     initPDF();
     enableDocumentProtection();
@@ -1218,6 +1245,22 @@ $(document).ready(function() {
         // Attendre la fin de l'animation de rotation
         setTimeout(adjustFlipbookSize, 200);
     });
+});
+
+$(window).on('resize', function() {
+    ensureNavbarAccessibility();
+    adjustFlipbookSize();
+});
+
+document.addEventListener('fullscreenchange', function() {
+    ensureNavbarAccessibility();
+
+    // Mettre à jour la position des contrôles en mode plein écran
+    if (document.fullscreenElement) {
+        $('.controls').css('bottom', '30px');
+    } else {
+        $('.controls').css('bottom', '20px');
+    }
 });
 
 // Fonction pour afficher les erreurs de chargement - adaptée pour mobile

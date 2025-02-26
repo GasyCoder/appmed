@@ -44,7 +44,7 @@ class Programmes extends Component
             ->orderBy('semestre_id')
             ->orderBy('order');
 
-        // Statistiques
+        // Statistiques mises à jour pour les 4 semestres
         $stats = [
             'totalUE' => Programme::where('type', 'UE')->count(),
             'totalEC' => Programme::where('type', 'EC')->count(),
@@ -55,6 +55,14 @@ class Programmes extends Component
             'semestre2' => [
                 'ue' => Programme::where('type', 'UE')->where('semestre_id', 2)->count(),
                 'ec' => Programme::where('type', 'EC')->where('semestre_id', 2)->count(),
+            ],
+            'semestre3' => [
+                'ue' => Programme::where('type', 'UE')->where('semestre_id', 3)->count(),
+                'ec' => Programme::where('type', 'EC')->where('semestre_id', 3)->count(),
+            ],
+            'semestre4' => [
+                'ue' => Programme::where('type', 'UE')->where('semestre_id', 4)->count(),
+                'ec' => Programme::where('type', 'EC')->where('semestre_id', 4)->count(),
             ],
         ];
 

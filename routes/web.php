@@ -133,7 +133,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         });
 
 
-    Route::get('/nos-programmes', ComingSoon::class)
+    Route::get('/nos-programmes', Programmes::class)
             ->name('programs');
 
     // Route commune pour l'incrémentation des vues des documents

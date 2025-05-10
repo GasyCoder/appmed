@@ -85,6 +85,6 @@
             {{ $students->links() }}
         </div>
 
-        @include('livewire.admin.sections.student-modal')
+        @include('livewire.admin.modal.student-modal')
     </div>
 </div>

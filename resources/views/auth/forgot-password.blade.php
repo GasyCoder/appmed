@@ -33,7 +33,7 @@
                 </a>
 
                 <x-button class="bg-blue-600 hover:bg-blue-700 text-white">
-                    {{ __('Email Password Reset Link') }}
+                    Réinitialiser le mot de passe
                 </x-button>
             </div>
         </form>

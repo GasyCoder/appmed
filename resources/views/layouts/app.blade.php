@@ -6,13 +6,22 @@
        <meta charset="utf-8">
        <meta name="viewport" content="width=device-width, initial-scale=1">
        <meta name="csrf-token" content="{{ csrf_token() }}">
+       @PwaHead
        <title>{{ config('app.name', 'Laravel') }}</title>
        <link rel="icon" type="image/png" href="{{ asset('assets/image/logo_med.png') }}">
-       <link rel="preconnect" href="https://fonts.bunny.net">
-       <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+       <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+       <!-- Police Plus Jakarta Sans et JetBrains Mono via Google Fonts -->
+       <link rel="preconnect" href="https://fonts.googleapis.com">
+       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
        @vite(['resources/css/app.css', 'resources/js/app.js'])
        @livewireStyles
        @stack('styles')
+       <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
    </head>
    <body class="font-sans antialiased min-h-screen flex flex-col bg-white dark:bg-gray-900" x-data="{ sidebarOpen: false }">
        <div class="flex-grow bg-gray-100 dark:bg-gray-900">
@@ -27,6 +36,7 @@
                </main>
            </div>
        </div>
+       @RegisterServiceWorkerScript
        <!-- Footer -->
        <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4">
            <div class="text-center text-sm text-gray-500 dark:text-gray-400">

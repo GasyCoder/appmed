@@ -103,5 +103,5 @@
         </div>
     </div>
 
-    @include('livewire.admin.sections.semestre-modal')
+    @include('livewire.admin.modal.semestre-modal')
 </div>

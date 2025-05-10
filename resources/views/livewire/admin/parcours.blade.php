@@ -85,5 +85,5 @@
         </div>
     </div>
 
-    @include('livewire.admin.sections.parcour-modal')
+    @include('livewire.admin.modal.parcour-modal')
 </div>

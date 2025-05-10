@@ -19,7 +19,9 @@ class DatabaseSeeder extends Seeder
             NiveauSeeder::class,        // Les niveaux doivent être créés avant
             ParcoursSeeder::class,      // Les parcours doivent être créés avant
             SemestreSeeder::class,
-            UserWithProfileSeeder::class // Les utilisateurs en dernier car ils dépendent des autres tables
+            UserWithProfileSeeder::class, // Les utilisateurs en dernier car ils dépendent des autres tables
+            ProgrammeSeeder::class,
+            AuthorizedEmailSeeder::class,
         ]);
 
     }

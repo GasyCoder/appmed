@@ -72,6 +72,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::get('/view-pdf/{filename}', [PdfController::class, 'viewer'])->name('pdf.viewer');
     Route::get('/pdf-content/{filename}', [PdfController::class, 'show'])->name('pdf.content');
+    Route::get('/pdf/download/{filename}', [PdfController::class, 'download'])->name('pdf.download');
+
+    Route::get('/pdf/serve/{filename}', [PdfController::class, 'serve'])->name('pdf.serve');
 
     /*
     |--------------------------------------------------------------------------

@@ -42,7 +42,7 @@
            <div class="text-center text-sm text-gray-500 dark:text-gray-400">
                &copy; {{ date('Y') }} Faculté de Médecine - Université de Mahajanga
                <span class="mx-2 dark:text-gray-500">•</span>
-               Conçu par <a href="#" class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">GasyCoder</a>
+               Conçu par <a href="https://me.gasycoder.com/" target="_blank" class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">GasyCoder</a>
            </div>
        </footer>
 

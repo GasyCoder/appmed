@@ -100,9 +100,9 @@
             
             <!-- PDF Viewer -->
             <div id="pdfViewer" class="hidden">
-                <div class="flex-1 bg-gray-100 dark:bg-gray-800 overflow-auto max-h-[85vh] mx-auto">
-                    <div id="pdfWrapper" class="bg-white shadow-lg w-full">
-                        <canvas id="pdfCanvas" class="block w-full max-w-full h-auto"></canvas>
+                <div class="bg-gray-100 dark:bg-gray-800 flex justify-center p-4 ">
+                    <div class="bg-white shadow-lg " id="pdfWrapper">
+                        <canvas id="pdfCanvas" class="max-w-full h-auto"></canvas>
                     </div>
                 </div>
                 

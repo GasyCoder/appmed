@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Log;
 
 class Document extends Model
 {
@@ -23,15 +24,21 @@ class Document extends Model
         'protected_path',
         'niveau_id',
         'parcour_id',
-        'semestre_id'
+        'semestre_id',
+        // Nouvelles colonnes pour la conversion
+        'original_filename',
+        'original_extension',
+        'converted_from',
+        'converted_at'
     ];
 
-    protected $dates = ['deleted_at'];
+    protected $dates = ['deleted_at', 'converted_at'];
 
     protected $casts = [
         'is_actif' => 'boolean',
         'download_count' => 'integer',
         'view_count' => 'integer',
+        'converted_at' => 'datetime',
     ];
 
     // Relations
@@ -58,6 +65,32 @@ class Document extends Model
     public function semestre()
     {
         return $this->belongsTo(Semestre::class);
+    }
+
+    // ✅ Nouvelles méthodes pour la conversion
+    public function wasConverted(): bool
+    {
+        return !empty($this->converted_from);
+    }
+
+    public function getConversionInfo(): array
+    {
+        return [
+            'was_converted' => $this->wasConverted(),
+            'original_extension' => $this->original_extension,
+            'converted_from' => $this->converted_from,
+            'converted_at' => $this->converted_at,
+            'current_extension' => $this->getExtensionAttribute()
+        ];
+    }
+
+    public function getConversionStatusAttribute(): string
+    {
+        if (!$this->wasConverted()) {
+            return 'original';
+        }
+
+        return "converti de {$this->converted_from} en " . $this->getExtensionAttribute();
     }
 
     // ✅ SOLUTION 1: Méthode d'accès simplifiée et debuggée
@@ -216,6 +249,8 @@ class Document extends Model
             'file_size' => $this->file_size,
             'actual_file_size' => null,
             'is_pdf' => $this->isPdf(),
+            'was_converted' => $this->wasConverted(),
+            'conversion_info' => $this->getConversionInfo(),
             'url' => null,
             'errors' => []
         ];
@@ -313,23 +348,23 @@ class Document extends Model
 
     public function registerView(): void
     {
-        if (auth()->check()) {
+        if (Auth::check()) {
             try {
                 // Vérifier que le document est accessible
-                if (!$this->canAccess(auth()->user())) {
-                    Log::warning("Attempted view registration for inaccessible document {$this->id} by user " . auth()->id());
+                if (!$this->canAccess(Auth::user())) {
+                    Log::warning("Attempted view registration for inaccessible document {$this->id} by user " . Auth::id());
                     return;
                 }
 
                 // Créer une nouvelle vue uniquement si elle n'existe pas déjà
                 $view = $this->views()->firstOrCreate([
-                    'user_id' => auth()->id()
+                    'user_id' => Auth::id()
                 ]);
 
                 // Mettre à jour le compteur total de vues seulement si c'est une nouvelle vue
                 if ($view->wasRecentlyCreated) {
                     $this->increment('view_count');
-                    Log::info("New view registered for document {$this->id} by user " . auth()->id());
+                    Log::info("New view registered for document {$this->id} by user " . Auth::id());
                 }
 
             } catch (\Exception $e) {
@@ -354,5 +389,23 @@ class Document extends Model
     public function getExtensionAttribute()
     {
         return strtolower(pathinfo($this->file_path, PATHINFO_EXTENSION));
+    }
+
+    // ✅ Méthode pour obtenir le nom de fichier original ou actuel
+    public function getDisplayFilename(): string
+    {
+        return $this->original_filename ?: basename($this->file_path);
+    }
+
+    // ✅ Scope pour les documents convertis
+    public function scopeConverted($query)
+    {
+        return $query->whereNotNull('converted_from');
+    }
+
+    // ✅ Scope pour les documents par format original
+    public function scopeByOriginalFormat($query, $format)
+    {
+        return $query->where('original_extension', $format);
     }
 }

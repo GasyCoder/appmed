@@ -105,7 +105,150 @@ class PdfController extends Controller
         }
     }
 
-    public function viewer($filename)
+    /**
+     * Visualiseur PDF uniquement
+     */
+    public function viewerPdf($filename)
+    {
+        try {
+            if (!Auth::check()) {
+                return redirect()->route('login')->with('error', 'Connexion requise');
+            }
+
+            $decodedFilename = urldecode($filename);
+            
+            // Recherche du document
+            $document = Document::where('file_path', 'documents/' . $decodedFilename)
+                            ->orWhere('file_path', $decodedFilename)
+                            ->orWhere('file_path', 'like', '%' . basename($decodedFilename))
+                            ->first();
+
+            if (!$document) {
+                return view('pdf.error', [
+                    'error' => 'Document non trouvé',
+                    'filename' => $decodedFilename
+                ]);
+            }
+
+            // Vérification que c'est bien un PDF
+            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if ($extension !== 'pdf') {
+                return redirect()->route('document.viewer', ['filename' => urlencode($filename)])
+                    ->with('error', 'Ce fichier n\'est pas un PDF');
+            }
+
+            // Vérification des permissions
+            if (method_exists($document, 'canAccess') && !$document->canAccess(Auth::user())) {
+                return view('pdf.error', [
+                    'error' => 'Accès non autorisé',
+                    'filename' => $decodedFilename
+                ]);
+            }
+
+            // Chercher le fichier physique
+            $filePath = $this->findFilePath($document, $decodedFilename);
+            if (!$filePath) {
+                return view('pdf.error', [
+                    'error' => 'Fichier introuvable sur le serveur',
+                    'filename' => $decodedFilename
+                ]);
+            }
+
+            // Incrémenter les vues
+            $this->incrementView($document);
+
+            $teacherInfo = $this->getTeacherInfo($document);
+
+            // Vue spécifique pour PDF avec PDF.js
+            return view('pdf.viewer-embedded', [
+                'filename' => basename($document->file_path),
+                'teacherInfo' => $teacherInfo,
+                'document' => $document
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Erreur PDF viewer $filename: " . $e->getMessage());
+            return view('pdf.error', [
+                'error' => 'Erreur serveur: ' . $e->getMessage(),
+                'filename' => $decodedFilename ?? $filename
+            ]);
+        }
+    }
+
+    /**
+     * Visualiseur PowerPoint uniquement
+     */
+    public function viewerPpt($filename)
+    {
+        try {
+            if (!Auth::check()) {
+                return redirect()->route('login')->with('error', 'Connexion requise');
+            }
+
+            $decodedFilename = urldecode($filename);
+            
+            // Recherche du document
+            $document = Document::where('file_path', 'documents/' . $decodedFilename)
+                            ->orWhere('file_path', $decodedFilename)
+                            ->orWhere('file_path', 'like', '%' . basename($decodedFilename))
+                            ->first();
+
+            if (!$document) {
+                return view('pdf.error', [
+                    'error' => 'Document non trouvé',
+                    'filename' => $decodedFilename
+                ]);
+            }
+
+            // Vérification que c'est bien un PowerPoint
+            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if (!in_array($extension, ['ppt', 'pptx'])) {
+                return redirect()->route('document.viewer', ['filename' => urlencode($filename)])
+                    ->with('error', 'Ce fichier n\'est pas une présentation PowerPoint');
+            }
+
+            // Vérification des permissions
+            if (method_exists($document, 'canAccess') && !$document->canAccess(Auth::user())) {
+                return view('pdf.error', [
+                    'error' => 'Accès non autorisé',
+                    'filename' => $decodedFilename
+                ]);
+            }
+
+            // Chercher le fichier physique
+            $filePath = $this->findFilePath($document, $decodedFilename);
+            if (!$filePath) {
+                return view('pdf.error', [
+                    'error' => 'Fichier introuvable sur le serveur',
+                    'filename' => $decodedFilename
+                ]);
+            }
+
+            // Incrémenter les vues
+            $this->incrementView($document);
+
+            $teacherInfo = $this->getTeacherInfo($document);
+
+            // Vue spécifique pour PowerPoint
+            return view('pdf.powerpoint-viewer', [
+                'filename' => basename($document->file_path),
+                'teacherInfo' => $teacherInfo,
+                'document' => $document
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Erreur PowerPoint viewer $filename: " . $e->getMessage());
+            return view('pdf.error', [
+                'error' => 'Erreur serveur: ' . $e->getMessage(),
+                'filename' => $decodedFilename ?? $filename
+            ]);
+        }
+    }
+
+    /**
+     * Visualiseur générique pour autres types de documents
+     */
+    public function viewerDocument($filename)
     {
         try {
             if (!Auth::check()) {
@@ -136,22 +279,7 @@ class PdfController extends Controller
             }
 
             // Chercher le fichier physique
-            $possiblePaths = [
-                storage_path('app/public/documents/' . $decodedFilename),
-                storage_path('app/public/documents/' . basename($document->file_path)),
-                storage_path('app/public/' . $document->file_path),
-                public_path('storage/documents/' . $decodedFilename),
-                public_path('storage/documents/' . basename($document->file_path))
-            ];
-
-            $filePath = null;
-            foreach ($possiblePaths as $path) {
-                if (file_exists($path)) {
-                    $filePath = $path;
-                    break;
-                }
-            }
-
+            $filePath = $this->findFilePath($document, $decodedFilename);
             if (!$filePath) {
                 return view('pdf.error', [
                     'error' => 'Fichier introuvable sur le serveur',
@@ -162,60 +290,48 @@ class PdfController extends Controller
             // Incrémenter les vues
             $this->incrementView($document);
 
-            // Déterminer le type de fichier et rediriger vers la vue appropriée
+            // Déterminer le type de fichier et la vue appropriée
             $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
             $teacherInfo = $this->getTeacherInfo($document);
 
-            if ($extension === 'pdf') {
-                // PDF: Utiliser le viewer intégré Laravel avec PDF.js
-                return view('pdf.viewer-embedded', [
-                    'filename' => basename($document->file_path),
-                    'teacherInfo' => $teacherInfo,
-                    'document' => $document
-                ]);
-                
-            } elseif (in_array($extension, ['ppt', 'pptx'])) {
-                // PowerPoint: Afficher une vue d'aperçu avec option de téléchargement
-                return view('pdf.powerpoint-viewer', [
-                    'filename' => basename($document->file_path),
-                    'teacherInfo' => $teacherInfo,
-                    'document' => $document
-                ]);
-                
-            } elseif (in_array($extension, ['doc', 'docx'])) {
-                // Word: Vue d'aperçu similaire à PowerPoint
-                return view('pdf.document-viewer', [
-                    'filename' => basename($document->file_path),
-                    'teacherInfo' => $teacherInfo,
-                    'document' => $document,
-                    'documentType' => 'Word'
-                ]);
-                
-            } elseif (in_array($extension, ['xls', 'xlsx'])) {
-                // Excel: Vue d'aperçu
-                return view('pdf.document-viewer', [
-                    'filename' => basename($document->file_path),
-                    'teacherInfo' => $teacherInfo,
-                    'document' => $document,
-                    'documentType' => 'Excel'
-                ]);
-                
-            } elseif (in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
-                // Images: Affichage direct
-                return view('pdf.image-viewer', [
-                    'filename' => basename($document->file_path),
-                    'teacherInfo' => $teacherInfo,
-                    'document' => $document,
-                    'fileUrl' => asset('storage/documents/' . urlencode(basename($document->file_path)))
-                ]);
-                
-            } else {
-                // Autres formats: Téléchargement direct
-                return response()->download($filePath, basename($document->file_path));
+            switch ($extension) {
+                case 'doc':
+                case 'docx':
+                    return view('pdf.document-viewer', [
+                        'filename' => basename($document->file_path),
+                        'teacherInfo' => $teacherInfo,
+                        'document' => $document,
+                        'documentType' => 'Word'
+                    ]);
+                    
+                case 'xls':
+                case 'xlsx':
+                    return view('pdf.document-viewer', [
+                        'filename' => basename($document->file_path),
+                        'teacherInfo' => $teacherInfo,
+                        'document' => $document,
+                        'documentType' => 'Excel'
+                    ]);
+                    
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                case 'gif':
+                case 'webp':
+                    return view('pdf.image-viewer', [
+                        'filename' => basename($document->file_path),
+                        'teacherInfo' => $teacherInfo,
+                        'document' => $document,
+                        'fileUrl' => asset('storage/documents/' . urlencode(basename($document->file_path)))
+                    ]);
+                    
+                default:
+                    // Téléchargement direct pour les autres formats
+                    return response()->download($filePath, basename($document->file_path));
             }
 
         } catch (\Exception $e) {
-            Log::error("Erreur viewer $filename: " . $e->getMessage());
+            Log::error("Erreur document viewer $filename: " . $e->getMessage());
             return view('pdf.error', [
                 'error' => 'Erreur serveur: ' . $e->getMessage(),
                 'filename' => $decodedFilename ?? $filename
@@ -246,22 +362,7 @@ class PdfController extends Controller
                 abort(403, 'Accès refusé');
             }
 
-            $possiblePaths = [
-                storage_path('app/public/documents/' . $decodedFilename),
-                storage_path('app/public/documents/' . basename($document->file_path)),
-                storage_path('app/public/' . $document->file_path),
-                public_path('storage/documents/' . $decodedFilename),
-                public_path('storage/documents/' . basename($document->file_path))
-            ];
-
-            $filePath = null;
-            foreach ($possiblePaths as $path) {
-                if (file_exists($path)) {
-                    $filePath = $path;
-                    break;
-                }
-            }
-
+            $filePath = $this->findFilePath($document, $decodedFilename);
             if (!$filePath) {
                 abort(404, 'Fichier introuvable');
             }
@@ -300,20 +401,7 @@ class PdfController extends Controller
                 abort(403, 'Accès refusé');
             }
 
-            $possiblePaths = [
-                storage_path('app/public/documents/' . $decodedFilename),
-                storage_path('app/public/documents/' . basename($document->file_path)),
-                storage_path('app/public/' . $document->file_path)
-            ];
-
-            $filePath = null;
-            foreach ($possiblePaths as $path) {
-                if (file_exists($path)) {
-                    $filePath = $path;
-                    break;
-                }
-            }
-
+            $filePath = $this->findFilePath($document, $decodedFilename);
             if (!$filePath) {
                 abort(404, 'Fichier introuvable');
             }
@@ -324,6 +412,28 @@ class PdfController extends Controller
             Log::error("Erreur download $filename: " . $e->getMessage());
             abort(500, 'Erreur serveur');
         }
+    }
+
+    /**
+     * Méthode utilitaire pour trouver le chemin du fichier
+     */
+    private function findFilePath($document, $decodedFilename)
+    {
+        $possiblePaths = [
+            storage_path('app/public/documents/' . $decodedFilename),
+            storage_path('app/public/documents/' . basename($document->file_path)),
+            storage_path('app/public/' . $document->file_path),
+            public_path('storage/documents/' . $decodedFilename),
+            public_path('storage/documents/' . basename($document->file_path))
+        ];
+
+        foreach ($possiblePaths as $path) {
+            if (file_exists($path)) {
+                return $path;
+            }
+        }
+
+        return null;
     }
 
     private function incrementView($document)

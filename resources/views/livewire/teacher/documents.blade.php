@@ -184,9 +184,22 @@
         <!-- Messages flash -->
         @include('layouts.partials.flash-msg')
 
+<!-- En-tête avec bouton de rafraîchissement -->
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Liste des documents</h2>
+            <button 
+                wire:click="refreshDocuments"
+                class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                title="Rafraîchir la liste">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Rafraîchir
+            </button>
+        </div>
+
         <!-- Liste des documents -->
         <div class="bg-white dark:bg-gray-800 shadow rounded-xl overflow-hidden">
-
             <!-- Version desktop -->
             <div class="hidden lg:block overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -243,7 +256,8 @@
 
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
                         @forelse($myDocuments as $document)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150" 
+                                wire:key="document-{{ $document->id }}-{{ $document->updated_at->timestamp }}">
                                 <!-- Document Cell -->
                                 <td class="px-6 py-4">
                                     <div class="flex items-center">
@@ -254,9 +268,18 @@
                                             @include('livewire.teacher.forms.file-icons')
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $document->title }}</div>
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $document->original_filename }}</div>
                                             <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                Ajouté le {{ $document->created_at->format('d/m/Y à H:i') }}
+                                                <!-- CORRIGÉ : Affichage des dates amélioré -->
+                                                @if($document->updated_at && $document->updated_at != $document->created_at)
+                                                    <span class="text-blue-600 dark:text-blue-400 font-medium">
+                                                        Modifié {{ $document->updated_at->diffForHumans() }}
+                                                    </span>
+                                                    <span class="text-gray-400 mx-1">•</span>
+                                                    <span>Créé {{ $document->created_at->diffForHumans() }}</span>
+                                                @else
+                                                    Ajouté {{ $document->created_at->diffForHumans() }}
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -265,9 +288,9 @@
                                 <!-- Information Cell -->
                                 <td class="px-6 py-4">
                                     <div class="text-sm">
-                                        <div class="font-medium text-gray-900 dark:text-white">{{ $document->niveau->name }}</div>
-                                        <div class="text-gray-500 dark:text-gray-400">{{ $document->parcour->name }}</div>
-                                        <div class="text-gray-500 dark:text-gray-400">{{ $document->semestre->name }}</div>
+                                        <div class="font-medium text-gray-900 dark:text-white">{{ $document->niveau->name ?? 'N/A' }}</div>
+                                        <div class="text-gray-500 dark:text-gray-400">{{ $document->parcour->name ?? 'N/A' }}</div>
+                                        <div class="text-gray-500 dark:text-gray-400">{{ $document->semestre->name ?? 'N/A' }}</div>
                                     </div>
                                 </td>
 
@@ -277,6 +300,7 @@
                                         <button
                                             wire:click="toggleStatus({{ $document->id }})"
                                             wire:loading.attr="disabled"
+                                            wire:target="toggleStatus({{ $document->id }})"
                                             class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:ring-offset-2 {{ $document->is_actif ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-200 dark:bg-gray-600' }}"
                                             role="switch">
                                             <span class="sr-only">Changer le statut</span>
@@ -285,6 +309,13 @@
                                                 class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200 ease-in-out {{ $document->is_actif ? 'translate-x-5' : 'translate-x-0' }}"
                                             ></span>
                                         </button>
+                                        <!-- Indicateur de chargement pour le toggle -->
+                                        <div wire:loading wire:target="toggleStatus({{ $document->id }})" class="text-xs text-gray-500">
+                                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </div>
                                     </div>
                                 </td>
 
@@ -314,7 +345,7 @@
                                     <div class="flex items-center space-x-3">
                                         <!-- Preview Button -->
                                         <button
-                                            onclick="window.open('{{ $document->getSecureUrl() }}', '_blank')"
+                                            onclick="window.open('{{ route('document.serve', $document->id) }}', '_blank')"
                                             class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 transition-colors duration-200"
                                             title="Prévisualiser">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -336,10 +367,16 @@
                                         <button
                                             wire:click="deleteDocument({{ $document->id }})"
                                             wire:confirm="Êtes-vous sûr de vouloir supprimer ce document ?"
-                                            class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 transition-colors duration-200"
+                                            wire:loading.attr="disabled"
+                                            wire:target="deleteDocument({{ $document->id }})"
+                                            class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 transition-colors duration-200 disabled:opacity-50"
                                             title="Supprimer">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg wire:loading.remove wire:target="deleteDocument({{ $document->id }})" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                            <svg wire:loading wire:target="deleteDocument({{ $document->id }})" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
                                         </button>
                                     </div>
@@ -369,7 +406,7 @@
             <div class="lg:hidden">
                 <div class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($myDocuments as $document)
-                        <div class="p-4">
+                        <div class="p-4" wire:key="mobile-document-{{ $document->id }}-{{ $document->updated_at->timestamp }}">
                             <div class="flex items-start space-x-4">
                                 <!-- Icône -->
                                 <div class="flex-shrink-0 h-12 w-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
@@ -385,11 +422,21 @@
                                         {{ $document->title }}
                                     </h4>
                                     <div class="mt-1 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                        <span>{{ $document->niveau->name }}</span>
+                                        <span>{{ $document->niveau->name ?? 'N/A' }}</span>
                                         <span>•</span>
-                                        <span>{{ $document->parcour->name }}</span>
+                                        <span>{{ $document->parcour->name ?? 'N/A' }}</span>
                                         <span>•</span>
-                                        <span>{{ $document->semestre->name }}</span>
+                                        <span>{{ $document->semestre->name ?? 'N/A' }}</span>
+                                    </div>
+                                    <!-- CORRIGÉ : Dates améliorées pour mobile -->
+                                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        @if($document->updated_at && $document->updated_at != $document->created_at)
+                                            <span class="text-blue-600 dark:text-blue-400 font-medium">
+                                                Modifié {{ $document->updated_at->diffForHumans() }}
+                                            </span>
+                                        @else
+                                            Créé {{ $document->created_at->diffForHumans() }}
+                                        @endif
                                     </div>
                                     <div class="mt-2 flex items-center gap-3">
                                         <span class="flex items-center text-xs text-gray-500 dark:text-gray-400">
@@ -414,6 +461,7 @@
                                         <button
                                             wire:click="toggleStatus({{ $document->id }})"
                                             wire:loading.attr="disabled"
+                                            wire:target="toggleStatus({{ $document->id }})"
                                             class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:ring-offset-2 {{ $document->is_actif ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-200 dark:bg-gray-600' }}"
                                             role="switch">
                                             <span class="sr-only">Changer le statut</span>
@@ -425,13 +473,20 @@
                                         <span class="text-sm text-gray-700 dark:text-gray-300">
                                             {{ $document->is_actif ? 'Partagé' : 'Non partagé' }}
                                         </span>
+                                        <!-- Indicateur de chargement pour mobile -->
+                                        <div wire:loading wire:target="toggleStatus({{ $document->id }})" class="ml-2">
+                                            <svg class="w-4 h-4 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </div>
                                     </div>
 
                                     <!-- Actions -->
                                     <div class="flex items-center gap-2 sm:gap-3">
                                         <!-- Prévisualiser -->
                                         <button
-                                            onclick="window.open('{{ $document->getSecureUrl() }}', '_blank')"
+                                            onclick="window.open('{{ route('document.serve', $document->id) }}', '_blank')"
                                             class="inline-flex items-center rounded-lg p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/50 transition-colors"
                                             title="Prévisualiser">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -455,10 +510,16 @@
                                         <button
                                             wire:click="deleteDocument({{ $document->id }})"
                                             wire:confirm="Êtes-vous sûr de vouloir supprimer ce document ?"
-                                            class="inline-flex items-center rounded-lg p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 transition-colors"
+                                            wire:loading.attr="disabled"
+                                            wire:target="deleteDocument({{ $document->id }})"
+                                            class="inline-flex items-center rounded-lg p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50"
                                             title="Supprimer">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg wire:loading.remove wire:target="deleteDocument({{ $document->id }})" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                            <svg wire:loading wire:target="deleteDocument({{ $document->id }})" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
                                             <span class="sr-only sm:not-sr-only sm:ml-2">Supprimer</span>
                                         </button>
@@ -498,6 +559,64 @@
 </div>
 
 @push('scripts')
+<script>
+document.addEventListener('livewire:init', () => {
+    
+    // Forcer le rafraîchissement après navigation
+    document.addEventListener('livewire:navigated', () => {
+        console.log('Livewire navigated - refreshing document list');
+        if (window.Livewire.find('documents')) {
+            window.Livewire.find('documents').call('$refresh');
+        }
+    });
+
+    // Écouter les événements personnalisés pour rafraîchir
+    Livewire.on('document-updated', () => {
+        console.log('Document updated event received');
+        setTimeout(() => {
+            if (window.Livewire.find('documents')) {
+                window.Livewire.find('documents').call('$refresh');
+            }
+        }, 100);
+    });
+
+    Livewire.on('document-created', () => {
+        console.log('Document created event received');
+        setTimeout(() => {
+            if (window.Livewire.find('documents')) {
+                window.Livewire.find('documents').call('$refresh');
+            }
+        }, 100);
+    });
+
+    Livewire.on('document-deleted', () => {
+        console.log('Document deleted event received');
+        setTimeout(() => {
+            if (window.Livewire.find('documents')) {
+                window.Livewire.find('documents').call('$refresh');
+            }
+        }, 100);
+    });
+
+    // Rafraîchissement automatique toutes les 30 secondes (optionnel)
+    setInterval(() => {
+        if (document.visibilityState === 'visible' && window.location.pathname.includes('documents')) {
+            console.log('Auto-refreshing document list');
+            if (window.Livewire.find('documents')) {
+                window.Livewire.find('documents').call('$refresh');
+            }
+        }
+    }, 30000); // 30 secondes
+
+});
+
+// Fonction utilitaire pour rafraîchir manuellement
+window.refreshDocumentList = function() {
+    if (window.Livewire.find('documents')) {
+        window.Livewire.find('documents').call('refreshDocuments');
+    }
+};
+</script>
 <script>
 function formatBytes(bytes, decimals = 2) {
     if (bytes === 0) return '0 Bytes';

@@ -22,6 +22,7 @@ use App\Livewire\Student\StudentDocument;
 use App\Livewire\Teacher\ScheduleTeacher;
 use App\Livewire\Student\DashboardStudent;
 use App\Livewire\Teacher\TeacherDashboard;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\Auth\RegisterFormController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 
@@ -70,11 +71,16 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         };
     })->name('dashboard');
 
-    Route::get('/view-pdf/{filename}', [PdfController::class, 'viewer'])->name('pdf.viewer');
+    Route::get('/view-pdf/{filename}', [PdfController::class, 'viewerPdf'])->name('pdf.viewer');
     Route::get('/pdf-content/{filename}', [PdfController::class, 'show'])->name('pdf.content');
     Route::get('/pdf/download/{filename}', [PdfController::class, 'download'])->name('pdf.download');
 
     Route::get('/pdf/serve/{filename}', [PdfController::class, 'serve'])->name('pdf.serve');
+
+    Route::get('/pdf/viewer/{filename}', [PdfController::class, 'viewerPpt'])->name('pdf.viewerppt');
+
+    Route::get('/documents/serve/{id}', [DocumentController::class, 'serve'])->name('document.serve');
+
 
     /*
     |--------------------------------------------------------------------------

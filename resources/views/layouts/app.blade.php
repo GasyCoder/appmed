@@ -29,11 +29,11 @@
            <div class="flex">
                @include('sidebar-menu')
                <!-- Page Content -->
-               <main class="flex-1 lg:pl-72">
-                   <div class="py-3 px-2 sm:px-3 lg:px-4">
-                       {{ $slot }}
-                   </div>
-               </main>
+                <main class="flex-1 lg:pl-80 block shadow-lg w-full h-full bg-gray-100 dark:bg-gray-900 overflow-auto">
+                    <div class="h-full py-3 px-2 sm:px-3 lg:px-4">
+                        {{ $slot }}
+                    </div>
+                </main>
            </div>
        </div>
        @RegisterServiceWorkerScript

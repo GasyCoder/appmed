@@ -2,20 +2,18 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Laravel\Sanctum\HasApiTokens;
-use Laravel\Jetstream\HasProfilePhoto;
-use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Fortify\TwoFactorAuthenticatable;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\DB;
+use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Jetstream\HasProfilePhoto;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
     use HasProfilePhoto;
     use Notifiable;
@@ -26,7 +24,7 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<int, string>
+     * @var array<int,string>
      */
     protected $fillable = [
         'name',
@@ -41,7 +39,7 @@ class User extends Authenticatable
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var array<int, string>
+     * @var array<int,string>
      */
     protected $hidden = [
         'password',
@@ -51,113 +49,190 @@ class User extends Authenticatable
     ];
 
     /**
-     * The accessors to append to the model's array form.
+     * The attributes that should be cast.
      *
-     * @var array<int, string>
+     * @var array<string,string>
      */
-    protected $appends = [
-        'profile_photo_url',
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password'          => 'hashed',
+        'status'            => 'boolean',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'status' => 'boolean',
-        ];
-    }
+    //
+    // ─── RELATIONS ────────────────────────────────────────────────────────────────
+    //
 
+    /**
+     * Niveau “one-to-one” via users.niveau_id
+     */
     public function niveau()
     {
-        return $this->belongsTo(Niveau::class);
+        return $this->belongsTo(Niveau::class, 'niveau_id');
     }
 
+    /**
+     * Parcours “one-to-one” via users.parcour_id
+     */
     public function parcour()
     {
-        return $this->belongsTo(Parcour::class);
+        return $this->belongsTo(Parcour::class, 'parcour_id');
     }
 
-    // 🔹 Relation avec Profil
+    /**
+     * Profil “one-to-one”
+     */
     public function profil()
     {
         return $this->hasOne(Profil::class);
     }
 
-    // 🔹 Relations avec Niveau et Parcour
-    public function teachers()
+    /**
+     * Enseignants associés (pivot parcours ↔ users)
+     */
+    public function teachers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'parcour_user');
+        return $this->belongsToMany(self::class, 'parcour_user');
     }
 
-    public function niveaux()
+    /**
+     * Tous les niveaux via pivot niveau_user
+     */
+    public function niveaux(): BelongsToMany
     {
         return $this->belongsToMany(Niveau::class, 'niveau_user')
                     ->withTimestamps();
     }
 
-    public function parcours()
+    /**
+     * Tous les parcours via pivot parcour_user
+     */
+    public function parcours(): BelongsToMany
     {
         return $this->belongsToMany(Parcour::class, 'parcour_user')
                     ->withTimestamps();
     }
 
-    public function teacherNiveaux()
+    /**
+     * Niveaux enseignants actifs (avec filtre status)
+     */
+    public function teacherNiveaux(): BelongsToMany
     {
         return $this->belongsToMany(Niveau::class, 'niveau_user')
-                    ->where('status', true)
+                    ->where('niveaux.status', true)
                     ->withTimestamps()
-                    ->with(['semestres' => function($query) {
-                        $query->where('status', true)
-                            ->orderBy('name');
-                    }]);
+                    ->orderBy('niveaux.name');
     }
 
-    public function teacherParcours()
+    /**
+     * Parcours enseignants actifs (avec filtre status)
+     */
+    public function teacherParcours(): BelongsToMany
     {
         return $this->belongsToMany(Parcour::class, 'parcour_user')
-                    ->where('status', true)
+                    ->where('parcours.status', true)
                     ->withTimestamps()
-                    ->orderBy('name');
+                    ->orderBy('parcours.name');
     }
 
-    public function getTeacherStatsAttribute()
+    //
+    // ─── SCOPES ────────────────────────────────────────────────────────────────────
+    //
+
+    /**
+     * Récupère uniquement les enseignants actifs
+     */
+    public function scopeActiveTeachers($query)
+    {
+        return $query->whereHas('roles', fn($q) => $q->where('name', 'teacher'))
+                     ->where('status', true);
+    }
+
+    /**
+     * Récupère uniquement les étudiants actifs
+     */
+    public function scopeActiveStudents($query)
+    {
+        return $query->whereHas('roles', fn($q) => $q->where('name', 'student'))
+                     ->where('status', true);
+    }
+
+    //
+    // ─── BUSINESS LOGIC ───────────────────────────────────────────────────────────
+    //
+
+    /**
+     * Récupère les parcours disponibles pour un niveau spécifique
+     */
+    public function getParcoursForNiveau(int $niveau_id)
+    {
+        return $this->teacherParcours()
+                    ->whereExists(fn($q) => $q->select(DB::raw(1))
+                                              ->from('niveau_user')
+                                              ->where('niveau_user.user_id', $this->id)
+                                              ->where('niveau_user.niveau_id', $niveau_id))
+                    ->get();
+    }
+
+    /**
+     * Vérifie si l'utilisateur a accès à un niveau spécifique
+     */
+    public function hasAccessToNiveau(int $niveau_id): bool
+    {
+        return $this->teacherNiveaux()
+                    ->where('niveaux.id', $niveau_id)
+                    ->exists();
+    }
+
+    /**
+     * Vérifie si l'utilisateur a accès à un parcours spécifique
+     */
+    public function hasAccessToParcours(int $parcour_id): bool
+    {
+        return $this->teacherParcours()
+                    ->where('parcours.id', $parcour_id)
+                    ->exists();
+    }
+
+    /**
+     * Statistiques de l'enseignant
+     */
+    public function getTeacherStatsAttribute(): array
     {
         return [
-            'niveaux_count' => $this->teacherNiveaux()->count() ?? 0,
-            'parcours_count' => $this->teacherParcours()->count() ?? 0,
-            'documents_count' => $this->documents()->count() ?? 0
+            'niveaux_count'  => $this->teacherNiveaux()->count(),
+            'parcours_count' => $this->teacherParcours()->count(),
+            'documents_count'=> $this->documents()->count(),
         ];
     }
 
+    /**
+     * Documents uploadés par l'utilisateur
+     */
     public function documents()
     {
         return $this->hasMany(Document::class, 'uploaded_by');
     }
 
-    public function canAccessDocument($path): bool
+    /**
+     * Vérifie l'accès à un document (admin / teacher / student)
+     */
+    public function canAccessDocument(string $path): bool
     {
-        // Admin a accès à tout
+        // Admin
         if ($this->roles->contains('name', 'admin')) {
             return true;
         }
 
-        // Enseignant a accès à ses propres documents
+        // Enseignant -> ses propres ou ceux de ses niveaux
         if ($this->roles->contains('name', 'teacher')) {
             return Document::where('file_path', $path)
-                ->where(function($query) {
-                    $query->where('uploaded_by', $this->id)
-                        ->orWhereIn('niveau_id', $this->teacherNiveaux->pluck('id'));
-                })
+                ->where(fn($q) => $q->where('uploaded_by', $this->id)
+                                   ->orWhereIn('niveau_id', $this->teacherNiveaux()->pluck('niveaux.id')))
                 ->exists();
         }
 
-        // Étudiant a accès aux documents actifs de son niveau et parcours
+        // Étudiant -> niveau & parcours courants + actif
         if ($this->roles->contains('name', 'student')) {
             return Document::where('file_path', $path)
                 ->where('niveau_id', $this->niveau_id)
@@ -169,10 +244,12 @@ class User extends Authenticatable
         return false;
     }
 
-    public function getFullNameWithGradeAttribute()
+    /**
+     * Nom complet avec grade (profil)
+     */
+    public function getFullNameWithGradeAttribute(): string
     {
         $grade = optional($this->profil)->grade;
         return $grade ? "{$grade}. {$this->name}" : $this->name;
     }
-
 }

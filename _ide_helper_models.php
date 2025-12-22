@@ -344,13 +344,32 @@ namespace App\Models{
 
 namespace App\Models{
 /**
+ * @property int $id
+ * @property string $title
+ * @property string $file_path
+ * @property string $file_type
+ * @property int $file_size
+ * @property string $academic_year
+ * @property string $type
+ * @property int|null $niveau_id
+ * @property int|null $parcour_id
+ * @property int|null $semestre_id
+ * @property \Illuminate\Support\Carbon|null $start_date
+ * @property \Illuminate\Support\Carbon|null $end_date
+ * @property bool $is_active
+ * @property int $uploaded_by
+ * @property int $view_count
+ * @property int $download_count
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read mixed $extension
  * @property-read mixed $file_size_formatted
  * @property-read mixed $file_url
  * @property-read \App\Models\Niveau|null $niveau
  * @property-read \App\Models\Parcour|null $parcour
  * @property-read \App\Models\Semestre|null $semestre
- * @property-read \App\Models\User|null $uploader
+ * @property-read \App\Models\User $uploader
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule current()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule forNiveau($niveauId)
@@ -359,6 +378,25 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereAcademicYear($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereDownloadCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereEndDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereFilePath($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereFileSize($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereFileType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereNiveauId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereParcourId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereSemestreId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereStartDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereTitle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereUploadedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereViewCount($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule withoutTrashed()
  */

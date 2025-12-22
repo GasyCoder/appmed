@@ -11,23 +11,24 @@ use App\Livewire\Admin\UsersTeacher;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Admin\AdminDashboard;
+use App\Livewire\Admin\ScheduleUpload;
 use App\Livewire\Teacher\DocumentEdit;
 use App\Http\Controllers\PdfController;
+use App\Livewire\Shared\ScheduleViewer;
+use App\Livewire\Admin\AuthorizedEmails;
 use App\Livewire\Student\EnseignantView;
 use App\Livewire\Teacher\DocumentUpload;
 use App\Livewire\Student\ScheduleStudent;
 use App\Livewire\Student\StudentDocument;
 use App\Livewire\Teacher\ScheduleTeacher;
+use App\Livewire\Admin\ScheduleManagement;
 use App\Livewire\Student\DashboardStudent;
 use App\Livewire\Teacher\TeacherDashboard;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ScheduleController;
-use App\Livewire\Admin\ScheduleManagement;
-use App\Livewire\Admin\ScheduleUpload;
-use App\Livewire\Shared\ScheduleViewer;
+use App\Livewire\Programmes\ProgrammesIndex;
 use App\Http\Controllers\Auth\RegisterFormController;
 use App\Http\Controllers\Auth\EmailVerificationController;
-use App\Livewire\Programmes\ProgrammesIndex;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,6 +98,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             // ✅ NOUVELLES ROUTES EMPLOI DU TEMPS ADMIN
             Route::get('/emploi-du-temps', ScheduleManagement::class)->name('admin.timetable');
             Route::get('/emploi-du-temps/upload', ScheduleUpload::class)->name('admin.schedules.upload');
+
+            Route::get('/authorized-emails', AuthorizedEmails::class)
+            ->name('admin.authorized-emails');
         });
 
     /*

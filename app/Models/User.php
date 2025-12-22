@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
@@ -64,25 +67,25 @@ class User extends Authenticatable
     //
 
     /**
-     * Niveau “one-to-one” via users.niveau_id
+     * Niveau "one-to-one" via users.niveau_id
      */
-    public function niveau()
+    public function niveau(): BelongsTo
     {
         return $this->belongsTo(Niveau::class, 'niveau_id');
     }
 
     /**
-     * Parcours “one-to-one” via users.parcour_id
+     * Parcours "one-to-one" via users.parcour_id
      */
-    public function parcour()
+    public function parcour(): BelongsTo
     {
         return $this->belongsTo(Parcour::class, 'parcour_id');
     }
 
     /**
-     * Profil “one-to-one”
+     * Profil "one-to-one"
      */
-    public function profil()
+    public function profil(): HasOne
     {
         return $this->hasOne(Profil::class);
     }
@@ -135,9 +138,50 @@ class User extends Authenticatable
                     ->orderBy('parcours.name');
     }
 
+    /**
+     * Programmes (ECs) enseignés par cet enseignant
+     */
+    public function programmes(): BelongsToMany
+    {
+        return $this->belongsToMany(Programme::class, 'programme_user')
+            ->withPivot(['heures_cm', 'heures_td', 'heures_tp', 'is_responsable', 'note'])
+            ->withTimestamps()
+            ->orderBy('programmes.semestre_id')
+            ->orderBy('programmes.order');
+    }
+
+    /**
+     * Programmes où l'enseignant est responsable
+     */
+    public function programmesResponsable(): BelongsToMany
+    {
+        return $this->belongsToMany(Programme::class, 'programme_user')
+            ->wherePivot('is_responsable', true)
+            ->withPivot(['heures_cm', 'heures_td', 'heures_tp', 'note'])
+            ->withTimestamps()
+            ->orderBy('programmes.semestre_id')
+            ->orderBy('programmes.order');
+    }
+
+    /**
+     * Documents uploadés par l'utilisateur
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class, 'uploaded_by');
+    }
+
     //
     // ─── SCOPES ────────────────────────────────────────────────────────────────────
     //
+
+    /**
+     * Récupère uniquement les utilisateurs actifs
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', true);
+    }
 
     /**
      * Récupère uniquement les enseignants actifs
@@ -155,6 +199,74 @@ class User extends Authenticatable
     {
         return $query->whereHas('roles', fn($q) => $q->where('name', 'student'))
                      ->where('status', true);
+    }
+
+    /**
+     * Récupère les utilisateurs par rôle
+     */
+    public function scopeByRole($query, string $role)
+    {
+        return $query->whereHas('roles', fn($q) => $q->where('name', $role));
+    }
+
+    /**
+     * Récupère les enseignants qui enseignent un programme spécifique
+     */
+    public function scopeTeachingProgramme($query, int $programmeId)
+    {
+        return $query->whereHas('programmes', fn($q) => $q->where('programmes.id', $programmeId));
+    }
+
+    //
+    // ─── ACCESSORS & MUTATORS ─────────────────────────────────────────────────────
+    //
+
+    /**
+     * Charge horaire totale de l'enseignant
+     */
+    public function getChargeHoraireAttribute(): array
+    {
+        $programmes = $this->programmes;
+        
+        return [
+            'cm' => $programmes->sum('pivot.heures_cm'),
+            'td' => $programmes->sum('pivot.heures_td'),
+            'tp' => $programmes->sum('pivot.heures_tp'),
+            'total' => $programmes->sum(function($p) {
+                return $p->pivot->heures_cm + $p->pivot->heures_td + $p->pivot->heures_tp;
+            }),
+        ];
+    }
+
+    /**
+     * Nombre de programmes enseignés
+     */
+    public function getProgrammesCountAttribute(): int
+    {
+        return $this->programmes()->count();
+    }
+
+    /**
+     * Nom complet avec grade (profil)
+     */
+    public function getFullNameWithGradeAttribute(): string
+    {
+        $grade = optional($this->profil)->grade;
+        return $grade ? "{$grade}. {$this->name}" : $this->name;
+    }
+
+    /**
+     * Statistiques de l'enseignant
+     */
+    public function getTeacherStatsAttribute(): array
+    {
+        return [
+            'niveaux_count'    => $this->teacherNiveaux()->count(),
+            'parcours_count'   => $this->teacherParcours()->count(),
+            'programmes_count' => $this->programmes()->count(),
+            'documents_count'  => $this->documents()->count(),
+            'charge_horaire'   => $this->charge_horaire,
+        ];
     }
 
     //
@@ -195,23 +307,23 @@ class User extends Authenticatable
     }
 
     /**
-     * Statistiques de l'enseignant
+     * Vérifie si l'enseignant a accès à un programme
      */
-    public function getTeacherStatsAttribute(): array
+    public function hasAccessToProgramme(int $programmeId): bool
     {
-        return [
-            'niveaux_count'  => $this->teacherNiveaux()->count(),
-            'parcours_count' => $this->teacherParcours()->count(),
-            'documents_count'=> $this->documents()->count(),
-        ];
+        return $this->programmes()
+            ->where('programmes.id', $programmeId)
+            ->exists();
     }
 
     /**
-     * Documents uploadés par l'utilisateur
+     * Vérifie si l'utilisateur est responsable d'un programme
      */
-    public function documents()
+    public function isResponsableOf(int $programmeId): bool
     {
-        return $this->hasMany(Document::class, 'uploaded_by');
+        return $this->programmesResponsable()
+            ->where('programmes.id', $programmeId)
+            ->exists();
     }
 
     /**
@@ -220,12 +332,12 @@ class User extends Authenticatable
     public function canAccessDocument(string $path): bool
     {
         // Admin
-        if ($this->roles->contains('name', 'admin')) {
+        if ($this->hasRole('admin')) {
             return true;
         }
 
         // Enseignant -> ses propres ou ceux de ses niveaux
-        if ($this->roles->contains('name', 'teacher')) {
+        if ($this->hasRole('teacher')) {
             return Document::where('file_path', $path)
                 ->where(fn($q) => $q->where('uploaded_by', $this->id)
                                    ->orWhereIn('niveau_id', $this->teacherNiveaux()->pluck('niveaux.id')))
@@ -233,7 +345,7 @@ class User extends Authenticatable
         }
 
         // Étudiant -> niveau & parcours courants + actif
-        if ($this->roles->contains('name', 'student')) {
+        if ($this->hasRole('student')) {
             return Document::where('file_path', $path)
                 ->where('niveau_id', $this->niveau_id)
                 ->where('parcour_id', $this->parcour_id)
@@ -245,11 +357,118 @@ class User extends Authenticatable
     }
 
     /**
-     * Nom complet avec grade (profil)
+     * Vérifie si l'utilisateur est un enseignant
      */
-    public function getFullNameWithGradeAttribute(): string
+    public function isTeacher(): bool
     {
-        $grade = optional($this->profil)->grade;
-        return $grade ? "{$grade}. {$this->name}" : $this->name;
+        return $this->hasRole('teacher');
+    }
+
+    /**
+     * Vérifie si l'utilisateur est un étudiant
+     */
+    public function isStudent(): bool
+    {
+        return $this->hasRole('student');
+    }
+
+    /**
+     * Vérifie si l'utilisateur est un administrateur
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Assigne l'enseignant à un programme (EC)
+     */
+    public function assignToProgramme(
+        Programme $programme,
+        int $heuresCm = 0,
+        int $heuresTd = 0,
+        int $heuresTp = 0,
+        bool $isResponsable = false,
+        ?string $note = null
+    ): void {
+        if (!$this->isTeacher()) {
+            throw new \Exception('Seuls les enseignants peuvent être assignés à des programmes.');
+        }
+
+        if (!$programme->isEc()) {
+            throw new \Exception('Seuls les ECs peuvent avoir des enseignants assignés.');
+        }
+
+        // Si on définit comme responsable, retirer le statut des autres
+        if ($isResponsable) {
+            $programme->enseignants()->updateExistingPivot(
+                $programme->enseignants->pluck('id'),
+                ['is_responsable' => false]
+            );
+        }
+
+        $this->programmes()->syncWithoutDetaching([
+            $programme->id => [
+                'heures_cm' => $heuresCm,
+                'heures_td' => $heuresTd,
+                'heures_tp' => $heuresTp,
+                'is_responsable' => $isResponsable,
+                'note' => $note,
+            ]
+        ]);
+    }
+
+    /**
+     * Retire l'enseignant d'un programme
+     */
+    public function removeFromProgramme(Programme $programme): void
+    {
+        $this->programmes()->detach($programme->id);
+    }
+
+    /**
+     * Met à jour les heures d'enseignement pour un programme
+     */
+    public function updateHeuresProgramme(
+        Programme $programme,
+        int $heuresCm = null,
+        int $heuresTd = null,
+        int $heuresTp = null,
+        bool $isResponsable = null,
+        string $note = null
+    ): void {
+        $updateData = array_filter([
+            'heures_cm' => $heuresCm,
+            'heures_td' => $heuresTd,
+            'heures_tp' => $heuresTp,
+            'is_responsable' => $isResponsable,
+            'note' => $note,
+        ], fn($value) => $value !== null);
+
+        if (!empty($updateData)) {
+            $this->programmes()->updateExistingPivot($programme->id, $updateData);
+        }
+    }
+
+    /**
+     * Récupère les programmes par semestre pour cet enseignant
+     */
+    public function programmesBySemestre(int $semestreId)
+    {
+        return $this->programmes()
+            ->where('programmes.semestre_id', $semestreId)
+            ->get();
+    }
+
+    /**
+     * Récupère les programmes par année pour cet enseignant
+     */
+    public function programmesByAnnee(int $annee)
+    {
+        $semestres = $annee == 4 ? [1, 2] : [3, 4];
+        
+        return $this->programmes()
+            ->whereIn('programmes.semestre_id', $semestres)
+            ->get();
     }
 }

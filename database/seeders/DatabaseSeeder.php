@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             SemestreSeeder::class,
             UserWithProfileSeeder::class, 
             ProgrammeSeeder::class,
+            ProgrammeUserSeeder::class,
             AuthorizedEmailSeeder::class,
         ]);
 

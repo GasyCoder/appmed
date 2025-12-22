@@ -6,36 +6,42 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('programmes', function (Blueprint $table) {
             $table->id();
-            $table->string('type');                // UE ou EC
-            $table->string('code');                // UE1, EC1, etc.
-            $table->string('name');                // Nom complet
-            $table->integer('order');              // Ordre d'affichage
-            $table->unsignedBigInteger('parent_id')->nullable();  // Pour lier EC à son UE
+            $table->enum('type', ['UE', 'EC'])->comment('Type de programme: UE ou EC');
+            $table->string('code', 20)->comment('Code unique du programme');
+            $table->string('name')->comment('Nom complet du programme');
+            $table->integer('order')->default(1)->comment('Ordre d\'affichage');
+            $table->unsignedBigInteger('parent_id')->nullable()->comment('ID de l\'UE parente pour les ECs');
+            
+            // Relations
             $table->foreignId('semestre_id')->constrained('semestres')->onDelete('cascade');
             $table->foreignId('niveau_id')->constrained('niveaux')->onDelete('cascade');
             $table->foreignId('parcour_id')->constrained('parcours')->onDelete('cascade');
-            $table->boolean('status')->default(true);
+            
+            // Nouveaux champs
+            $table->integer('credits')->nullable()->comment('Crédits ECTS');
+            $table->decimal('coefficient', 5, 2)->nullable()->comment('Coefficient');
+            
+            $table->boolean('status')->default(true)->comment('Statut actif/inactif');
             $table->timestamps();
-            $table->softDeletes();  // Pour la suppression logique
+            $table->softDeletes();
 
             // Self-referencing foreign key
             $table->foreign('parent_id')
                   ->references('id')
                   ->on('programmes')
                   ->onDelete('cascade');
+
+            // Index pour optimiser les requêtes
+            $table->index(['type', 'status']);
+            $table->index(['semestre_id', 'order']);
+            $table->index('parent_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('programmes');

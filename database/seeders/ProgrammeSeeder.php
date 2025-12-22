@@ -4,19 +4,18 @@ namespace Database\Seeders;
 
 use App\Models\Programme;
 use Illuminate\Database\Seeder;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class ProgrammeSeeder extends Seeder
 {
     public function run(): void
     {
-        // Premier regroupement (Semestre 1)
+        // 4ème année - Semestre 1 (S1)
         $this->createUE1();
         $this->createUE2();
         $this->createUE3();
         $this->createUE4();
 
-        // Deuxième regroupement (Semestre 2)
+        // 4ème année - Semestre 2 (S2)
         $this->createUE5();
         $this->createUE6();
         $this->createUE7();
@@ -24,7 +23,7 @@ class ProgrammeSeeder extends Seeder
         $this->createUE9();
         $this->createUE10();
 
-        // Troisième regroupement (Semestre 3)
+        // 5ème année - Semestre 3 (S3)
         $this->createUE11();
         $this->createUE12();
         $this->createUE13();
@@ -33,9 +32,13 @@ class ProgrammeSeeder extends Seeder
         $this->createUE16();
         $this->createUE17();
 
-        // Quatrième regroupement (Semestre 4)
+        // 5ème année - Semestre 4 (S4)
         $this->createUE18();
     }
+
+    // ============================================================================
+    // SEMESTRE 1 - 4ème ANNÉE
+    // ============================================================================
 
     private function createUE1()
     {
@@ -47,12 +50,15 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 1,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 6,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Introduction à la santé publique'],
-            ['code' => 'EC2', 'name' => 'Prévention en santé'],
-            ['code' => 'EC3', 'name' => 'Socio-anthropologie'],
+            ['code' => 'EC1', 'name' => 'Introduction à la santé publique', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Prévention en santé', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC3', 'name' => 'Socio-anthropologie', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -65,6 +71,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 1,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -79,13 +88,16 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 1,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 8,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Variables et organisation des données'],
-            ['code' => 'EC2', 'name' => 'Mesures en statistique'],
-            ['code' => 'EC3', 'name' => 'Description des données'],
-            ['code' => 'EC4', 'name' => 'Représentation d\'une distribution'],
+            ['code' => 'EC1', 'name' => 'Variables et organisation des données', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Mesures en statistique', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC3', 'name' => 'Description des données', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC4', 'name' => 'Représentation d\'une distribution', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -98,6 +110,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 1,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -112,16 +127,19 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 1,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 14,
+            'coefficient' => 3,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Définition et concept en épidémiologie'],
-            ['code' => 'EC2', 'name' => 'Mesures en épidémiologie'],
-            ['code' => 'EC3', 'name' => 'Type d\'étude en épidémiologie'],
-            ['code' => 'EC4', 'name' => 'Validité et biais en épidémiologie'],
-            ['code' => 'EC5', 'name' => 'Standardisation en épidémiologie'],
-            ['code' => 'EC6', 'name' => 'Évaluation d\'un test diagnostique'],
-            ['code' => 'EC7', 'name' => 'Epidémiologie des maladies infectieuses'],
+            ['code' => 'EC1', 'name' => 'Définition et concept en épidémiologie', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Mesures en épidémiologie', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC3', 'name' => 'Type d\'étude en épidémiologie', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC4', 'name' => 'Validité et biais en épidémiologie', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC5', 'name' => 'Standardisation en épidémiologie', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC6', 'name' => 'Évaluation d\'un test diagnostique', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC7', 'name' => 'Epidémiologie des maladies infectieuses', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -134,6 +152,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 1,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -148,12 +169,15 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 1,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 6,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Introduction à la recherche clinique'],
-            ['code' => 'EC2', 'name' => 'Introduction à l\'éthique et bonne pratique clinique'],
-            ['code' => 'EC3', 'name' => 'Base méthodologique des essais cliniques'],
+            ['code' => 'EC1', 'name' => 'Introduction à la recherche clinique', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Introduction à l\'éthique et bonne pratique clinique', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC3', 'name' => 'Base méthodologique des essais cliniques', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -166,9 +190,16 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 1,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
+
+    // ============================================================================
+    // SEMESTRE 2 - 4ème ANNÉE
+    // ============================================================================
 
     private function createUE5()
     {
@@ -180,12 +211,15 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 2,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 6,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Introduction à l\'économie de la santé'],
-            ['code' => 'EC2', 'name' => 'Introduction à la démographie'],
-            ['code' => 'EC3', 'name' => 'Introduction à la « One Health »'],
+            ['code' => 'EC1', 'name' => 'Introduction à l\'économie de la santé', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Introduction à la démographie', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC3', 'name' => 'Introduction à la « One Health »', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -198,6 +232,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 2,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -212,11 +249,14 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 2,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 4,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Recherche bibliographique'],
-            ['code' => 'EC3', 'name' => 'Lecture critique d\'articles scientifiques'],
+            ['code' => 'EC1', 'name' => 'Recherche bibliographique', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Lecture critique d\'articles scientifiques', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -229,6 +269,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 2,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -243,11 +286,14 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 2,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 4,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Estimation'],
-            ['code' => 'EC2', 'name' => 'Tests statistiques'],
+            ['code' => 'EC1', 'name' => 'Estimation', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Tests statistiques', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -260,6 +306,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 2,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -274,11 +323,14 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 2,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 4,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Utilisation du logiciel libre épi-info dans la recherche en santé'],
-            ['code' => 'EC2', 'name' => 'Utilisation du logiciel dans la recherche en santé R, Stata'],
+            ['code' => 'EC1', 'name' => 'Utilisation du logiciel libre épi-info dans la recherche en santé', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Utilisation du logiciel dans la recherche en santé R, Stata', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -291,6 +343,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 2,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -305,13 +360,16 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 2,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 8,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Généralités sur l\'élaboration d\'un outil de recueil'],
-            ['code' => 'EC2', 'name' => 'Recueil de données'],
-            ['code' => 'EC3', 'name' => 'Initiation à Googleform / Kobo Collect®'],
-            ['code' => 'EC4', 'name' => 'Le questionnaire'],
+            ['code' => 'EC1', 'name' => 'Généralités sur l\'élaboration d\'un outil de recueil', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Recueil de données', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC3', 'name' => 'Initiation à Googleform / Kobo Collect®', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC4', 'name' => 'Le questionnaire', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -324,6 +382,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 2,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -332,17 +393,20 @@ class ProgrammeSeeder extends Seeder
     {
         $ue = Programme::create([
             'type' => 'UE',
-            'code' => 'U10',
+            'code' => 'UE10',
             'name' => 'Méthodologie de recherche',
             'order' => 10,
             'semestre_id' => 2,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 4,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Rédaction de protocole de recherche'],
-            ['code' => 'EC2', 'name' => 'Introduction à la méthode qualitative'],
+            ['code' => 'EC1', 'name' => 'Rédaction de protocole de recherche', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Introduction à la méthode qualitative', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -355,9 +419,16 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 2,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
+
+    // ============================================================================
+    // SEMESTRE 3 - 5ème ANNÉE
+    // ============================================================================
 
     private function createUE11()
     {
@@ -369,11 +440,14 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 3,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 4,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Gestion axée sur les résultats'],
-            ['code' => 'EC2', 'name' => 'Planification sanitaire'],
+            ['code' => 'EC1', 'name' => 'Gestion axée sur les résultats', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Planification sanitaire', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -386,6 +460,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 3,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -400,11 +477,14 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 3,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 4,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Système d\'information sanitaire'],
-            ['code' => 'EC2', 'name' => 'Système de surveillance épidémiologique'],
+            ['code' => 'EC1', 'name' => 'Système d\'information sanitaire', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Système de surveillance épidémiologique', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -417,6 +497,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 3,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -431,11 +514,14 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 3,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 4,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Correspondances administratives'],
-            ['code' => 'EC2', 'name' => 'Anglais'],
+            ['code' => 'EC1', 'name' => 'Correspondances administratives', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Anglais', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -448,6 +534,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 3,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -462,11 +551,14 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 3,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 4,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Communication en santé publique en situation d\'urgence'],
-            ['code' => 'EC2', 'name' => 'Gestion des situations d\'urgence de santé publique'],
+            ['code' => 'EC1', 'name' => 'Communication en santé publique en situation d\'urgence', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Gestion des situations d\'urgence de santé publique', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -479,6 +571,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 3,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -493,11 +588,14 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 3,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 4,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Collectes de données en recherche qualitative'],
-            ['code' => 'EC2', 'name' => 'Analyse de données en recherche qualitative'],
+            ['code' => 'EC1', 'name' => 'Collectes de données en recherche qualitative', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Analyse de données en recherche qualitative', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -510,6 +608,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 3,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -524,15 +625,18 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 3,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 12,
+            'coefficient' => 3,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Principes de base d\'analyse statistique'],
-            ['code' => 'EC2', 'name' => 'Régression logistique binomiale'],
-            ['code' => 'EC3', 'name' => 'Régression linéaire'],
-            ['code' => 'EC4', 'name' => 'Analyse de survie'],
-            ['code' => 'EC5', 'name' => 'Analyse des séries temporelles'],
-            ['code' => 'EC6', 'name' => 'Analyse géospatiale des données de santé'],
+            ['code' => 'EC1', 'name' => 'Principes de base d\'analyse statistique', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Régression logistique binomiale', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC3', 'name' => 'Régression linéaire', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC4', 'name' => 'Analyse de survie', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC5', 'name' => 'Analyse des séries temporelles', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC6', 'name' => 'Analyse géospatiale des données de santé', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -545,6 +649,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 3,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
@@ -559,11 +666,14 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 3,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 4,
+            'coefficient' => 2,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Méta-analyse et Revue Systématique'],
-            ['code' => 'EC2', 'name' => 'Rédaction et publication d\'articles scientifiques'],
+            ['code' => 'EC1', 'name' => 'Méta-analyse et Revue Systématique', 'credits' => 2, 'coefficient' => 1],
+            ['code' => 'EC2', 'name' => 'Rédaction et publication d\'articles scientifiques', 'credits' => 2, 'coefficient' => 1],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -576,9 +686,16 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 3,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }
+
+    // ============================================================================
+    // SEMESTRE 4 - 5ème ANNÉE
+    // ============================================================================
 
     private function createUE18()
     {
@@ -590,11 +707,14 @@ class ProgrammeSeeder extends Seeder
             'semestre_id' => 4,
             'niveau_id' => 1,
             'parcour_id' => 1,
+            'credits' => 30,
+            'coefficient' => 5,
+            'status' => true,
         ]);
 
         $ecs = [
-            ['code' => 'EC1', 'name' => 'Stages de terrain/Rédaction du mémoire'],
-            ['code' => 'EC2', 'name' => 'Soutenance de mémoire'],
+            ['code' => 'EC1', 'name' => 'Stages de terrain/Rédaction du mémoire', 'credits' => 20, 'coefficient' => 3],
+            ['code' => 'EC2', 'name' => 'Soutenance de mémoire', 'credits' => 10, 'coefficient' => 2],
         ];
 
         foreach ($ecs as $index => $ec) {
@@ -607,6 +727,9 @@ class ProgrammeSeeder extends Seeder
                 'semestre_id' => 4,
                 'niveau_id' => 1,
                 'parcour_id' => 1,
+                'credits' => $ec['credits'],
+                'coefficient' => $ec['coefficient'],
+                'status' => true,
             ]);
         }
     }

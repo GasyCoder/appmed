@@ -84,5 +84,5 @@
         </div>
     </div>
 
-    @include('livewire.admin.sections.level-modal')
+    @include('livewire.admin.modal.level-modal')
 </div>

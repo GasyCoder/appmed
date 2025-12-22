@@ -21,6 +21,12 @@ class Niveau extends Model
         'status' => 'boolean',
     ];
 
+        // Relations
+    public function programmes()
+    {
+        return $this->hasMany(Programme::class);
+    }
+
     public function users()
     {
         return $this->hasMany(User::class);
@@ -42,5 +48,6 @@ class Niveau extends Model
     {
         return $this->hasMany(Semestre::class);
     }
+
 
 }

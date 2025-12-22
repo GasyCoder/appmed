@@ -5,6 +5,7 @@ namespace App\Livewire\Student;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Auth;
 
 class EnseignantView extends Component
 {
@@ -16,49 +17,64 @@ class EnseignantView extends Component
 
     protected $listeners = ['closeModal' => 'closeTeacherModal'];
 
+    // Important pour que la pagination reset quand on tape dans search
+    public function updatedSearch()
+    {
+        $this->resetPage();
+    }
+
     public function mount()
     {
-        abort_if(!auth()->user()->hasRole('student'), 403);
+        abort_if(!Auth::user()->hasRole('student'), 403);
 
-        if (!auth()->user()->niveau_id || !auth()->user()->parcour_id) {
+        if (!Auth::user()->niveau_id || !Auth::user()->parcour_id) {
             return redirect()->route('profile.show')
                 ->with('error', 'Veuillez compléter votre profil.');
         }
     }
 
-    public function getTeachersProperty()
+    protected function baseTeachersQuery()
     {
-        $studentNiveauId = auth()->user()->niveau_id;
-        $studentParcourId = auth()->user()->parcour_id;
+        $studentNiveauId = Auth::user()->niveau_id;
+        $studentParcourId = Auth::user()->parcour_id;
 
         return User::query()
             ->role('teacher')
             ->where('status', true)
-            ->whereHas('teacherNiveaux', function($query) use ($studentNiveauId) {
-                $query->where('niveau_id', $studentNiveauId);
+            ->whereHas('teacherNiveaux', function ($q) use ($studentNiveauId) {
+                $q->where('niveau_id', $studentNiveauId);
             })
-            ->withCount(['documents' => function($query) use ($studentNiveauId, $studentParcourId) {
-                $query->where('is_actif', true)
-                      ->where('niveau_id', $studentNiveauId)
-                      ->where('parcour_id', $studentParcourId);
+            ->withCount(['documents' => function ($q) use ($studentNiveauId, $studentParcourId) {
+                $q->where('is_actif', true)
+                  ->where('niveau_id', $studentNiveauId)
+                  ->where('parcour_id', $studentParcourId);
             }])
             ->with(['teacherNiveaux', 'teacherParcours', 'profil'])
-            ->when($this->search, function($query) {
-                $query->where('name', 'like', "%{$this->search}%");
+            ->when($this->search, function ($q) {
+                $s = trim($this->search);
+                $q->where(function ($qq) use ($s) {
+                    $qq->where('name', 'like', "%{$s}%")
+                       ->orWhere('email', 'like', "%{$s}%");
+                });
             })
-            ->get();
+            ->orderBy('name');
+    }
+
+    public function getTeachersProperty()
+    {
+        return $this->baseTeachersQuery()->paginate(9);
     }
 
     public function showTeacherProfile($teacherId)
     {
-        $studentNiveauId = auth()->user()->niveau_id;
-        $studentParcourId = auth()->user()->parcour_id;
+        $studentNiveauId = Auth::user()->niveau_id;
+        $studentParcourId = Auth::user()->parcour_id;
 
         $this->selectedTeacher = User::query()
-            ->withCount(['documents' => function($query) use ($studentNiveauId, $studentParcourId) {
-                $query->where('is_actif', true)
-                      ->where('niveau_id', $studentNiveauId)
-                      ->where('parcour_id', $studentParcourId);
+            ->withCount(['documents' => function ($q) use ($studentNiveauId, $studentParcourId) {
+                $q->where('is_actif', true)
+                  ->where('niveau_id', $studentNiveauId)
+                  ->where('parcour_id', $studentParcourId);
             }])
             ->with(['profil', 'teacherNiveaux', 'teacherParcours'])
             ->findOrFail($teacherId);
@@ -75,7 +91,7 @@ class EnseignantView extends Component
     public function render()
     {
         return view('livewire.student.enseignant-view', [
-            'teachers' => $this->teachers
+            'teachers' => $this->teachers,
         ]);
     }
 }

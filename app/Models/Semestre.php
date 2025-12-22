@@ -18,6 +18,11 @@ class Semestre extends Model
         'status' => 'boolean'
     ];
 
+    public function programmes()
+    {
+        return $this->hasMany(Programme::class);
+    }
+
     public function niveau()
     {
         return $this->belongsTo(Niveau::class);

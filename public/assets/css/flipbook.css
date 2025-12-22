@@ -1,0 +1,795 @@
+/* Reset et styles de base */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Container principal - Responsive */
+.viewer-container {
+    position: fixed;
+    top: 35px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 20 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Ajustement pour desktop - sidebar */
+@media screen and (min-width: 1025px) {
+    .viewer-container {
+        left: 260px; /* Largeur de la sidebar + espace */
+        width: calc(100% - 260px);
+    }
+}
+
+/* Style du flipbook et son container - Responsive */
+#flipbook-container {
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    height: calc(100vh - 140px); /* Augmenter l'espace pour la barre de contrôle */
+    margin-bottom: 40px; /* Espace additionnel en bas */
+    display: flex;
+    justify-content: center !important;
+    align-items: center;
+    perspective: 2000px;
+    padding: 0 10px;
+    overflow: visible;
+}
+
+#flipbook {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: all 0.3s ease;
+    transform-origin: center center;
+    max-width: 100%;
+}
+
+/* Style des pages */
+.page {
+    background-color: white !important;
+    border-radius: 3px;
+    overflow: visible !important;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.page canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    text-rendering: optimizeLegibility;
+    image-rendering: auto;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    max-height: none !important; /* Supprimer la limite de hauteur */
+    object-fit: contain; /* Adapter le contenu */
+    transform: scale(0.95); /* Légère réduction pour voir tout le contenu */
+    transform-origin: top center;
+}
+
+.slide-loading, .slide-error, .slide-empty {
+    margin-bottom: 25px;
+}
+
+/* Numérotation des pages */
+.page-number {
+    position: absolute;
+    bottom: 50px !important; /* Plus haut pour éviter d'être masqué */
+    width: 100%;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #6b7280;
+    z-index: 10;
+}
+
+/* Contrôles de navigation - Responsive */
+.controls {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 5px;
+    background: rgba(111, 235, 37, 0.8); /* Plus opaque */
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 50px;
+    z-index: 25 !important;
+    margin: 0;
+    width: auto;
+    max-width: 95%;
+    padding: 8px 12px;
+    opacity: 0.8;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.control-btn {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: none;
+    border-radius: 30px !important;
+    padding: 10px !important;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 36px;
+    min-height: 36px;
+    justify-content: center;
+    font-weight: 500;
+}
+
+.control-btn:hover {
+    background-color: white;
+    transform: translateY(-1px);
+}
+
+
+.control-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Zoom controls - Responsive */
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 8px;
+    border-left: 1px solid rgba(229, 231, 235, 0.8);
+    border-right: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+.zoom-level {
+    min-width: 45px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #000;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 6px;
+    border-radius: 10px;
+}
+
+/* Loading container */
+.loading-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    color: #374151;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e7eb;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Style de la couverture - Responsive */
+.cover-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+}
+
+.cover-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.university {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.5px;
+}
+
+.fac-university {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
+}
+
+.logo-book {
+    width: 60px;
+    height: auto;
+    margin: 8px auto;
+    display: block;
+}
+
+.cover-body {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0;
+}
+
+.document-title {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+    text-align: center;
+    text-transform: capitalize;
+}
+
+.teacher-info {
+    text-align: center;
+    margin-top: auto;
+    margin-bottom: 1.5rem;
+}
+
+.teacher-grade {
+    font-size: 0.8rem;
+    color: #4B5563;
+    margin-bottom: 0.25rem;
+}
+
+.teacher-name {
+    font-size: 1rem;
+    color: #1F2937;
+    font-weight: 500;
+}
+
+.cover-footer {
+    text-align: center;
+    margin-top: auto;
+    padding-bottom: 1rem;
+}
+
+.page-count {
+    font-size: 0.8rem;
+    color: #6B7280;
+}
+
+/* Fin de document - Responsive */
+.end-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background-color: #f8fafc;
+}
+
+.end-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.end-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+}
+
+.end-text {
+    font-size: 1.2rem;
+    color: #1f2937;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+}
+
+.doc-title {
+    font-size: 1rem;
+    color: #4b5563;
+    max-width: 90%;
+    word-wrap: break-word;
+}
+
+.end-footer {
+    text-align: center;
+    margin-top: auto;
+    padding-top: 1rem;
+}
+
+.page-info {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* Message d'erreur - Responsive */
+.error-message {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.error-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    width: 90%;
+    max-width: 350px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.error-container h3 {
+    color: #ef4444;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.error-container p {
+    color: #6b7280;
+    margin-bottom: 1.2rem;
+    font-size: 0.9rem;
+}
+
+.retry-button {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+/* PowerPoint slides - Responsive */
+.slide-content {
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.slide-header {
+    text-align: right;
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.8rem;
+    border-bottom: 1px solid #e2e8f0;
+    color: #64748b;
+    font-size: 0.7rem;
+}
+
+.slide-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 0.4rem;
+}
+
+.slide-title {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #2563eb;
+    margin-bottom: 1.2rem;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.slide-heading {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e40af;
+    margin: 0.8rem 0 0.4rem;
+    line-height: 1.3;
+}
+
+.slide-paragraph {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #334155;
+    margin-bottom: 0.6rem;
+}
+
+.slide-list-item {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #334155;
+    padding-left: 1.2rem;
+    margin-bottom: 0.4rem;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+}
+
+.slide-list-item:before {
+    content: '•';
+    position: absolute;
+    left: 0.4rem;
+    color: #3b82f6;
+}
+
+.slide-image-placeholder {
+    background-color: #f8fafc;
+    border: 1px dashed #94a3b8;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0.8rem auto;
+    width: 85%;
+    max-width: 250px;
+    height: auto;
+    aspect-ratio: 4/3;
+}
+
+.image-icon {
+    width: 24px;
+    height: 24px;
+    color: #94a3b8;
+    margin-bottom: 0.4rem;
+}
+
+.image-text {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+/* Media Queries */
+@media screen and (min-width: 481px) {
+    .control-btn {
+        padding: 10px;
+    }
+
+    .document-title {
+        font-size: 1rem;
+    }
+
+    .logo-book {
+        width: 70px;
+    }
+
+    .zoom-level {
+        min-width: 50px;
+        font-size: 0.85rem;
+    }
+
+    .slide-title {
+        font-size: 1.5rem;
+    }
+}
+
+@media screen and (max-width: 380px) {
+    #flipbook .page canvas {
+        transform: scale(0.85); /* Réduction plus importante pour les très petits écrans */
+    }
+
+    .controls {
+        max-width: 98%;
+        padding: 4px;
+        gap: 3px;
+    }
+
+    .control-btn {
+        padding: 6px;
+        min-width: 30px;
+        min-height: 30px;
+    }
+
+    .zoom-controls {
+        gap: 2px;
+    }
+
+    .zoom-level {
+        min-width: 34px;
+        font-size: 0.7rem;
+    }
+}
+
+@media screen and (max-height: 500px) {
+    .controls {
+        bottom: 10px;
+        transform: translateX(-50%) scale(0.9);
+    }
+
+    .page-number {
+        bottom: 40px !important;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .control-btn {
+        padding: 8px !important;
+        min-width: 32px;
+        min-height: 32px;
+    }
+
+    .controls {
+        padding: 6px 10px;
+    }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    /* Ajustements de l'échelle pour un meilleur affichage des documents */
+    #flipbook .page canvas {
+        transform: scale(0.88);
+    }
+
+    /* Amélioration du défilement tactile */
+    .slide-body {
+        padding-bottom: 2rem;
+        scrollbar-width: thin;
+    }
+
+    /* Styliser les barres de défilement pour tactile */
+    .slide-body::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .slide-body::-webkit-scrollbar-thumb {
+        background-color: rgba(59, 130, 246, 0.5);
+        border-radius: 4px;
+    }
+}
+
+
+.viewer-container:fullscreen #flipbook .page canvas,
+.viewer-container:-webkit-full-screen #flipbook .page canvas,
+.viewer-container:-moz-full-screen #flipbook .page canvas {
+    transform: scale(0.95);
+}
+
+.page-wrapper {
+    transition: transform 0.3s ease-out;
+}
+
+@media screen and (max-width: 767px) {
+    /* Réduire l'échelle des pages pour voir plus de contenu */
+    #flipbook .page canvas {
+        transform: scale(0.9);
+    }
+
+    /* Augmenter l'espacement des numéros de page */
+    .page-number {
+        bottom: 20px;
+        position: absolute;
+        font-size: 0.7rem;
+        opacity: 0.8;
+        background: rgba(255, 255, 255, 0.7);
+        padding: 2px 5px;
+        border-radius: 10px;
+        width: auto;
+        max-width: 90%;
+        margin: 0 auto;
+    }
+
+    /* Ajuster la position des contrôles pour éviter les chevauchements */
+    .controls {
+        opacity: 0.5;
+        transition: opacity 0.3s ease;
+    }
+
+    .controls:hover {
+        opacity: 1;
+    }
+
+    .viewer-container:fullscreen #flipbook-container {
+        height: calc(100vh - 120px);
+    }
+
+
+    /* Optimisation de l'espace vertical */
+    .slide-header {
+        padding-bottom: 0.2rem;
+        margin-bottom: 0.4rem;
+        font-size: 0.6rem;
+    }
+
+    /* Améliorer le défilement des slides */
+    .slide-body {
+        -webkit-overflow-scrolling: touch; /* Défilement fluide sur iOS */
+        padding: 0.2rem;
+        margin-bottom: 20px; /* Espace pour les contrôles */
+    }
+
+    /* Ajuster l'échelle de rendu du canvas */
+    #flipbook .hard canvas,
+    #flipbook .page canvas {
+        max-width: 100%;
+        max-height: 100%;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    .controls {
+        bottom: 10px;
+        padding: 4px 8px;
+    }
+
+    .control-btn {
+        padding: 6px 8px;
+        min-width: 32px;
+        min-height: 32px;
+    }
+
+    #flipbook-container {
+        height: calc(100vh - 120px);
+    }
+}
+
+@media screen and (min-width: 768px) {
+    .cover-container {
+        padding: 1.5rem;
+    }
+
+    .logo-book {
+        width: 80px;
+    }
+
+    .document-title {
+        font-size: 1.1rem;
+    }
+
+    .university {
+        font-size: 1rem;
+    }
+
+    .controls {
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .control-btn span {
+        display: inline-block;
+        margin: 0 5px;
+    }
+
+    #prev span, #next span {
+        display: inline-block;
+    }
+
+    .slide-content {
+        padding: 1.2rem;
+    }
+
+    .slide-title {
+        font-size: 1.6rem;
+    }
+
+    .slide-paragraph {
+        font-size: 1rem;
+    }
+}
+
+@media screen and (min-width: 1024px) {
+    #flipbook-container {
+        max-width: 95%;
+        padding: 0 20px;
+    }
+
+    .logo-book {
+        width: 100px;
+    }
+
+    .document-title {
+        font-size: 1.2rem;
+    }
+
+    .slide-title {
+        font-size: 1.75rem;
+    }
+
+    .control-btn {
+        padding: 0.5rem 1rem;
+    }
+
+    .control-btn span {
+        margin: 0 5px;
+    }
+
+    .zoom-controls {
+        gap: 10px;
+        padding: 0 10px;
+    }
+}
+
+/* Classes utilitaires pour le responsive */
+.hidden-mobile {
+    display: none;
+}
+
+@media screen and (min-width: 768px) {
+    .hidden-mobile {
+        display: inline-block;
+    }
+
+    .hidden-desktop {
+        display: none;
+    }
+}
+
+/* Touchscreen specific improvements */
+@media (hover: none) {
+    .control-btn {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .controls {
+        padding: 8px;
+        gap: 10px;
+    }
+
+    /* Increase touch targets */
+    #prev, #next, #fullscreen, #soundToggle {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+/* Fix pour le mode fullscreen */
+.viewer-container:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+    left: 0;
+    top: 0;
+}
+
+
+.viewer-container:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+    left: 0;
+    top: 0;
+}
+
+.viewer-container:-moz-full-screen {
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+    left: 0;
+    top: 0;
+}
+
+.flipbook-loading-container,
+.flipbook-error-message {
+    z-index: 25;
+}

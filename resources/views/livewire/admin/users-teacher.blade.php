@@ -101,6 +101,6 @@
         <div class="mt-4">
             {{ $teachers->links() }}
         </div>
-        @include('livewire.admin.sections.teacher-modal')
+        @include('livewire.admin.modal.teacher-modal')
     </div>
 </div>

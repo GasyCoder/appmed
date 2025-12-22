@@ -18,6 +18,11 @@ class Parcour extends Model
         'status' => 'boolean',
     ];
 
+    public function programmes()
+    {
+        return $this->hasMany(Programme::class);
+    }
+
     public function users()
     {
         return $this->hasMany(User::class);

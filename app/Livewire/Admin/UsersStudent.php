@@ -12,6 +12,7 @@ use Livewire\WithPagination;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Notifications\UserAccountCreated;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -54,7 +55,7 @@ class UsersStudent extends Component
 
     public function mount()
     {
-        abort_if(!auth()->user()->hasRole('admin'), 403, 'Non autorisé.');
+        abort_if(!Auth::user()->hasRole('admin'), 403, 'Non autorisé.');
     }
 
     // Règles de validation

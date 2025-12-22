@@ -2,273 +2,287 @@
 
 namespace App\Livewire\Teacher;
 
+use App\Models\Document;
 use App\Models\Niveau;
 use App\Models\Parcour;
-use Livewire\Component;
-use App\Models\Document;
-use App\Models\Semestre;
-use Illuminate\Support\Str;
-use Livewire\WithPagination;
-use Livewire\Attributes\Rule;
-use Livewire\WithFileUploads;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use App\Models\Programme;
+use App\Services\PdfConversionService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class DocumentUpload extends Component
 {
-    use WithFileUploads;
-    use WithPagination;
+    use WithFileUploads, LivewireAlert;
 
-    // Règles pour les fichiers
-    #[Rule(['array'])]
-    #[Rule(['file', 'max:10240', 'mimes:pdf,doc,docx,dotx,dot,ppt,pptx,xls,xlsx,jpeg,jpg,png'], as: 'file.*')]
-    public $file = [];
-    public $file_status = [];
-    public $titles = [];
+    public array $files = [];
+    public array $titles = [];
+    public array $statuses = [];
 
-    // Règles pour les sélections
-    #[Rule(['required', 'exists:niveaux,id'])]
-    public $niveau_id = '';
+    public string $niveau_id = '';
+    public ?int $parcour_id = null; // auto (un seul parcours)
+    public string $ue_id = '';
+    public string $ec_id = '';
 
-    #[Rule(['required', 'exists:parcours,id'])]
-    public $parcour_id = '';
+    public const MAX_FILES = 6;
+    public const MAX_FILE_SIZE = 10240; // 10MB
 
-    public $is_actif = true;
-    public $semestres_selected = [];
-    const MAX_FILES = 6;
-
-    public function mount()
+    public function mount(): void
     {
-        $this->file = [];
+        // Parcours automatique (un seul parcours actif)
+        $this->parcour_id = Parcour::where('status', true)->orderBy('name')->value('id');
+
+        // Niveau par défaut
+        $firstNiveauId = Niveau::where('status', true)->orderBy('name')->value('id');
+        if ($firstNiveauId) {
+            $this->niveau_id = (string) $firstNiveauId;
+        }
+    }
+
+    public function updatedFiles(): void
+    {
+        $this->validate([
+            'files' => 'array|max:' . self::MAX_FILES,
+            'files.*' => 'file|max:' . self::MAX_FILE_SIZE . '|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png',
+        ]);
+
+        foreach ($this->files as $index => $file) {
+            $this->titles[$index] = $this->titles[$index]
+                ?? pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
+            $this->statuses[$index] = $this->statuses[$index] ?? true;
+        }
+    }
+
+    public function clearFiles(): void
+    {
+        $this->files = [];
         $this->titles = [];
-        $this->file_status = [];
-
-        if ($this->niveau_id) {
-            $this->updatedNiveauId();
-        }
+        $this->statuses = [];
     }
 
-    protected $messages = [
-        'file' => 'Veuillez sélectionner un fichier valide.',
-        'file.required' => 'Veuillez sélectionner au moins un fichier.',
-        'file.array' => 'Le format des fichiers est invalide.',
-        'file.max' => 'Vous ne pouvez pas téléverser plus de ' . self::MAX_FILES . ' fichiers à la fois.',
-        'file.*.file' => 'Chaque élément doit être un fichier valide.',
-        'file.*.max' => 'La taille maximale autorisée pour chaque fichier est de 10MB.',
-        'file.*.mimes' => 'Les types de fichiers acceptés sont : PDF, Word, Excel, PowerPoint, Images.',
-        'file.*.uploaded' => 'Échec du téléversement du fichier. Veuillez réessayer.',
-        'titles.*.required' => 'Un titre est requis pour chaque fichier.',
-        'titles.*.min' => 'Chaque titre doit contenir au moins 3 caractères.',
-        'titles.*.max' => 'Chaque titre ne peut pas dépasser 255 caractères.',
-        'niveau_id.required' => 'Le niveau est requis.',
-        'niveau_id.exists' => 'Le niveau sélectionné est invalide.',
-        'parcour_id.required' => 'Le parcours est requis.',
-        'parcour_id.exists' => 'Le parcours sélectionné est invalide.',
-        'semestres_selected.required' => 'Au moins un semestre actif est requis.',
-        'semestres_selected.min' => 'Au moins un semestre actif est requis.',
-    ];
-
-    // Méthodes pour la gestion des fichiers
-    public function updatedFile()
+    public function removeFile(int $index): void
     {
-        if (!empty($this->file)) {
-            $this->validate([
-                'file' => 'array|max:' . self::MAX_FILES,
-                'file.*' => 'file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpeg,jpg,png'
+        unset($this->files[$index], $this->titles[$index], $this->statuses[$index]);
+
+        $this->files = array_values($this->files);
+        $this->titles = array_values($this->titles);
+        $this->statuses = array_values($this->statuses);
+    }
+
+    public function updatedNiveauId(): void
+    {
+        $this->ue_id = '';
+        $this->ec_id = '';
+    }
+
+    public function updatedUeId(): void
+    {
+        $this->ec_id = '';
+    }
+
+    public function uploadDocuments()
+    {
+        if (!$this->parcour_id) {
+            $this->alert('error', 'Configuration manquante', [
+                'text' => "Aucun parcours actif n'est configuré.",
+                'toast' => false,
+                'position' => 'center',
             ]);
-
-            foreach ($this->file as $index => $file) {
-                if (!isset($this->titles[$index])) {
-                    $this->titles[$index] = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                }
-                if (!isset($this->file_status[$index])) {
-                    $this->file_status[$index] = true;
-                }
-            }
-        }
-    }
-
-    public function removeFile($index)
-    {
-        if (isset($this->file[$index])) {
-            unset($this->file[$index]);
-            $this->file = array_values($this->file);
-
-            if (isset($this->titles[$index])) {
-                unset($this->titles[$index]);
-                $this->titles = array_values($this->titles);
-            }
-
-            if (isset($this->file_status[$index])) {
-                unset($this->file_status[$index]);
-                $this->file_status = array_values($this->file_status);
-            }
-        }
-    }
-
-    // Propriétés calculées
-    public function getSemestresActifsProperty()
-    {
-        if (!$this->niveau_id) {
-            return collect();
-        }
-
-        $semestres = Semestre::where('niveau_id', $this->niveau_id)
-            ->where('is_active', true)
-            ->where('status', true)
-            ->orderBy('name')
-            ->get();
-
-        // Mettre à jour automatiquement les semestres sélectionnés
-        $this->semestres_selected = $semestres->pluck('id')->toArray();
-
-        return $semestres;
-    }
-
-    public function getTeacherNiveauxProperty()
-    {
-        return Niveau::whereHas('teachers', function($q) {
-            $q->where('users.id', Auth::id());
-        })
-        ->where('status', true)
-        ->orderBy('name')
-        ->get();
-    }
-
-    public function getTeacherParcoursProperty()
-    {
-        if (!$this->niveau_id) {
-            return collect();
-        }
-
-        $user = Auth::user();
-
-        return Parcour::whereHas('teachers', function($query) use ($user) {
-                $query->where('users.id', $user->id);
-            })
-            ->where('status', true)
-            ->whereExists(function ($query) use ($user) {
-                $query->select(DB::raw(1))
-                      ->from('niveau_user')
-                      ->where('user_id', $user->id)
-                      ->where('niveau_id', $this->niveau_id);
-            })
-            ->orderBy('name')
-            ->get();
-    }
-
-    public function updatedNiveauId()
-    {
-        $this->parcour_id = '';
-        $this->semestres_selected = [];
-
-        // Récupérer les parcours disponibles
-        $availableParcours = $this->teacherParcours;
-
-        // Sélectionner le premier parcours si disponible
-        if ($availableParcours->isNotEmpty()) {
-            $this->parcour_id = $availableParcours->first()->id;
-        }
-
-        // Mettre à jour les semestres
-        if ($this->niveau_id) {
-            $this->semestres_selected = $this->semestresActifs->pluck('id')->toArray();
-        }
-
-        // Émettre un événement pour rafraîchir l'interface
-        $this->dispatch('parcours-updated');
-    }
-
-    // Méthode principale d'upload
-    public function uploadDocument()
-    {
-        if (count($this->file) > self::MAX_FILES) {
-            session()->flash('error', 'Vous ne pouvez pas téléverser plus de ' . self::MAX_FILES . ' fichiers à la fois.');
             return;
         }
 
         $this->validate([
-            'file' => 'required|array|max:' . self::MAX_FILES,
-            'file.*' => [
-                'required',
-                'file',
-                'max:10240',
-                'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpeg,jpg,png'
-            ],
+            'files' => 'required|array|min:1|max:' . self::MAX_FILES,
+            'files.*' => 'required|file|max:' . self::MAX_FILE_SIZE . '|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png',
             'titles.*' => 'required|string|min:3|max:255',
+            'statuses.*' => 'nullable|boolean',
             'niveau_id' => 'required|exists:niveaux,id',
-            'parcour_id' => 'required|exists:parcours,id',
-            'semestres_selected' => 'required|array|min:1',
+            'ue_id' => 'required|exists:programmes,id',
+            'ec_id' => 'nullable|exists:programmes,id',
         ]);
+
+        // Programme choisi (EC si présent sinon UE)
+        $programmeId = $this->ec_id ?: $this->ue_id;
+
+        // IMPORTANT : semestre_id est obligatoire dans votre table documents
+        $programme = Programme::query()
+            ->select('id', 'semestre_id')
+            ->findOrFail((int) $programmeId);
+
+        if (!$programme->semestre_id) {
+            $this->alert('error', 'Donnée incomplète', [
+                'text' => "Le programme sélectionné n'a pas de semestre_id. Corrigez la table programmes.",
+                'toast' => false,
+                'position' => 'center',
+            ]);
+            return;
+        }
 
         try {
             DB::beginTransaction();
 
-            if (empty($this->semestres_selected)) {
-                throw new \Exception('Aucun semestre actif disponible pour ce niveau.');
-            }
+            $uploaded = 0;
+            $converted = 0;
 
-            foreach ($this->file as $index => $uploadedFile) {
-                if (empty($this->titles[$index])) {
-                    throw new \Exception('Titre requis pour tous les fichiers');
+            foreach ($this->files as $index => $file) {
+                $result = $this->processFile(
+                    $file,
+                    $this->titles[$index] ?? 'Document',
+                    $index,
+                    (int) $programme->id,
+                    (int) $programme->semestre_id
+                );
+
+                if ($result['success']) {
+                    $uploaded++;
+                    if ($result['converted']) $converted++;
                 }
-
-                $filePath = $this->storeDocument($uploadedFile, $this->titles[$index]);
-                $this->createDocument($this->titles[$index], $uploadedFile, $filePath, $index);
             }
 
             DB::commit();
-            session()->flash('success', count($this->file) . ' document(s) téléversé(s) avec succès');
+
+            $message = "{$uploaded} document(s) uploadé(s)";
+            if ($converted > 0) $message .= " ({$converted} converti(s) en PDF)";
+
+            $this->alert('success', 'Succès', [
+                'position' => 'top-end',
+                'timer' => 3500,
+                'toast' => true,
+                'text' => $message,
+            ]);
+
             return redirect()->route('document.teacher');
-
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Upload error:', [
-                'error' => $e->getMessage(),
-                'user' => Auth::id()
+
+            $this->alert('error', 'Erreur', [
+                'position' => 'center',
+                'toast' => false,
+                'text' => $e->getMessage(),
             ]);
-            session()->flash('error', $e->getMessage());
+            return null;
         }
     }
 
-    // Méthodes privées
-    private function storeDocument($file, $title)
+    private function processFile($file, string $title, int $index, int $programmeId, int $semestreId): array
     {
-        $fileName = time() . '_' . Str::slug($title) . '_' . $file->getClientOriginalName();
-        $filePath = $file->storeAs('documents', $fileName, 'public');
+        $extension = strtolower($file->getClientOriginalExtension());
+        $needsConversion = in_array($extension, ['doc', 'docx', 'ppt', 'pptx'], true);
 
-        if (!$filePath) {
-            throw new \Exception('Échec du stockage du fichier.');
+        if ($needsConversion) {
+            $result = $this->convertToPdf($file, $title);
+        } else {
+            $fileName = time() . '_' . Str::slug($title) . '_' . Str::random(6) . '.' . $extension;
+            $filePath = $file->storeAs('documents', $fileName, 'public');
+
+            $result = [
+                'path' => $filePath,
+                'converted' => false,
+                'mime' => $file->getMimeType(),
+            ];
         }
 
-        return $filePath;
+        $absolutePath = storage_path('app/public/' . $result['path']);
+
+        Document::create([
+            'title' => $title,
+            'file_path' => $result['path'],
+            'file_type' => $result['mime'],
+            'file_size' => file_exists($absolutePath) ? filesize($absolutePath) : 0,
+
+            'original_filename' => $file->getClientOriginalName(),
+            'original_extension' => $extension,
+            'converted_from' => $result['converted'] ? $extension : null,
+            'converted_at' => $result['converted'] ? now() : null,
+
+            'niveau_id' => (int) $this->niveau_id,
+            'parcour_id' => (int) $this->parcour_id,
+            'semestre_id' => $semestreId,
+            'programme_id' => $programmeId,
+
+            'uploaded_by' => Auth::id(),
+            'is_actif' => (bool) ($this->statuses[$index] ?? false),
+        ]);
+
+        return [
+            'success' => true,
+            'converted' => (bool) $result['converted'],
+        ];
     }
 
-    private function createDocument($title, $file, $filePath, $index)
+    private function convertToPdf($file, string $title): array
     {
-        foreach ($this->semestres_selected as $semestre_id) {
-            Document::create([
-                'title' => $title,
-                'file_path' => $filePath,
-                'protected_path' => $filePath,
-                'file_type' => $file->getMimeType(),
-                'file_size' => $file->getSize(),
-                'niveau_id' => $this->niveau_id,
-                'parcour_id' => $this->parcour_id,
-                'semestre_id' => $semestre_id,
-                'uploaded_by' => Auth::id(),
-                'is_actif' => $this->file_status[$index] ?? false,
-                'download_count' => 0,
-                'view_count' => 0,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $conversionService = app(PdfConversionService::class);
+
+        $tempPath = $file->storeAs(
+            'temp',
+            Str::random(10) . '.' . strtolower($file->getClientOriginalExtension())
+        );
+
+        $absoluteTempPath = storage_path('app/' . $tempPath);
+
+        try {
+            $outputDir = storage_path('app/public/documents');
+            if (!file_exists($outputDir)) {
+                mkdir($outputDir, 0755, true);
+            }
+
+            $pdfFileName = time() . '_' . Str::slug($title) . '_' . Str::random(6) . '.pdf';
+            $conversionService->convertToPdf($absoluteTempPath, $outputDir, $pdfFileName);
+
+            return [
+                'path' => 'documents/' . $pdfFileName,
+                'converted' => true,
+                'mime' => 'application/pdf',
+            ];
+        } finally {
+            Storage::delete($tempPath);
         }
     }
 
     public function render()
     {
-        return view('livewire.teacher.document-upload');
+        $niveaux = Niveau::where('status', true)->orderBy('name')->get();
+
+        $ues = collect();
+        if ($this->niveau_id) {
+            $baseQuery = Programme::where('type', 'UE')
+                ->where('niveau_id', (int) $this->niveau_id)
+                ->where('status', true)
+                ->orderBy('order');
+
+            // Filtre parcours si vos UEs ont bien parcour_id
+            $withParcour = (clone $baseQuery);
+            if ($this->parcour_id) {
+                $withParcour->where('parcour_id', (int) $this->parcour_id);
+            }
+
+            $ues = $withParcour->get();
+
+            // Fallback si parcour_id est vide côté programmes (cas fréquent)
+            if ($ues->isEmpty()) {
+                $ues = $baseQuery->get();
+            }
+        }
+
+        $ecs = collect();
+        if ($this->ue_id) {
+            $ecs = Programme::where('type', 'EC')
+                ->where('parent_id', (int) $this->ue_id)
+                ->where('status', true)
+                ->orderBy('order')
+                ->get();
+        }
+
+        return view('livewire.teacher.document-upload', [
+            'niveaux' => $niveaux,
+            'ues' => $ues,
+            'ecs' => $ecs,
+        ]);
     }
 }

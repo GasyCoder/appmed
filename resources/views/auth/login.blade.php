@@ -119,9 +119,9 @@
                 <!-- Aide -->
                 <div class="p-6 bg-gray-50 dark:bg-gray-800/50 border-t dark:border-gray-700">
                     <p class="text-center text-gray-600 dark:text-gray-400 text-sm">
-                        Besoin d'aide ?
-                        <a href="mailto:medecinemahajanga@gmail.com" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-700 transition-colors duration-200">
-                            Contactez la scolarité
+                        Vous n'avez pas encore de compte ?
+                        <a href="/inscription" class="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-700 transition-colors duration-200">
+                           S'inscrire
                         </a>
                     </p>
                 </div>

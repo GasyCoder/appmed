@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('niveaux', function (Blueprint $table) {
             $table->id();
-            $table->string('sigle');
-            $table->string('name');
+            $table->string('sigle'); // M1 / M2
+            $table->string('name'); // Master 1 / Master 2
             $table->boolean('status')->default(true);
             $table->timestamps();
         });

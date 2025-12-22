@@ -2,36 +2,29 @@
 
 namespace App\Livewire\Teacher;
 
+use App\Models\Document;
+use App\Models\DocumentView;
 use App\Models\Niveau;
 use App\Models\Parcour;
 use App\Models\Semestre;
-use Livewire\Component;
-use App\Models\Document;
-use Livewire\WithPagination;
-use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-
-namespace App\Livewire\Teacher;
-
-use App\Models\Niveau;
-use App\Models\Parcour;
-use App\Models\Semestre;
+use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
-use App\Models\Document;
 use Livewire\WithPagination;
-use Livewire\WithFileUploads;
-use Illuminate\Support\Facades\Storage;
 
 class Documents extends Component
 {
-    use WithFileUploads;
-    use WithPagination;
+    use WithPagination, LivewireAlert;
 
+    // Filtres
     public $search = '';
     public $filterNiveau = '';
     public $filterParcour = '';
     public $filterSemestre = '';
     public $filterStatus = '';
+
+    // Tri
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
 
@@ -45,118 +38,153 @@ class Documents extends Component
         'sortDirection' => ['except' => 'desc'],
     ];
 
-    // Définir les listeners pour les événements
-    protected $listeners = ['refresh' => '$refresh'];
+    // Champs autorisés au tri (sécurité)
+    protected array $sortable = [
+        'title',
+        'is_actif',
+        'created_at',
+        'view_count',
+    ];
 
-    public function mount()
+    public function updated($propertyName)
     {
-        $this->resetPage();
-    }
-
-    public function updatedSearch()
-    {
-        $this->resetPage();
-    }
-
-    public function updatedFilterNiveau()
-    {
-        $this->resetPage();
-        if ($this->filterNiveau === '') {
-            $this->filterSemestre = '';
+        if (in_array($propertyName, ['search', 'filterNiveau', 'filterParcour', 'filterSemestre', 'filterStatus'])) {
+            $this->resetPage();
         }
-    }
-
-    public function updatedFilterParcour()
-    {
-        $this->resetPage();
-    }
-
-    public function updatedFilterSemestre()
-    {
-        $this->resetPage();
-    }
-
-    public function updatedFilterStatus()
-    {
-        $this->resetPage();
     }
 
     public function sortBy($field)
     {
+        if (!in_array($field, $this->sortable, true)) {
+            $field = 'created_at';
+        }
+
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
             $this->sortField = $field;
-            $this->sortDirection = 'asc';
+
+            // Par défaut: desc pour dates & compteurs, asc pour le titre
+            $this->sortDirection = in_array($field, ['created_at', 'view_count'], true) ? 'desc' : 'asc';
         }
     }
 
     public function toggleStatus($documentId)
     {
-        $document = Document::find($documentId);
-        if ($document && $document->uploaded_by === auth()->id()) {
+        try {
+            $document = Document::findOrFail($documentId);
+
+            if ($document->uploaded_by !== Auth::id()) {
+                $this->alert('error', 'Accès refusé', [
+                    'position' => 'top-end',
+                    'timer' => 3000,
+                    'toast' => true,
+                ]);
+                return;
+            }
+
             $document->update(['is_actif' => !$document->is_actif]);
-            $this->dispatch('document-updated');
+
+            $this->alert('success', 'Statut mis à jour', [
+                'position' => 'top-end',
+                'timer' => 2000,
+                'toast' => true,
+                'text' => $document->is_actif ? 'Document partagé' : 'Document non partagé',
+            ]);
+        } catch (\Exception $e) {
+            $this->alert('error', 'Erreur', [
+                'position' => 'top-end',
+                'timer' => 3000,
+                'toast' => true,
+                'text' => 'Impossible de modifier le statut',
+            ]);
         }
     }
 
     public function deleteDocument($documentId)
     {
-        $document = Document::findOrFail($documentId);
+        try {
+            $document = Document::findOrFail($documentId);
 
-        if ($document->uploaded_by !== auth()->id()) {
-            return;
+            if ($document->uploaded_by !== Auth::id()) {
+                $this->alert('error', 'Accès refusé', [
+                    'position' => 'top-end',
+                    'timer' => 3000,
+                    'toast' => true,
+                ]);
+                return;
+            }
+
+            $filePath = $document->file_path;
+
+            // Supprimer l'enregistrement
+            $document->delete();
+
+            // Supprimer le fichier physique s'il n'est plus utilisé
+            if ($filePath && !Document::where('file_path', $filePath)->exists()) {
+                Storage::disk('public')->delete($filePath);
+            }
+
+            $this->alert('success', 'Document supprimé', [
+                'position' => 'top-end',
+                'timer' => 3000,
+                'toast' => true,
+            ]);
+        } catch (\Exception $e) {
+            $this->alert('error', 'Erreur', [
+                'position' => 'top-end',
+                'timer' => 3000,
+                'toast' => true,
+                'text' => 'Impossible de supprimer le document',
+            ]);
         }
-
-        if (Storage::disk('public')->exists($document->file_path)) {
-            Storage::disk('public')->delete($document->file_path);
-        }
-
-        $document->delete();
-        session()->flash('success', 'Document supprimé avec succès');
-    }
-
-    public function getSemestres()
-    {
-        if ($this->filterNiveau) {
-            return Semestre::where('niveau_id', $this->filterNiveau)
-                          ->where('status', true)
-                          ->orderBy('name')
-                          ->get();
-        }
-        return Semestre::where('status', true)->orderBy('name')->get();
     }
 
     public function render()
     {
-        $documents = Document::query()
-            ->where('uploaded_by', auth()->id())
-            ->when($this->search, function ($query) {
-                return $query->where('title', 'like', '%' . $this->search . '%');
-            })
-            ->when($this->filterNiveau, function ($query) {
-                return $query->where('niveau_id', $this->filterNiveau);
-            })
-            ->when($this->filterParcour, function ($query) {
-                return $query->where('parcour_id', $this->filterParcour);
-            })
-            ->when($this->filterSemestre, function ($query) {
-                return $query->where('semestre_id', $this->filterSemestre);
-            })
-            ->when($this->filterStatus !== '', function ($query) {
-                return $query->where('is_actif', $this->filterStatus);
-            })
+        $baseQuery = Document::query()
+            ->where('uploaded_by', Auth::id());
+
+        // Liste paginée (avec vues uniques par doc)
+        $query = (clone $baseQuery)
+            ->when($this->search, fn ($q) => $q->where('title', 'like', "%{$this->search}%"))
+            ->when($this->filterNiveau, fn ($q) => $q->where('niveau_id', $this->filterNiveau))
+            ->when($this->filterParcour, fn ($q) => $q->where('parcour_id', $this->filterParcour))
+            ->when($this->filterSemestre, fn ($q) => $q->where('semestre_id', $this->filterSemestre))
+            ->when($this->filterStatus !== '', fn ($q) => $q->where('is_actif', $this->filterStatus))
             ->with(['niveau', 'parcour', 'semestre'])
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate(10);
+            ->withCount('views') // IMPORTANT => $document->views_count
+            ->orderBy(
+                in_array($this->sortField, $this->sortable, true) ? $this->sortField : 'created_at',
+                $this->sortDirection === 'asc' ? 'asc' : 'desc'
+            );
+
+        $documents = $query->paginate(10);
+
+        // Stats (dont VUES)
+        $stats = [
+            'total'     => (clone $baseQuery)->count(),
+            'shared'    => (clone $baseQuery)->where('is_actif', true)->count(),
+            'notShared' => (clone $baseQuery)->where('is_actif', false)->count(),
+            'recent'    => (clone $baseQuery)->where('created_at', '>=', now()->subDays(7))->count(),
+
+            // ✅ total des ouvertures (hits) par étudiants
+            'views'     => (clone $baseQuery)->sum('view_count'),
+
+            // (optionnel) total des vues uniques (1 étudiant = 1 vue unique par document)
+            'uniqueViews' => DocumentView::query()
+                ->whereHas('document', fn ($q) => $q->where('uploaded_by', Auth::id()))
+                ->count(),
+        ];
 
         return view('livewire.teacher.documents', [
+            'documents' => $documents,
+            'stats' => $stats,
             'niveaux' => Niveau::where('status', true)->orderBy('name')->get(),
             'parcours' => Parcour::where('status', true)->orderBy('name')->get(),
-            'semestres' => $this->getSemestres(),
-            'myDocuments' => $documents,
-            'uploadCount' => Document::where('uploaded_by', auth()->id())->count(),
-            'totalDownloads' => Document::where('uploaded_by', auth()->id())->sum('download_count'),
+            'semestres' => $this->filterNiveau
+                ? Semestre::where('niveau_id', $this->filterNiveau)->where('status', true)->orderBy('name')->get()
+                : Semestre::where('status', true)->orderBy('name')->get(),
         ]);
     }
 }

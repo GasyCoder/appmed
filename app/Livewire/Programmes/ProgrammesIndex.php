@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Programmes;
 
 use App\Models\Programme;
 use App\Models\Semestre;
@@ -9,7 +9,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\On;
 
-class Programmes extends Component
+class ProgrammesIndex extends Component
 {
     use WithPagination;
 
@@ -116,7 +116,7 @@ class Programmes extends Component
         // Statistiques
         $stats = $this->calculateStats();
 
-        return view('livewire.programmes', [
+        return view('livewire.programmes.programme-index', [
             'programmes' => $query->paginate($this->perPage),
             'stats' => $stats
         ]);

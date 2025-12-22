@@ -1,14 +1,11 @@
 <?php
 
 use App\Models\Document;
-use App\Livewire\Programmes;
 use App\Livewire\Admin\Niveaux;
-use App\Livewire\Admin\Calendar;
 use App\Livewire\Admin\Parcours;
 use App\Livewire\Admin\Semestres;
 use App\Livewire\Pages\ComingSoon;
 use App\Livewire\Teacher\Documents;
-use App\Livewire\Admin\SheduleAdmin;
 use App\Livewire\Admin\UsersStudent;
 use App\Livewire\Admin\UsersTeacher;
 use Illuminate\Support\Facades\Auth;
@@ -24,8 +21,13 @@ use App\Livewire\Teacher\ScheduleTeacher;
 use App\Livewire\Student\DashboardStudent;
 use App\Livewire\Teacher\TeacherDashboard;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\ScheduleController;
+use App\Livewire\Admin\ScheduleManagement;
+use App\Livewire\Admin\ScheduleUpload;
+use App\Livewire\Shared\ScheduleViewer;
 use App\Http\Controllers\Auth\RegisterFormController;
 use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Livewire\Programmes\ProgrammesIndex;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,7 +37,6 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 Route::redirect('/', '/login');
 Route::redirect('/register', '/login');
 
-// routes/web.php
 Route::middleware('guest')->group(function () {
     Route::get('/inscription', [EmailVerificationController::class, 'index'])
         ->name('inscription');
@@ -49,8 +50,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/inscription/formulaire/{token}', [RegisterFormController::class, 'register'])
         ->name('register.store');
 });
-
-
 
 Route::get('/set-password/{token}', function ($token) {
     return view('auth.set-password', ['token' => $token]);
@@ -75,13 +74,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/view-pdf/{filename}', [PdfController::class, 'viewerPdf'])->name('pdf.viewer');
     Route::get('/pdf-content/{filename}', [PdfController::class, 'show'])->name('pdf.content');
     Route::get('/pdf/download/{filename}', [PdfController::class, 'download'])->name('pdf.download');
-
     Route::get('/pdf/serve/{filename}', [PdfController::class, 'serve'])->name('pdf.serve');
-
     Route::get('/pdf/viewer/{filename}', [PdfController::class, 'viewerPpt'])->name('pdf.viewerppt');
 
     Route::get('/documents/serve/{document}', [DocumentController::class, 'serve'])->name('document.serve');
-
 
     /*
     |--------------------------------------------------------------------------
@@ -89,18 +85,19 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin')
-    ->middleware('role:admin')
-    ->group(function () {
-        Route::get('/dashboard', AdminDashboard::class)->name('adminEspace');
-        Route::get('/etudiants', UsersStudent::class)->name('admin.students');
-        Route::get('/enseignants', UsersTeacher::class)->name('admin.teachers');
-        Route::get('/niveaux', Niveaux::class)->name('admin.niveau');
-        Route::get('/parcours', Parcours::class)->name('admin.parcour');
-        Route::get('/semestres', Semestres::class)->name('admin.semestre');
+        ->middleware('role:admin')
+        ->group(function () {
+            Route::get('/dashboard', AdminDashboard::class)->name('adminEspace');
+            Route::get('/etudiants', UsersStudent::class)->name('admin.students');
+            Route::get('/enseignants', UsersTeacher::class)->name('admin.teachers');
+            Route::get('/niveaux', Niveaux::class)->name('admin.niveau');
+            Route::get('/parcours', Parcours::class)->name('admin.parcour');
+            Route::get('/semestres', Semestres::class)->name('admin.semestre');
 
-        Route::get('/timetable', SheduleAdmin::class)
-        ->name('admin.timetable');
-    });
+            // ✅ NOUVELLES ROUTES EMPLOI DU TEMPS ADMIN
+            Route::get('/emploi-du-temps', ScheduleManagement::class)->name('admin.timetable');
+            Route::get('/emploi-du-temps/upload', ScheduleUpload::class)->name('admin.schedules.upload');
+        });
 
     /*
     |--------------------------------------------------------------------------
@@ -115,12 +112,11 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             Route::get('/documents/upload', DocumentUpload::class)->name('document.upload');
             Route::get('/documents/{document}/edit', DocumentEdit::class)->name('document.edit');
 
-            Route::get('/emploi-du-temps', ScheduleTeacher::class)
-                ->name('teacher.timetable');
+            // ✅ NOUVELLE ROUTE EMPLOI DU TEMPS TEACHER
+            Route::get('/emploi-du-temps', ScheduleViewer::class)->name('teacher.timetable');
 
-            Route::get('/scolarites', ComingSoon::class)
-                ->name('teacher.scolarites');
-    });
+            Route::get('/scolarites', ComingSoon::class)->name('teacher.scolarites');
+        });
 
     /*
     |--------------------------------------------------------------------------
@@ -130,21 +126,22 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::prefix('student')
         ->middleware('role:student')
         ->group(function () {
-
             Route::get('/dashboard', DashboardStudent::class)->name('studentEspace');
-
             Route::get('/mes-cours', StudentDocument::class)->name('student.document');
-
             Route::get('/mes-enseignants', EnseignantView::class)->name('student.myTeacher');
 
-            Route::get('/emploi-du-temps', ScheduleStudent::class)->name('student.timetable');
+            // ✅ NOUVELLE ROUTE EMPLOI DU TEMPS STUDENT
+            Route::get('/emploi-du-temps', ScheduleViewer::class)->name('student.timetable');
 
             Route::get('/scolarites', ComingSoon::class)->name('student.scolarites');
         });
 
+    Route::get('/nos-programmes', ProgrammesIndex::class)->name('programs');
 
-    Route::get('/nos-programmes', Programmes::class)
-            ->name('programs');
+    // ✅ NOUVELLES ROUTES COMMUNES POUR LES EMPLOIS DU TEMPS
+    Route::get('/schedule/{schedule}', [ScheduleController::class, 'view'])->name('schedule.view');
+    Route::get('/schedule/{schedule}/serve', [ScheduleController::class, 'serve'])->name('schedule.serve');
+    Route::get('/schedule/{schedule}/download', [ScheduleController::class, 'download'])->name('schedule.download');
 
     // Route commune pour l'incrémentation des vues des documents
     Route::post('/document/{document}/increment-view', function(Document $document) {

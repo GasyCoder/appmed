@@ -605,8 +605,8 @@
     </div>
 
  {{-- Modal d'assignation --}}
-<livewire:assign-enseignant />
-<livewire:edit-programme />
-<livewire:delete-programme /> 
+<livewire:programmes.assign-enseignant />
+<livewire:programmes.edit-programme />
+<livewire:programmes.delete-programme /> 
 
 </div>

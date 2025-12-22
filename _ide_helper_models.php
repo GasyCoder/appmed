@@ -344,6 +344,29 @@ namespace App\Models{
 
 namespace App\Models{
 /**
+ * @property-read mixed $extension
+ * @property-read mixed $file_size_formatted
+ * @property-read mixed $file_url
+ * @property-read \App\Models\Niveau|null $niveau
+ * @property-read \App\Models\Parcour|null $parcour
+ * @property-read \App\Models\Semestre|null $semestre
+ * @property-read \App\Models\User|null $uploader
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule current()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule forNiveau($niveauId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule forParcour($parcourId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule withoutTrashed()
+ */
+	class Schedule extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
  * @property int $id
  * @property string $name
  * @property int $niveau_id

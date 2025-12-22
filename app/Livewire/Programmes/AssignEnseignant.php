@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Programmes;
 
 use App\Models\User;
 use App\Models\Programme;
@@ -186,7 +186,7 @@ class AssignEnseignant extends Component
             ->orderBy('name')
             ->get();
 
-        return view('livewire.assign-enseignant', [
+        return view('livewire.programmes.assign-enseignant', [
             'enseignants' => $enseignants,
         ]);
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Programmes;
 
 use App\Models\Programme;
 use App\Models\Semestre;
@@ -164,7 +164,7 @@ class EditProgramme extends Component
 
     public function render()
     {
-        return view('livewire.edit-programme', [
+        return view('livewire.programmes.edit-programme', [
             'semestres' => Semestre::orderBy('id')->get(),
             'niveaux' => Niveau::orderBy('id')->get(),
             'parcours' => Parcour::orderBy('id')->get(),

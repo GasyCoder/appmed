@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Programmes;
 
 use App\Models\Programme;
 use Livewire\Component;
@@ -74,6 +74,6 @@ class DeleteProgramme extends Component
 
     public function render()
     {
-        return view('livewire.delete-programme');
+        return view('livewire.programmes.delete-programme');
     }
 }

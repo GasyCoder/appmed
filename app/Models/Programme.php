@@ -61,14 +61,23 @@ class Programme extends Model
      * Les enseignants assignés à ce programme (EC)
      * Uniquement les users avec le rôle 'teacher'
      */
-    public function enseignants()
+    public function enseignant()
     {
         return $this->belongsToMany(User::class, 'programme_user')
             ->withPivot(['heures_cm', 'heures_td', 'heures_tp', 'is_responsable', 'note'])
             ->withTimestamps()
             ->whereHas('roles', fn($q) => $q->where('name', 'teacher'))
-            ->orderByPivot('is_responsable', 'desc');
+            ->first(); // Retourne UN SEUL enseignant
     }
+
+    public function enseignants()
+    {
+        return $this->belongsToMany(User::class, 'programme_user')
+            ->withPivot(['heures_cm', 'heures_td', 'heures_tp', 'is_responsable', 'note'])
+            ->withTimestamps()
+            ->whereHas('roles', fn($q) => $q->where('name', 'teacher'));
+    }
+
 
     /**
      * L'enseignant responsable du programme
@@ -259,11 +268,15 @@ class Programme extends Model
             });
         }
 
-        return $this->enseignants->sum(function ($enseignant) {
-            return $enseignant->pivot->heures_cm +
-                   $enseignant->pivot->heures_td +
-                   $enseignant->pivot->heures_tp;
-        });
+        // Pour un EC : heures d'UN SEUL enseignant
+        $enseignant = $this->enseignants->first();
+        if (!$enseignant) {
+            return 0;
+        }
+
+        return $enseignant->pivot->heures_cm +
+            $enseignant->pivot->heures_td +
+            $enseignant->pivot->heures_tp;
     }
 
     /**
@@ -282,10 +295,16 @@ class Programme extends Model
             return compact('cm', 'td', 'tp');
         }
 
+        // Pour un EC : heures d'UN SEUL enseignant
+        $enseignant = $this->enseignants->first();
+        if (!$enseignant) {
+            return ['cm' => 0, 'td' => 0, 'tp' => 0];
+        }
+
         return [
-            'cm' => $this->enseignants->sum('pivot.heures_cm'),
-            'td' => $this->enseignants->sum('pivot.heures_td'),
-            'tp' => $this->enseignants->sum('pivot.heures_tp'),
+            'cm' => $enseignant->pivot->heures_cm,
+            'td' => $enseignant->pivot->heures_td,
+            'tp' => $enseignant->pivot->heures_tp,
         ];
     }
 
@@ -308,43 +327,39 @@ class Programme extends Model
         int $heuresCm = 0,
         int $heuresTd = 0,
         int $heuresTp = 0,
-        bool $isResponsable = false,
         ?string $note = null
     ): void {
         if (!$this->isEc()) {
-            throw new \Exception('Seuls les ECs peuvent avoir des enseignants assignés.');
+            throw new \Exception('Seuls les ECs peuvent avoir un enseignant assigné.');
         }
 
         if (!$user->hasRole('teacher')) {
             throw new \Exception('L\'utilisateur doit avoir le rôle "teacher".');
         }
 
-        // Si on définit comme responsable, retirer le statut des autres
-        if ($isResponsable) {
-            $this->enseignants()->updateExistingPivot(
-                $this->enseignants->pluck('id'),
-                ['is_responsable' => false]
-            );
-        }
-
-        $this->enseignants()->syncWithoutDetaching([
+        // SYNC remplace l'ancien enseignant (pas syncWithoutDetaching)
+        $this->enseignants()->sync([
             $user->id => [
                 'heures_cm' => $heuresCm,
                 'heures_td' => $heuresTd,
                 'heures_tp' => $heuresTp,
-                'is_responsable' => $isResponsable,
+                'is_responsable' => true, // Toujours responsable puisque c'est le seul
                 'note' => $note,
             ]
         ]);
     }
 
+
     /**
-     * Retirer un enseignant d'un EC
+     * Retirer l'enseignant d'un EC
      */
-    public function retirerEnseignant(User $user): void
+    public function retirerEnseignant(): void
     {
-        $this->enseignants()->detach($user->id);
+        $this->enseignants()->detach();
     }
+
+
+    
 
     /*
     |--------------------------------------------------------------------------

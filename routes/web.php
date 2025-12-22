@@ -11,6 +11,7 @@ use App\Livewire\Teacher\Documents;
 use App\Livewire\Admin\SheduleAdmin;
 use App\Livewire\Admin\UsersStudent;
 use App\Livewire\Admin\UsersTeacher;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Admin\AdminDashboard;
 use App\Livewire\Teacher\DocumentEdit;
@@ -64,9 +65,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     // Route de redirection du dashboard selon le rôle
     Route::get('/dashboard', function () {
         return match (true) {
-            auth()->user()->hasRole('admin') => redirect()->route('adminEspace'),
-            auth()->user()->hasRole('teacher') => redirect()->route('teacherEspace'),
-            auth()->user()->hasRole('student') => redirect()->route('studentEspace'),
+            Auth::user()->hasRole('admin') => redirect()->route('adminEspace'),
+            Auth::user()->hasRole('teacher') => redirect()->route('teacherEspace'),
+            Auth::user()->hasRole('student') => redirect()->route('studentEspace'),
             default => redirect()->route('login')
         };
     })->name('dashboard');
@@ -79,7 +80,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::get('/pdf/viewer/{filename}', [PdfController::class, 'viewerPpt'])->name('pdf.viewerppt');
 
-    Route::get('/documents/serve/{id}', [DocumentController::class, 'serve'])->name('document.serve');
+    Route::get('/documents/serve/{document}', [DocumentController::class, 'serve'])->name('document.serve');
 
 
     /*

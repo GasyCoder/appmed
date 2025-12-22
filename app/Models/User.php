@@ -66,18 +66,12 @@ class User extends Authenticatable
     // ─── RELATIONS ────────────────────────────────────────────────────────────────
     //
 
-    /**
-     * Niveau "one-to-one" via users.niveau_id
-     */
-    public function niveau(): BelongsTo
+    public function niveau()
     {
         return $this->belongsTo(Niveau::class, 'niveau_id');
     }
 
-    /**
-     * Parcours "one-to-one" via users.parcour_id
-     */
-    public function parcour(): BelongsTo
+    public function parcour()
     {
         return $this->belongsTo(Parcour::class, 'parcour_id');
     }
@@ -431,24 +425,25 @@ class User extends Authenticatable
      */
     public function updateHeuresProgramme(
         Programme $programme,
-        int $heuresCm = null,
-        int $heuresTd = null,
-        int $heuresTp = null,
-        bool $isResponsable = null,
-        string $note = null
+        ?int $heuresCm = null,
+        ?int $heuresTd = null,
+        ?int $heuresTp = null,
+        ?bool $isResponsable = null,
+        ?string $note = null
     ): void {
         $updateData = array_filter([
-            'heures_cm' => $heuresCm,
-            'heures_td' => $heuresTd,
-            'heures_tp' => $heuresTp,
+            'heures_cm'      => $heuresCm,
+            'heures_td'      => $heuresTd,
+            'heures_tp'      => $heuresTp,
             'is_responsable' => $isResponsable,
-            'note' => $note,
-        ], fn($value) => $value !== null);
+            'note'           => $note,
+        ], static fn ($value) => $value !== null);
 
-        if (!empty($updateData)) {
+        if ($updateData !== []) {
             $this->programmes()->updateExistingPivot($programme->id, $updateData);
         }
     }
+
 
     /**
      * Récupère les programmes par semestre pour cet enseignant

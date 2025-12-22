@@ -2,28 +2,29 @@
 
 namespace App\Livewire\Teacher;
 
+use App\Models\Document;
+use App\Models\DocumentView;
 use App\Models\Niveau;
 use App\Models\Parcour;
 use App\Models\Semestre;
-use Livewire\Component;
-use App\Models\Document;
-use Livewire\WithPagination;
-use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 class Documents extends Component
 {
-    use WithFileUploads;
-    use WithPagination;
-    use LivewireAlert;
+    use WithPagination, LivewireAlert;
 
+    // Filtres
     public $search = '';
     public $filterNiveau = '';
     public $filterParcour = '';
     public $filterSemestre = '';
     public $filterStatus = '';
+
+    // Tri
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
 
@@ -37,139 +38,65 @@ class Documents extends Component
         'sortDirection' => ['except' => 'desc'],
     ];
 
-    // CORRIGÉ : Ajouter les listeners pour les événements de rafraîchissement
-    protected $listeners = [
-        'refresh' => '$refresh',
-        'document-updated' => 'handleDocumentUpdated',
-        'document-created' => 'handleDocumentCreated',
-        'document-deleted' => 'handleDocumentDeleted'
+    // Champs autorisés au tri (sécurité)
+    protected array $sortable = [
+        'title',
+        'is_actif',
+        'created_at',
+        'view_count',
     ];
 
-    public function mount()
+    public function updated($propertyName)
     {
-        $this->resetPage();
-    }
-
-    // NOUVEAU : Gérer les événements de mise à jour
-    public function handleDocumentUpdated()
-    {
-        $this->resetPage();
-        $this->alert('success', 'Document mis à jour avec succès', [
-            'position' => 'top-end',
-            'timer' => 3000,
-            'toast' => true,
-        ]);
-        
-        // Forcer le rafraîchissement
-        $this->dispatch('$refresh');
-    }
-
-    public function handleDocumentCreated()
-    {
-        $this->resetPage();
-        $this->alert('success', 'Document créé avec succès', [
-            'position' => 'top-end',
-            'timer' => 3000,
-            'toast' => true,
-        ]);
-    }
-
-    public function handleDocumentDeleted()
-    {
-        $this->resetPage();
-        $this->alert('success', 'Document supprimé avec succès', [
-            'position' => 'top-end',
-            'timer' => 3000,
-            'toast' => true,
-        ]);
-    }
-
-    public function updatedSearch()
-    {
-        $this->resetPage();
-    }
-
-    public function updatedFilterNiveau()
-    {
-        $this->resetPage();
-        if ($this->filterNiveau === '') {
-            $this->filterSemestre = '';
+        if (in_array($propertyName, ['search', 'filterNiveau', 'filterParcour', 'filterSemestre', 'filterStatus'])) {
+            $this->resetPage();
         }
-    }
-
-    public function updatedFilterParcour()
-    {
-        $this->resetPage();
-    }
-
-    public function updatedFilterSemestre()
-    {
-        $this->resetPage();
-    }
-
-    public function updatedFilterStatus()
-    {
-        $this->resetPage();
     }
 
     public function sortBy($field)
     {
+        if (!in_array($field, $this->sortable, true)) {
+            $field = 'created_at';
+        }
+
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
             $this->sortField = $field;
-            $this->sortDirection = 'asc';
+
+            // Par défaut: desc pour dates & compteurs, asc pour le titre
+            $this->sortDirection = in_array($field, ['created_at', 'view_count'], true) ? 'desc' : 'asc';
         }
-        
-        // Forcer le rechargement après tri
-        $this->resetPage();
     }
 
     public function toggleStatus($documentId)
     {
         try {
-            $document = Document::find($documentId);
-            
-            if (!$document || $document->uploaded_by !== auth()->id()) {
-                $this->alert('error', 'Document non trouvé ou accès non autorisé', [
-                    'position' => 'center',
+            $document = Document::findOrFail($documentId);
+
+            if ($document->uploaded_by !== Auth::id()) {
+                $this->alert('error', 'Accès refusé', [
+                    'position' => 'top-end',
                     'timer' => 3000,
                     'toast' => true,
                 ]);
                 return;
             }
 
-            $newStatus = !$document->is_actif;
-            $document->update(['is_actif' => $newStatus]);
-            
-            $statusText = $newStatus ? 'partagé' : 'non partagé';
-            
-            $this->alert('success', "Document maintenant {$statusText}", [
+            $document->update(['is_actif' => !$document->is_actif]);
+
+            $this->alert('success', 'Statut mis à jour', [
                 'position' => 'top-end',
                 'timer' => 2000,
                 'toast' => true,
+                'text' => $document->is_actif ? 'Document partagé' : 'Document non partagé',
             ]);
-            
-            // Émettre l'événement de mise à jour
-            $this->dispatch('document-updated');
-            
-            Log::info("Document status toggled", [
-                'document_id' => $documentId,
-                'new_status' => $newStatus,
-                'user_id' => auth()->id()
-            ]);
-            
         } catch (\Exception $e) {
-            Log::error('Error toggling document status', [
-                'document_id' => $documentId,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id()
-            ]);
-            
-            $this->alert('error', 'Erreur lors de la mise à jour du statut', [
-                'position' => 'center',
+            $this->alert('error', 'Erreur', [
+                'position' => 'top-end',
                 'timer' => 3000,
                 'toast' => true,
+                'text' => 'Impossible de modifier le statut',
             ]);
         }
     }
@@ -179,138 +106,85 @@ class Documents extends Component
         try {
             $document = Document::findOrFail($documentId);
 
-            if ($document->uploaded_by !== auth()->id()) {
-                $this->alert('error', 'Accès non autorisé', [
-                    'position' => 'center',
+            if ($document->uploaded_by !== Auth::id()) {
+                $this->alert('error', 'Accès refusé', [
+                    'position' => 'top-end',
                     'timer' => 3000,
                     'toast' => true,
                 ]);
                 return;
             }
 
-            // CORRIGÉ : Supprimer tous les documents avec le même file_path (pour gérer la logique niveau/semestre)
-            $documentsToDelete = Document::where('file_path', $document->file_path)
-                ->where('uploaded_by', auth()->id())
-                ->get();
-
-            $deletedCount = 0;
             $filePath = $document->file_path;
 
-            foreach ($documentsToDelete as $doc) {
-                $doc->delete();
-                $deletedCount++;
-            }
+            // Supprimer l'enregistrement
+            $document->delete();
 
-            // Supprimer le fichier physique une seule fois
-            if (Storage::disk('public')->exists($filePath)) {
+            // Supprimer le fichier physique s'il n'est plus utilisé
+            if ($filePath && !Document::where('file_path', $filePath)->exists()) {
                 Storage::disk('public')->delete($filePath);
-                Log::info("Physical file deleted: {$filePath}");
             }
 
-            Log::info("Documents deleted", [
-                'file_path' => $filePath,
-                'deleted_count' => $deletedCount,
-                'user_id' => auth()->id()
-            ]);
-
-            $this->alert('success', "{$deletedCount} entrée(s) supprimée(s) avec succès", [
+            $this->alert('success', 'Document supprimé', [
                 'position' => 'top-end',
                 'timer' => 3000,
                 'toast' => true,
             ]);
-
-            // Émettre l'événement de suppression
-            $this->dispatch('document-deleted');
-            
         } catch (\Exception $e) {
-            Log::error('Error deleting document', [
-                'document_id' => $documentId,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id()
-            ]);
-            
-            $this->alert('error', 'Erreur lors de la suppression: ' . $e->getMessage(), [
-                'position' => 'center',
-                'timer' => 5000,
-                'toast' => false,
+            $this->alert('error', 'Erreur', [
+                'position' => 'top-end',
+                'timer' => 3000,
+                'toast' => true,
+                'text' => 'Impossible de supprimer le document',
             ]);
         }
-    }
-
-    public function getSemestres()
-    {
-        if ($this->filterNiveau) {
-            return Semestre::where('niveau_id', $this->filterNiveau)
-                          ->where('status', true)
-                          ->orderBy('name')
-                          ->get();
-        }
-        return Semestre::where('status', true)->orderBy('name')->get();
-    }
-
-    // NOUVEAU : Méthode pour rafraîchir manuellement
-    public function refreshDocuments()
-    {
-        $this->resetPage();
-        $this->dispatch('$refresh');
-        
-        $this->alert('info', 'Liste rafraîchie', [
-            'position' => 'top-end',
-            'timer' => 2000,
-            'toast' => true,
-        ]);
     }
 
     public function render()
     {
-        // CORRIGÉ : Améliorer la requête avec rechargement forcé des relations
-        $documents = Document::query()
-            ->where('uploaded_by', auth()->id())
-            ->when($this->search, function ($query) {
-                return $query->where('title', 'like', '%' . $this->search . '%');
-            })
-            ->when($this->filterNiveau, function ($query) {
-                return $query->where('niveau_id', $this->filterNiveau);
-            })
-            ->when($this->filterParcour, function ($query) {
-                return $query->where('parcour_id', $this->filterParcour);
-            })
-            ->when($this->filterSemestre, function ($query) {
-                return $query->where('semestre_id', $this->filterSemestre);
-            })
-            ->when($this->filterStatus !== '', function ($query) {
-                return $query->where('is_actif', $this->filterStatus);
-            })
-            // CORRIGÉ : Recharger systématiquement les relations
-            ->with(['niveau:id,name', 'parcour:id,name', 'semestre:id,name'])
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate(10);
+        $baseQuery = Document::query()
+            ->where('uploaded_by', Auth::id());
 
-        // CORRIGÉ : Ajouter la propriété formatted_size à chaque document
-        $documents->getCollection()->transform(function ($document) {
-            $document->formatted_size = $this->formatFileSize($document->file_size);
-            return $document;
-        });
+        // Liste paginée (avec vues uniques par doc)
+        $query = (clone $baseQuery)
+            ->when($this->search, fn ($q) => $q->where('title', 'like', "%{$this->search}%"))
+            ->when($this->filterNiveau, fn ($q) => $q->where('niveau_id', $this->filterNiveau))
+            ->when($this->filterParcour, fn ($q) => $q->where('parcour_id', $this->filterParcour))
+            ->when($this->filterSemestre, fn ($q) => $q->where('semestre_id', $this->filterSemestre))
+            ->when($this->filterStatus !== '', fn ($q) => $q->where('is_actif', $this->filterStatus))
+            ->with(['niveau', 'parcour', 'semestre'])
+            ->withCount('views') // IMPORTANT => $document->views_count
+            ->orderBy(
+                in_array($this->sortField, $this->sortable, true) ? $this->sortField : 'created_at',
+                $this->sortDirection === 'asc' ? 'asc' : 'desc'
+            );
+
+        $documents = $query->paginate(10);
+
+        // Stats (dont VUES)
+        $stats = [
+            'total'     => (clone $baseQuery)->count(),
+            'shared'    => (clone $baseQuery)->where('is_actif', true)->count(),
+            'notShared' => (clone $baseQuery)->where('is_actif', false)->count(),
+            'recent'    => (clone $baseQuery)->where('created_at', '>=', now()->subDays(7))->count(),
+
+            // ✅ total des ouvertures (hits) par étudiants
+            'views'     => (clone $baseQuery)->sum('view_count'),
+
+            // (optionnel) total des vues uniques (1 étudiant = 1 vue unique par document)
+            'uniqueViews' => DocumentView::query()
+                ->whereHas('document', fn ($q) => $q->where('uploaded_by', Auth::id()))
+                ->count(),
+        ];
 
         return view('livewire.teacher.documents', [
+            'documents' => $documents,
+            'stats' => $stats,
             'niveaux' => Niveau::where('status', true)->orderBy('name')->get(),
             'parcours' => Parcour::where('status', true)->orderBy('name')->get(),
-            'semestres' => $this->getSemestres(),
-            'myDocuments' => $documents,
-            'uploadCount' => Document::where('uploaded_by', auth()->id())->count(),
-            'totalDownloads' => Document::where('uploaded_by', auth()->id())->sum('download_count'),
+            'semestres' => $this->filterNiveau
+                ? Semestre::where('niveau_id', $this->filterNiveau)->where('status', true)->orderBy('name')->get()
+                : Semestre::where('status', true)->orderBy('name')->get(),
         ]);
-    }
-
-    // NOUVEAU : Méthode pour formater la taille des fichiers
-    private function formatFileSize($bytes)
-    {
-        if ($bytes >= 1048576) {
-            return round($bytes / 1048576, 2) . ' MB';
-        } elseif ($bytes >= 1024) {
-            return round($bytes / 1024, 2) . ' KB';
-        } else {
-            return $bytes . ' octets';
-        }
     }
 }

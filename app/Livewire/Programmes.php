@@ -7,6 +7,7 @@ use App\Models\Semestre;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\On;
 
 class Programmes extends Component
 {
@@ -38,6 +39,21 @@ class Programmes extends Component
     {
         $this->resetPage();
         $this->semestre = null;
+    }
+
+    public function toggleShowEnseignants()
+    {
+        $this->showEnseignants = !$this->showEnseignants;
+    }
+
+    // Écouter l'événement d'assignation
+    #[On('enseignantAssigned')]
+    #[On('programmeUpdated')]
+    #[On('programmeDeleted')]
+    public function refreshProgrammes()
+    {
+        // Rafraîchir la liste
+        $this->render();
     }
 
     public function getSemestresProperty()
@@ -113,7 +129,7 @@ class Programmes extends Component
         return [
             'totalUE' => $baseQuery->clone()->ues()->count(),
             'totalEC' => $baseQuery->clone()->ecs()->count(),
-            'totalEnseignants' => User::role('teacher')->active()->count(),
+            'totalEnseignants' => User::activeTeachers()->count(),
             'ecSansEnseignant' => $baseQuery->clone()->ecs()->withoutEnseignants()->count(),
             
             // Stats par année
@@ -144,10 +160,5 @@ class Programmes extends Component
                 'ec' => $baseQuery->clone()->ecs()->bySemestre(4)->count(),
             ],
         ];
-    }
-
-    public function toggleShowEnseignants()
-    {
-        $this->showEnseignants = !$this->showEnseignants;
     }
 }

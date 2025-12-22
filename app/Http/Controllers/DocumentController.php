@@ -8,33 +8,28 @@ use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
-    public function serve($id)
+    public function serve(Document $document)
     {
-        $document = Document::findOrFail($id);
+        $user = Auth::user();
+        abort_unless($user, 401);
 
-        // Vérifier l'accès (basé sur la méthode canAccess du modèle)
-        if (!$document->canAccess(Auth::user())) {
-            abort(403, 'Interdit');
+        // Sécurité d'accès (ton modèle a déjà canAccess)
+        abort_unless($document->canAccess($user), 403);
+
+        // ✅ Compter la vue UNIQUEMENT pour les étudiants (unique par étudiant grâce à document_views + registerView())
+        if ($user->hasRole('student')) {
+            $document->registerView(); // incrémente view_count seulement si 1ère vue de cet étudiant
         }
 
-        // Vérifier l'existence du fichier
-        if (!Storage::disk('public')->exists($document->file_path)) {
-            abort(404, 'Fichier non trouvé');
-        }
+        // Vérifier que le fichier existe
+        abort_unless($document->fileExists(), 404);
 
-        // Vérifier la lisibilité
-        $filePath = Storage::disk('public')->path($document->file_path);
-        if (!is_readable($filePath)) {
-            abort(500, 'Fichier non lisible');
-        }
+        $absolutePath = Storage::disk('public')->path($document->file_path);
+        $mime = $document->file_type ?: 'application/octet-stream';
 
-        // Enregistrer une vue
-        $document->registerView();
-
-        // Servir le fichier
-        return response()->file($filePath, [
-            'Content-Type' => $document->file_type,
-            'Content-Disposition' => 'inline; filename="' . $document->getDisplayFilename() . '"',
+        return response()->file($absolutePath, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="'.$document->getDisplayFilename().'"',
         ]);
     }
 }

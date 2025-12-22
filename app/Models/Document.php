@@ -29,6 +29,7 @@ class Document extends Model
         'original_filename',
         'original_extension',
         'converted_from',
+        'programme_id',
         'converted_at'
     ];
 
@@ -40,6 +41,11 @@ class Document extends Model
         'view_count' => 'integer',
         'converted_at' => 'datetime',
     ];
+
+    public function programme()
+    {
+        return $this->belongsTo(Programme::class);
+    }
 
     // Relations
     public function teacher()
@@ -348,30 +354,31 @@ class Document extends Model
 
     public function registerView(): void
     {
-        if (Auth::check()) {
-            try {
-                // Vérifier que le document est accessible
-                if (!$this->canAccess(Auth::user())) {
-                    Log::warning("Attempted view registration for inaccessible document {$this->id} by user " . Auth::id());
-                    return;
-                }
-
-                // Créer une nouvelle vue uniquement si elle n'existe pas déjà
-                $view = $this->views()->firstOrCreate([
-                    'user_id' => Auth::id()
-                ]);
-
-                // Mettre à jour le compteur total de vues seulement si c'est une nouvelle vue
-                if ($view->wasRecentlyCreated) {
-                    $this->increment('view_count');
-                    Log::info("New view registered for document {$this->id} by user " . Auth::id());
-                }
-
-            } catch (\Exception $e) {
-                Log::error('Error registering document view: ' . $e->getMessage());
-            }
+        if (!Auth::check()) {
+            return;
         }
+
+        $user = Auth::user();
+
+        // On ne compte que les vues des étudiants
+        if (!$user->hasRole('student')) {
+            return;
+        }
+
+        // Vérifier l'accès
+        if (!$this->canAccess($user)) {
+            return;
+        }
+
+        // 1) Vue "unique" (1 fois par étudiant) => table document_views (unique index)
+        $this->views()->firstOrCreate([
+            'user_id' => $user->id,
+        ]);
+
+        // 2) Compteur global "hits" (chaque ouverture) => colonne documents.view_count
+        $this->increment('view_count');
     }
+
 
     public function getFormattedSizeAttribute()
     {
@@ -407,5 +414,19 @@ class Document extends Model
     public function scopeByOriginalFormat($query, $format)
     {
         return $query->where('original_extension', $format);
+    }
+
+
+    public function getFileSizeFormattedAttribute()
+    {
+        $bytes = $this->file_size;
+        
+        if ($bytes >= 1048576) {
+            return round($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return round($bytes / 1024, 2) . ' KB';
+        }
+        
+        return $bytes . ' octets';
     }
 }

@@ -5,240 +5,170 @@ namespace App\Livewire\Teacher;
 use App\Models\Document;
 use App\Models\Niveau;
 use App\Models\Parcour;
-use App\Models\Semestre;
+use App\Models\Programme;
 use App\Services\PdfConversionService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Livewire\Attributes\Rule;
 
 class DocumentEdit extends Component
 {
-    use WithFileUploads;
-    use LivewireAlert;
+    use WithFileUploads, LivewireAlert;
 
     public Document $document;
-    public $title;
-    public $currentDateTime;
-    public $currentUser;
 
-    #[Rule(['required', 'exists:niveaux,id'])]
-    public $niveau_id = '';
+    public string $title = '';
+    public string $niveau_id = '';
+    public ?int $parcour_id = null; // auto (un seul parcours)
+    public string $ue_id = '';
+    public string $ec_id = '';
 
-    #[Rule(['required', 'exists:parcours,id'])]
-    public $parcour_id = '';
+    public bool $is_actif = false;
 
-    public $is_actif;
-    public $newFile;
-    public $showNewFile = false;
-    public $semestres_selected = [];
+    public $newFile = null;
+    public bool $showNewFile = false;
 
-    protected function rules()
-    {
-        return [
-            'title' => 'required|string|min:3|max:255',
-            'newFile' => 'nullable|file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpeg,jpg,png',
-            'niveau_id' => 'required|exists:niveaux,id',
-            'parcour_id' => 'required|exists:parcours,id',
-            'semestres_selected' => 'required|array|min:1',
-        ];
-    }
-
-    protected function messages()
-    {
-        return [
-            'title.required' => 'Le titre est requis',
-            'title.min' => 'Le titre doit contenir au moins 3 caractères',
-            'title.max' => 'Le titre ne peut pas dépasser 255 caractères',
-            'niveau_id.required' => 'Le niveau est requis',
-            'niveau_id.exists' => 'Niveau invalide',
-            'parcour_id.required' => 'Le parcours est requis',
-            'parcour_id.exists' => 'Parcours invalide',
-            'newFile.file' => 'Fichier invalide',
-            'newFile.max' => 'Taille maximale : 10MB',
-            'newFile.mimes' => 'Types acceptés : PDF, Word, Excel, PowerPoint, Images',
-            'semestres_selected.required' => 'Au moins un semestre actif est requis.',
-            'semestres_selected.min' => 'Au moins un semestre actif est requis.',
-        ];
-    }
-
-    private function getConversionService(): PdfConversionService
-    {
-        return app(PdfConversionService::class);
-    }
-
-    private function sanitizeFilename($filename)
-    {
-        $pathInfo = pathinfo($filename);
-        $basename = $pathInfo['filename'] ?? $filename;
-        $extension = $pathInfo['extension'] ?? '';
-
-        $forbiddenChars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*', '[', ']', '{', '}'];
-        $cleanBasename = str_replace($forbiddenChars, '', $basename);
-        $cleanBasename = str_replace(' ', '_', $cleanBasename);
-        $cleanBasename = preg_replace('/[^\w\-\.]/', '_', $cleanBasename);
-        $cleanBasename = preg_replace('/_+/', '_', $cleanBasename);
-        $cleanBasename = trim($cleanBasename, '_');
-
-        if (strlen($cleanBasename) > 100) {
-            $cleanBasename = substr($cleanBasename, 0, 100);
-        }
-
-        if (empty($cleanBasename)) {
-            $cleanBasename = 'document_' . time();
-        }
-
-        $result = $extension ? $cleanBasename . '.' . $extension : $cleanBasename;
-        Log::info("Filename sanitized: '{$filename}' -> '{$result}'");
-        return $result;
-    }
-
-    private function createSafeTemporaryFilename($originalFile, $title = null)
-    {
-        $extension = strtolower($originalFile->getClientOriginalExtension());
-        $baseName = $title ? Str::slug($title) : 'temp_file';
-        $timestamp = now()->format('Y_m_d_H_i_s');
-        $random = Str::random(8);
-        return "{$baseName}_{$timestamp}_{$random}.{$extension}";
-    }
-
-    /**
-     * Renommer un fichier existant avec un nouveau titre
-     */
-    private function renameExistingFile($oldFilePath, $newTitle)
-    {
-        try {
-            // Vérifier que l'ancien fichier existe
-            if (!Storage::disk('public')->exists($oldFilePath)) {
-                Log::error("Cannot rename: old file does not exist: {$oldFilePath}");
-                return null;
-            }
-
-            // Extraire l'extension de l'ancien fichier
-            $oldExtension = strtolower(pathinfo($oldFilePath, PATHINFO_EXTENSION));
-            
-            // Créer le nouveau nom de fichier avec le nouveau titre
-            $cleanTitle = $this->sanitizeFilename($newTitle);
-            $newFileName = time() . '_' . Str::slug($cleanTitle) . '_' . Str::random(8) . '.' . $oldExtension;
-            $newFilePath = 'documents/' . $newFileName;
-
-            // Obtenir les chemins absolus
-            $oldAbsolutePath = Storage::disk('public')->path($oldFilePath);
-            $newAbsolutePath = Storage::disk('public')->path($newFilePath);
-
-            // Renommer le fichier physique
-            if (rename($oldAbsolutePath, $newAbsolutePath)) {
-                Log::info("File successfully renamed", [
-                    'old_title' => $this->document->title,
-                    'new_title' => $newTitle,
-                    'old_path' => $oldFilePath,
-                    'new_path' => $newFilePath
-                ]);
-                
-                return $newFilePath;
-            } else {
-                Log::error("Failed to rename file physically", [
-                    'old_path' => $oldAbsolutePath,
-                    'new_path' => $newAbsolutePath
-                ]);
-                return null;
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Error renaming existing file', [
-                'old_path' => $oldFilePath,
-                'new_title' => $newTitle,
-                'error' => $e->getMessage()
-            ]);
-            return null;
-        }
-    }
-
-    public function mount(Document $document)
+    public function mount(Document $document): void
     {
         abort_if(
-            !Auth::user()?->roles->contains('name', 'teacher') ||
-            $document->uploaded_by !== Auth::id(),
+            !Auth::check() ||
+            !Auth::user()->hasRole('teacher') ||
+            (int) $document->uploaded_by !== (int) Auth::id(),
             403
         );
 
         $this->document = $document;
-        $this->title = $document->title;
-        $this->niveau_id = $document->niveau_id;
-        $this->parcour_id = $document->parcour_id;
-        $this->is_actif = $document->is_actif;
-        $this->currentDateTime = now()->format('Y-m-d H:i:s');
-        $this->currentUser = Auth::user()->name;
-        $this->semestres_selected = $document->semestre_id ? [$document->semestre_id] : [];
+
+        $this->title = (string) $document->title;
+        $this->niveau_id = (string) $document->niveau_id;
+        $this->parcour_id = $document->parcour_id ?: Parcour::where('status', true)->orderBy('name')->value('id');
+        $this->is_actif = (bool) $document->is_actif;
+
+        // Précharger UE/EC depuis programme_id
+        if ($document->programme_id) {
+            $p = Programme::query()
+                ->select('id', 'type', 'parent_id')
+                ->find($document->programme_id);
+
+            if ($p) {
+                if ($p->type === 'EC' && $p->parent_id) {
+                    $this->ue_id = (string) $p->parent_id;
+                    $this->ec_id = (string) $p->id;
+                } else {
+                    $this->ue_id = (string) $p->id;
+                    $this->ec_id = '';
+                }
+            }
+        }
     }
 
-    public function getSemestresActifsProperty()
+    protected function rules(): array
     {
-        if (!$this->niveau_id) {
-            return collect();
-        }
+        return [
+            'title' => 'required|string|min:3|max:255',
+            'niveau_id' => 'required|exists:niveaux,id',
 
-        return Semestre::where('niveau_id', $this->niveau_id)
-            ->where('is_active', true)
-            ->where('status', true)
-            ->orderBy('name')
-            ->get();
+            // UE obligatoire, EC optionnel
+            'ue_id' => 'required|exists:programmes,id',
+            'ec_id' => 'nullable|exists:programmes,id',
+
+            'is_actif' => 'boolean',
+            'newFile' => 'nullable|file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpeg,jpg,png',
+        ];
+    }
+
+    protected function messages(): array
+    {
+        return [
+            'title.required' => 'Le titre est requis.',
+            'title.min' => 'Le titre doit contenir au moins 3 caractères.',
+            'title.max' => 'Le titre ne peut pas dépasser 255 caractères.',
+
+            'niveau_id.required' => 'Le niveau est requis.',
+            'niveau_id.exists' => 'Niveau invalide.',
+
+            'ue_id.required' => 'Veuillez choisir une UE.',
+            'ue_id.exists' => 'UE invalide.',
+
+            'ec_id.exists' => 'EC invalide.',
+
+            'newFile.max' => 'Taille maximale : 10MB.',
+            'newFile.mimes' => 'Types acceptés : PDF, Word, Excel, PowerPoint, Images.',
+        ];
     }
 
     public function getTeacherNiveauxProperty()
     {
         return Niveau::query()
-            ->whereHas('teachers', fn($q) => $q->where('niveau_user.user_id', Auth::id()))
+            ->whereHas('teachers', fn ($q) => $q->where('niveau_user.user_id', Auth::id()))
             ->where('status', true)
             ->orderBy('name')
             ->get();
     }
 
-    public function getTeacherParcoursProperty()
+    public function getUesProperty()
     {
-        if (!$this->niveau_id) {
-            return collect();
+        if (!$this->niveau_id) return collect();
+
+        $baseQuery = Programme::query()
+            ->where('type', 'UE')
+            ->where('niveau_id', (int) $this->niveau_id)
+            ->where('status', true)
+            ->orderBy('order');
+
+        // Si vos UEs ont parcour_id et que vous voulez filtrer : on tente, puis fallback si vide.
+        $withParcour = (clone $baseQuery);
+        if ($this->parcour_id) {
+            $withParcour->where('parcour_id', (int) $this->parcour_id);
         }
 
-        return Parcour::query()
-            ->whereHas('teachers', fn($q) => $q->where('parcour_user.user_id', Auth::id()))
+        $ues = $withParcour->get();
+        if ($ues->isEmpty()) {
+            $ues = $baseQuery->get();
+        }
+
+        return $ues;
+    }
+
+    public function getEcsProperty()
+    {
+        if (!$this->ue_id) return collect();
+
+        return Programme::query()
+            ->where('type', 'EC')
+            ->where('parent_id', (int) $this->ue_id)
             ->where('status', true)
-            ->whereExists(fn($query) => $query->select(DB::raw(1))
-                ->from('niveau_user')
-                ->where('user_id', Auth::id())
-                ->where('niveau_id', $this->niveau_id))
-            ->orderBy('name')
+            ->orderBy('order')
             ->get();
     }
 
-    public function updatedNiveauId()
+    public function updatedNiveauId(): void
     {
-        $this->parcour_id = '';
-        $this->semestres_selected = [];
-        if ($this->niveau_id) {
-            $availableParcours = $this->teacherParcours;
-            if ($availableParcours->isNotEmpty()) {
-                $this->parcour_id = $availableParcours->first()->id;
-            }
-            $this->semestres_selected = $this->semestresActifs->pluck('id')->toArray();
-        }
-        $this->dispatch('parcours-updated');
+        // Reset UE/EC quand on change de niveau
+        $this->ue_id = '';
+        $this->ec_id = '';
     }
 
-    public function updatedNewFile()
+    public function updatedUeId(): void
+    {
+        // Reset EC quand UE change
+        $this->ec_id = '';
+    }
+
+    public function updatedNewFile(): void
     {
         try {
             $this->validateOnly('newFile');
             $this->showNewFile = true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->newFile = null;
             $this->showNewFile = false;
-            $this->alert('error', 'Le type de fichier n\'est pas accepté', [
+
+            $this->alert('error', 'Fichier non accepté', [
                 'position' => 'center',
                 'timer' => 3000,
                 'toast' => true,
@@ -246,247 +176,213 @@ class DocumentEdit extends Component
         }
     }
 
-    public function removeNewFile()
+    public function removeNewFile(): void
     {
         $this->newFile = null;
         $this->showNewFile = false;
     }
 
-    protected function handleFileUpload()
+    private function conversionService(): PdfConversionService
     {
-        if (!$this->newFile) {
+        return app(PdfConversionService::class);
+    }
+
+    private function renameExistingFile(string $oldFilePath, string $newTitle): ?string
+    {
+        if (!Storage::disk('public')->exists($oldFilePath)) {
             return null;
         }
 
+        $oldExtension = strtolower(pathinfo($oldFilePath, PATHINFO_EXTENSION));
+        $newFileName = time() . '_' . Str::slug($newTitle) . '_' . Str::random(8) . '.' . $oldExtension;
+        $newFilePath = 'documents/' . $newFileName;
+
+        $oldAbs = Storage::disk('public')->path($oldFilePath);
+        $newAbs = Storage::disk('public')->path($newFilePath);
+
+        try {
+            if (@rename($oldAbs, $newAbs)) {
+                return $newFilePath;
+            }
+        } catch (\Throwable $e) {
+            // ignore -> return null
+        }
+
+        return null;
+    }
+
+    private function handleFileUpload(): array
+    {
         $originalExtension = strtolower($this->newFile->getClientOriginalExtension());
-        $conversionService = $this->getConversionService();
-        $needsConversion = $conversionService->isConvertibleFormat($this->newFile->getClientOriginalName());
+        $needsConversion = in_array($originalExtension, ['doc', 'docx', 'ppt', 'pptx'], true);
 
-        $cleanTitle = $this->sanitizeFilename($this->title);
-        $fileName = time() . '_' . Str::slug($cleanTitle) . '_' . Str::random(8) . ($needsConversion ? '.pdf' : '.' . $originalExtension);
-        $filePath = $needsConversion ? null : $this->newFile->storeAs('documents', $fileName, 'public');
+        if ($needsConversion) {
+            return $this->convertToPdf($this->newFile, $this->title, $originalExtension);
+        }
 
-        $fileData = [
+        $fileName = time() . '_' . Str::slug($this->title) . '_' . Str::random(8) . '.' . $originalExtension;
+        $filePath = $this->newFile->storeAs('documents', $fileName, 'public');
+
+        return [
             'file_path' => $filePath,
             'protected_path' => $filePath,
             'file_type' => $this->newFile->getMimeType(),
-            'file_size' => $this->newFile->getSize(),
+            'file_size' => Storage::disk('public')->size($filePath),
+
             'original_filename' => $this->newFile->getClientOriginalName(),
             'original_extension' => $originalExtension,
+
+            'converted_from' => null,
+            'converted_at' => null,
         ];
-
-        if ($needsConversion) {
-            $convertedPath = $this->convertToPdfUsingService($this->newFile, $cleanTitle);
-            if ($convertedPath) {
-                $fileData['file_path'] = $convertedPath;
-                $fileData['protected_path'] = $convertedPath;
-                $fileData['file_type'] = 'application/pdf';
-                $fileData['file_size'] = Storage::disk('public')->size($convertedPath);
-                $fileData['converted_from'] = $originalExtension;
-                $fileData['converted_at'] = now();
-            }
-        }
-
-        if (!$fileData['file_path']) {
-            throw new \Exception('Échec du stockage ou de la conversion du fichier.');
-        }
-
-        return $fileData;
     }
 
-    protected function convertToPdfUsingService($file, $title)
+    private function convertToPdf($file, string $title, string $originalExtension): array
     {
-        $tempPath = null;
-        $absoluteTempPath = null;
+        $tempPath = $file->storeAs('temp', Str::random(10) . '.' . $originalExtension);
+        $absoluteTempPath = storage_path('app/' . $tempPath);
 
         try {
-            if (!$file->isValid()) {
-                throw new \Exception("Le fichier uploadé est invalide: " . $file->getClientOriginalName());
-            }
-
-            $fileSize = $file->getSize();
-            if ($fileSize === 0) {
-                throw new \Exception("Le fichier uploadé est vide: " . $file->getClientOriginalName());
-            }
-
-            $safeFileName = $this->createSafeTemporaryFilename($file, $title);
-            $tempDir = storage_path('app/temp');
-            $absoluteTempPath = $tempDir . '/' . $safeFileName;
-
-            if (!file_exists($tempDir)) {
-                if (!mkdir($tempDir, 0755, true)) {
-                    throw new \Exception("Impossible de créer le dossier temporaire: {$tempDir}");
-                }
-            }
-
-            if (!is_writable($tempDir)) {
-                if (!chmod($tempDir, 0755)) {
-                    throw new \Exception("Dossier temporaire non accessible en écriture: {$tempDir}");
-                }
-            }
-
-            if (!copy($file->getPathname(), $absoluteTempPath)) {
-                throw new \Exception("Échec du déplacement du fichier temporaire: {$safeFileName}");
-            }
-
-            if (!file_exists($absoluteTempPath) || !is_readable($absoluteTempPath) || filesize($absoluteTempPath) === 0) {
-                throw new \Exception("Validation du fichier temporaire échouée: {$absoluteTempPath}");
-            }
-
             $outputDir = storage_path('app/public/documents');
-            $pdfFileName = time() . '_' . Str::slug($title) . '_' . Str::random(8) . '.pdf';
-
             if (!file_exists($outputDir)) {
-                if (!mkdir($outputDir, 0755, true)) {
-                    throw new \Exception("Impossible de créer le dossier de sortie: {$outputDir}");
-                }
+                mkdir($outputDir, 0755, true);
             }
 
-            if (!is_writable($outputDir)) {
-                if (!chmod($outputDir, 0755)) {
-                    throw new \Exception("Dossier de sortie non accessible en écriture: {$outputDir}");
-                }
-            }
+            $pdfFileName = time() . '_' . Str::slug($title) . '_' . Str::random(8) . '.pdf';
+            $this->conversionService()->convertToPdf($absoluteTempPath, $outputDir, $pdfFileName);
 
-            if (file_exists($outputDir . '/' . $pdfFileName)) {
-                $pdfFileName = time() . '_' . Str::slug($title) . '_' . Str::random(8) . '.pdf';
-            }
+            $finalPath = 'documents/' . $pdfFileName;
 
-            $convertedFilePath = $this->getConversionService()->convertToPdf(
-                $absoluteTempPath,
-                $outputDir,
-                $pdfFileName
-            );
+            return [
+                'file_path' => $finalPath,
+                'protected_path' => $finalPath,
+                'file_type' => 'application/pdf',
+                'file_size' => Storage::disk('public')->size($finalPath),
 
-            if (!file_exists($convertedFilePath)) {
-                throw new \Exception("La conversion a échoué - fichier PDF non trouvé: {$convertedFilePath}");
-            }
+                'original_filename' => $file->getClientOriginalName(),
+                'original_extension' => $originalExtension,
 
-            return 'documents/' . $pdfFileName;
-
-        } catch (\Exception $e) {
-            Log::error('Conversion error in DocumentEdit:', [
-                'file' => $title,
-                'temp_path' => $absoluteTempPath ?? 'unknown',
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            throw $e;
+                'converted_from' => $originalExtension,
+                'converted_at' => now(),
+            ];
         } finally {
-            if (isset($absoluteTempPath) && file_exists($absoluteTempPath)) {
-                @unlink($absoluteTempPath);
-                Log::info("Cleaned up temp file in DocumentEdit: {$absoluteTempPath}");
-            }
+            Storage::delete($tempPath);
         }
+    }
+
+    private function validateProgrammeSelection(): array
+    {
+        // UE doit être une UE et correspondre au niveau sélectionné
+        $ue = Programme::query()
+            ->select('id', 'type', 'niveau_id', 'parcour_id', 'semestre_id')
+            ->findOrFail((int) $this->ue_id);
+
+        if ($ue->type !== 'UE') {
+            throw new \Exception("Le programme choisi comme UE n'est pas une UE.");
+        }
+
+        if ((int) $ue->niveau_id !== (int) $this->niveau_id) {
+            throw new \Exception("Cette UE n'appartient pas au niveau sélectionné.");
+        }
+
+        // Programme final = EC si choisi sinon UE
+        $programmeId = (int) ($this->ec_id ?: $this->ue_id);
+
+        $programme = Programme::query()
+            ->select('id', 'type', 'parent_id', 'niveau_id', 'semestre_id')
+            ->findOrFail($programmeId);
+
+        if ((int) $programme->niveau_id !== (int) $this->niveau_id) {
+            throw new \Exception("Le programme sélectionné n'appartient pas au niveau choisi.");
+        }
+
+        if ($programme->type === 'EC') {
+            if ((int) $programme->parent_id !== (int) $this->ue_id) {
+                throw new \Exception("L'EC sélectionné n'appartient pas à l'UE choisie.");
+            }
+        } elseif ($programme->type !== 'UE') {
+            throw new \Exception("Type de programme invalide.");
+        }
+
+        // semestre_id obligatoire côté documents
+        $semestreId = $programme->semestre_id ?: $ue->semestre_id;
+        if (!$semestreId) {
+            throw new \Exception("Le programme sélectionné n'a pas de semestre_id. Corrigez la table programmes.");
+        }
+
+        return [
+            'programme_id' => (int) $programmeId,
+            'semestre_id' => (int) $semestreId,
+        ];
     }
 
     public function updateDocument()
     {
         $this->validate();
 
+        // Parcours auto si absent (plateforme mono-parcours)
+        if (!$this->parcour_id) {
+            $this->parcour_id = Parcour::where('status', true)->orderBy('name')->value('id');
+        }
+
         try {
             DB::beginTransaction();
 
-            Log::info("Starting document update", [
-                'document_id' => $this->document->id,
-                'old_title' => $this->document->title,
-                'new_title' => $this->title,
-                'user_id' => Auth::id()
-            ]);
+            // Validation UE/EC + récupération programme_id / semestre_id
+            $programmeData = $this->validateProgrammeSelection();
 
             $oldFilePath = $this->document->file_path;
 
             $updateData = [
                 'title' => $this->title,
-                'niveau_id' => $this->niveau_id,
-                'parcour_id' => $this->parcour_id,
-                'is_actif' => $this->is_actif,
+                'niveau_id' => (int) $this->niveau_id,
+                'parcour_id' => (int) $this->parcour_id,
+                'programme_id' => $programmeData['programme_id'],
+                'semestre_id' => $programmeData['semestre_id'],
+                'is_actif' => (bool) $this->is_actif,
                 'updated_at' => now(),
             ];
 
-            // Si nouveau fichier, traiter l'upload
+            // Nouveau fichier => upload/convert + suppression ancien fichier
             if ($this->newFile) {
                 $fileData = $this->handleFileUpload();
-                if ($fileData) {
-                    $updateData = array_merge($updateData, $fileData);
-                    
-                    // Supprimer l'ancien fichier physique
-                    if ($oldFilePath && Storage::disk('public')->exists($oldFilePath)) {
-                        Storage::disk('public')->delete($oldFilePath);
-                        Log::info("Old file deleted: {$oldFilePath}");
-                    }
+                $updateData = array_merge($updateData, $fileData);
+
+                if ($oldFilePath && Storage::disk('public')->exists($oldFilePath)) {
+                    Storage::disk('public')->delete($oldFilePath);
                 }
-            } 
-            // Si pas de nouveau fichier mais titre modifié, renommer le fichier existant
+            }
+            // Sinon, si juste titre modifié => rename physique
             elseif ($this->title !== $this->document->title && $oldFilePath) {
-                $newFilePath = $this->renameExistingFile($oldFilePath, $this->title);
-                if ($newFilePath) {
-                    $updateData['file_path'] = $newFilePath;
-                    $updateData['protected_path'] = $newFilePath;
-                    
-                    Log::info("File renamed for title change", [
-                        'old_path' => $oldFilePath,
-                        'new_path' => $newFilePath,
-                        'old_title' => $this->document->title,
-                        'new_title' => $this->title
-                    ]);
+                $newPath = $this->renameExistingFile($oldFilePath, $this->title);
+                if ($newPath) {
+                    $updateData['file_path'] = $newPath;
+                    $updateData['protected_path'] = $newPath;
                 }
             }
 
-            // Mettre à jour via Query Builder
-            $affectedRows = Document::where('id', $this->document->id)->update($updateData);
-            
-            Log::info("Document updated in database", [
-                'document_id' => $this->document->id,
-                'affected_rows' => $affectedRows,
-                'new_title' => $this->title,
-                'update_data' => $updateData
-            ]);
-
-            // Recharger l'instance depuis la base
-            $this->document = Document::find($this->document->id);
-            
-            Log::info("Document reloaded from database", [
-                'document_id' => $this->document->id,
-                'current_title' => $this->document->title,
-                'updated_at' => $this->document->updated_at
-            ]);
+            Document::where('id', $this->document->id)->update($updateData);
 
             DB::commit();
 
-            $this->alert('success', 'Document mis à jour avec succès', [
+            $this->alert('success', 'Document mis à jour', [
                 'position' => 'top-end',
-                'timer' => 5000,
+                'timer' => 3500,
                 'toast' => true,
-                'timerProgressBar' => true,
             ]);
 
-            // Émettre événement pour informer les autres composants
-            $this->dispatch('document-updated', [
-                'document_id' => $this->document->id,
-                'new_title' => $this->title,
-                'timestamp' => now()->timestamp
-            ]);
-
-            // Redirection vers la liste des documents
             return $this->redirect(route('document.teacher'), navigate: true);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Erreur mise à jour document', [
-                'error' => $e->getMessage(),
-                'document_id' => $this->document->id,
-                'user_id' => Auth::id(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            $this->alert('error', 'Erreur: ' . $e->getMessage(), [
+
+            $this->alert('error', 'Erreur : ' . $e->getMessage(), [
                 'position' => 'center',
-                'timer' => 7000,
                 'toast' => false,
+                'timer' => 7000,
             ]);
-        } finally {
-            $this->getConversionService()->cleanupTempFiles();
+
+            return null;
         }
     }
 
@@ -494,8 +390,8 @@ class DocumentEdit extends Component
     {
         return view('livewire.teacher.document-edit', [
             'niveaux' => $this->teacherNiveaux,
-            'parcours' => $this->teacherParcours,
-            'semestresActifs' => $this->semestresActifs,
+            'ues' => $this->ues,
+            'ecs' => $this->ecs,
         ]);
     }
 }

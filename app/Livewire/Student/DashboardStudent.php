@@ -3,23 +3,159 @@
 namespace App\Livewire\Student;
 
 use Carbon\Carbon;
-use App\Models\User;
-use App\Models\Lesson;
 use Livewire\Component;
+use App\Models\User;
 use App\Models\Document;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class DashboardStudent extends Component
 {
-    public function getCurrentDateTimeProperty()
+    public function mount(): void
     {
-        return Carbon::now();
+        // Sécurité : seul étudiant
+        if (!Auth::check() || !Auth::user()->hasRole('student')) {
+            redirect()->route('login')->send();
+        }
+    }
+
+    public function getCurrentDateTimeProperty(): Carbon
+    {
+        return now();
+    }
+
+    public function getStudentProperty()
+    {
+        return Auth::user()->load(['niveau', 'parcour', 'profil']);
+    }
+
+    /**
+     * Base query des "cours" (documents accessibles pour l'étudiant)
+     * IMPORTANT : accepte aussi les documents "communs" avec niveau_id/parcour_id NULL
+     */
+    private function baseDocumentsQuery()
+    {
+        $u = Auth::user();
+
+        return Document::query()
+            ->where('is_actif', true)
+            ->when($u->niveau_id, function ($q) use ($u) {
+                $q->where(function ($qq) use ($u) {
+                    $qq->whereNull('niveau_id')
+                       ->orWhere('niveau_id', $u->niveau_id);
+                });
+            })
+            ->when($u->parcour_id, function ($q) use ($u) {
+                $q->where(function ($qq) use ($u) {
+                    $qq->whereNull('parcour_id')
+                       ->orWhere('parcour_id', $u->parcour_id);
+                });
+            });
+    }
+
+    public function getStatsProperty(): array
+    {
+        $q = $this->baseDocumentsQuery();
+
+        // on clone pour éviter les effets de bord
+        $total = (clone $q)->count();
+
+        $todayCount = (clone $q)
+            ->whereDate('created_at', now()->toDateString())
+            ->count();
+
+        $weekCount = (clone $q)
+            ->where('created_at', '>=', now()->subDays(7))
+            ->count();
+
+        $viewsSum = (clone $q)->sum('view_count');
+        $downloadsSum = (clone $q)->sum('download_count');
+
+        return [
+            'total' => $total,
+            'today' => $todayCount,
+            'week' => $weekCount,
+            'views' => (int) $viewsSum,
+            'downloads' => (int) $downloadsSum,
+        ];
+    }
+
+    public function getTodayDocumentsProperty()
+    {
+        return $this->baseDocumentsQuery()
+            ->with(['uploader.profil'])
+            ->whereDate('created_at', now()->toDateString())
+            ->latest()
+            ->take(6)
+            ->get();
+    }
+
+    public function getRecentDocumentsProperty()
+    {
+        return $this->baseDocumentsQuery()
+            ->with(['uploader.profil'])
+            ->latest()
+            ->take(8)
+            ->get();
+    }
+
+    public function getPopularDocumentsProperty()
+    {
+        return $this->baseDocumentsQuery()
+            ->with(['uploader.profil'])
+            ->orderByDesc('view_count')
+            ->latest()
+            ->take(6)
+            ->get();
+    }
+
+    public function getTeachersProperty()
+    {
+        $u = Auth::user();
+
+        return User::query()
+            ->role('teacher')
+            ->whereHas('documents', function ($q) use ($u) {
+                $q->where('is_actif', true)
+                  ->when($u->niveau_id, function ($qq) use ($u) {
+                      $qq->where(function ($x) use ($u) {
+                          $x->whereNull('niveau_id')
+                            ->orWhere('niveau_id', $u->niveau_id);
+                      });
+                  })
+                  ->when($u->parcour_id, function ($qq) use ($u) {
+                      $qq->where(function ($x) use ($u) {
+                          $x->whereNull('parcour_id')
+                            ->orWhere('parcour_id', $u->parcour_id);
+                      });
+                  });
+            })
+            ->with(['profil'])
+            ->withCount(['documents as docs_count' => function ($q) use ($u) {
+                $q->where('is_actif', true)
+                  ->when($u->niveau_id, function ($qq) use ($u) {
+                      $qq->where(function ($x) use ($u) {
+                          $x->whereNull('niveau_id')
+                            ->orWhere('niveau_id', $u->niveau_id);
+                      });
+                  })
+                  ->when($u->parcour_id, function ($qq) use ($u) {
+                      $qq->where(function ($x) use ($u) {
+                          $x->whereNull('parcour_id')
+                            ->orWhere('parcour_id', $u->parcour_id);
+                      });
+                  });
+            }])
+            ->orderByDesc('docs_count')
+            ->take(6)
+            ->get();
     }
 
     public function getUserSessionsProperty()
     {
         return DB::table('sessions')
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->orderBy('last_activity', 'desc')
             ->take(5)
             ->get()
@@ -27,152 +163,38 @@ class DashboardStudent extends Component
                 return (object)[
                     'ip_address' => $session->ip_address,
                     'user_agent' => $session->user_agent,
-                    'last_activity' => Carbon::createFromTimestamp($session->last_activity)
+                    'last_activity' => Carbon::createFromTimestamp($session->last_activity),
                 ];
             });
     }
 
-    public function getLastLoginProperty()
+    public function getLastLoginAtProperty(): ?Carbon
     {
-        return DB::table('sessions')
-            ->where('user_id', auth()->id())
+        $last = DB::table('sessions')
+            ->where('user_id', Auth::id())
             ->orderBy('last_activity', 'desc')
-            ->first();
+            ->value('last_activity');
+
+        return $last ? Carbon::createFromTimestamp($last) : null;
     }
 
-    public function getTodayLessonsProperty()
+    public function shortAgent(?string $agent): string
     {
-        $student = auth()->user();
-        $today = Carbon::now()->dayOfWeek;
-        $today = $today === 0 ? 6 : $today;
-
-        return Lesson::with(['teacher.profil'])
-            ->calendarByRole()
-            ->where('weekday', $today)
-            ->where('is_active', true)
-            ->orderBy('start_time')
-            ->get();
-    }
-
-    public function getUpcomingLessonsProperty()
-    {
-        $student = auth()->user();
-        $today = Carbon::now()->dayOfWeek;
-        $today = $today === 0 ? 6 : $today;
-
-        return Lesson::with(['teacher.profil'])
-            ->calendarByRole()
-            ->where('is_active', true)
-            ->where(function($query) use ($today) {
-                $query->where('weekday', '>', $today)
-                      ->orWhere('weekday', '<', $today);
-            })
-            ->orderBy('weekday')
-            ->orderBy('start_time')
-            ->take(3) // Limite aux 3 prochains cours
-            ->get()
-            ->map(function($lesson) {
-                $lesson->day_name = Lesson::WEEKDAYS[$lesson->weekday];
-                return $lesson;
-            });
-    }
-
-
-    public function debugLessonsData()
-    {
-        $student = auth()->user();
-        $today = Carbon::now()->dayOfWeek;
-        $today = $today === 0 ? 6 : $today;
-
-        // Récupérer tous les cours (sans filtre de jour) pour debug
-        $allLessons = Lesson::where('niveau_id', $student->niveau_id)
-            ->where('parcour_id', $student->parcour_id)
-            ->where('is_active', true)
-            ->get();
-
-        dd([
-            'student_info' => [
-                'id' => $student->id,
-                'niveau_id' => $student->niveau_id,
-                'parcour_id' => $student->parcour_id,
-            ],
-            'today' => [
-                'day_number' => $today,
-                'day_name' => Lesson::WEEKDAYS[$today] ?? 'Unknown'
-            ],
-            'all_lessons_count' => $allLessons->count(),
-            'all_lessons' => $allLessons->map(function($lesson) {
-                return [
-                    'id' => $lesson->id,
-                    'weekday' => [
-                        'number' => $lesson->weekday,
-                        'name' => $lesson->weekday_name
-                    ],
-                    'time' => [
-                        'start' => $lesson->start_time->format('H:i'),
-                        'end' => $lesson->end_time->format('H:i')
-                    ],
-                    'type' => $lesson->type_cours,
-                    'salle' => $lesson->salle
-                ];
-            })
-        ]);
-    }
-
-    public function formatTime($time)
-    {
-        return Carbon::parse($time)->format('H:i');
-    }
-
-    public function getRecentDocumentsProperty()
-    {
-        return Document::query()
-            ->where('is_actif', true)
-            ->where('niveau_id', auth()->user()->niveau_id)
-            ->where('parcour_id', auth()->user()->parcour_id)
-            ->with('uploader.profil')
-            ->latest()
-            ->take(5)
-            ->get();
-    }
-
-    public function getTeachersProperty()
-    {
-        return User::query()
-            ->role('teacher')
-            ->whereHas('teacherNiveaux', function($query) {
-                $query->where('niveau_id', auth()->user()->niveau_id);
-            })
-            ->with(['profil', 'teacherNiveaux'])
-            ->take(4)
-            ->get();
-    }
-
-    public function getCurrentDayName()
-    {
-        $today = Carbon::now()->dayOfWeek;
-        // Convertir de 0-6 (dimanche = 0) au format 1-6 (lundi-samedi) utilisé dans votre modèle
-        $adjustedDay = $today === 0 ? 6 : $today;
-        return Lesson::WEEKDAYS[$adjustedDay] ?? 'Inconnu';
+        return Str::limit($agent ?? '-', 90);
     }
 
     public function render()
     {
-        $lastLogin = $this->lastLogin ? Carbon::createFromTimestamp($this->lastLogin->last_activity) : null;
-        $todayLessons = $this->todayLessons;
-
         return view('livewire.student.dashboard-student', [
-            'todayLessons' => $todayLessons,
-            'upcomingLessons' => $this->upcomingLessons,
+            'student' => $this->student,
+            'stats' => $this->stats,
+            'todayDocuments' => $this->todayDocuments,
             'recentDocuments' => $this->recentDocuments,
-            'currentDayName' => $this->getCurrentDayName(),
+            'popularDocuments' => $this->popularDocuments,
             'teachers' => $this->teachers,
-            'student' => auth()->user()->load(['niveau', 'parcour']),
             'currentDateTime' => $this->currentDateTime,
             'userSessions' => $this->userSessions,
-            'lastLogin' => $lastLogin
+            'lastLoginAt' => $this->lastLoginAt,
         ]);
-
     }
 }
-

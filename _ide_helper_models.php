@@ -52,15 +52,18 @@ namespace App\Models{
  * @property int $niveau_id
  * @property int $semestre_id
  * @property int $parcour_id
+ * @property int|null $programme_id
  * @property int $uploaded_by
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read string $conversion_status
  * @property-read mixed $extension
+ * @property-read mixed $file_size_formatted
  * @property-read mixed $formatted_size
  * @property-read \App\Models\Niveau $niveau
  * @property-read \App\Models\Parcour $parcour
+ * @property-read \App\Models\Programme|null $programme
  * @property-read \App\Models\Semestre $semestre
  * @property-read \App\Models\User $teacher
  * @property-read \App\Models\User $uploader
@@ -86,6 +89,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereOriginalExtension($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereOriginalFilename($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereParcourId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereProgrammeId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereProtectedPath($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereSemestreId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereTitle($value)
@@ -192,6 +196,8 @@ namespace App\Models{
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Document> $documents
  * @property-read int|null $documents_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Programme> $programmes
+ * @property-read int|null $programmes_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Semestre> $semestres
  * @property-read int|null $semestres_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $teachers
@@ -221,6 +227,8 @@ namespace App\Models{
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Document> $documents
  * @property-read int|null $documents_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Programme> $programmes
+ * @property-read int|null $programmes_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $teachers
  * @property-read int|null $teachers_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
@@ -276,15 +284,17 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
- * @property string $type
- * @property string $code
- * @property string $name
- * @property int $order
- * @property int|null $parent_id
+ * @property string $type Type de programme: UE ou EC
+ * @property string $code Code unique du programme
+ * @property string $name Nom complet du programme
+ * @property int $order Ordre d'affichage
+ * @property int|null $parent_id ID de l'UE parente pour les ECs
  * @property int $semestre_id
  * @property int $niveau_id
  * @property int $parcour_id
- * @property bool $status
+ * @property int|null $credits Crédits ECTS
+ * @property int|null $coefficient Coefficient
+ * @property bool $status Statut actif/inactif
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -310,7 +320,9 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme ues()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme whereCode($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme whereCoefficient($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme whereCredits($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme whereName($value)
@@ -342,6 +354,8 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Document> $documents
  * @property-read int|null $documents_count
  * @property-read \App\Models\Niveau $niveau
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Programme> $programmes
+ * @property-read int|null $programmes_count
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Semestre newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Semestre newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Semestre query()

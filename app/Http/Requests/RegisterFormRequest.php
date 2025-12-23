@@ -11,16 +11,15 @@ class RegisterFormRequest extends FormRequest
         return true;
     }
 
-    public function rules()
+    public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'niveau_id' => ['required', 'exists:niveaux,id'],
-            'parcour_id' => ['required', 'exists:parcours,id'],
+            'name' => ['required', 'string', 'min:3', 'max:150'],
+            'telephone' => ['required', 'string', 'min:8', 'max:30'],
             'sexe' => ['required', 'in:homme,femme'],
-            'telephone' => ['required', 'string'],
-            'terms' => ['accepted']
+            'niveau_id' => ['required', 'exists:niveaux,id'],
+
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
     }
 
@@ -32,7 +31,6 @@ class RegisterFormRequest extends FormRequest
             'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
             'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
             'niveau_id.required' => 'Le niveau est requis.',
-            'parcour_id.required' => 'Le parcours est requis.',
             'sexe.required' => 'Le sexe est requis.',
             'telephone.required' => 'Le numéro de téléphone est requis.',
             'terms.accepted' => 'Vous devez accepter les conditions d\'utilisation.'

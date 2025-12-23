@@ -2,30 +2,48 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Niveau;
 use App\Models\Parcour;
 use App\Models\AuthorizedEmail;
-use Illuminate\Http\Request;
-use App\Http\Requests\RegisterFormRequest;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Requests\RegisterFormRequest;
 
 class RegisterFormController extends Controller
 {
+    private function defaultParcour(): Parcour
+    {
+        // Si vous avez un seul parcours actif, on prend le premier.
+        // Vous pouvez aussi remplacer par ->where('slug','medecine') si vous avez un slug.
+        $parcour = Parcour::query()
+            ->where('status', true)
+            ->orderBy('id')
+            ->first();
+
+        abort_if(!$parcour, 500, 'Aucun parcours actif n’est configuré.');
+
+        return $parcour;
+    }
+
     public function showRegistrationForm($token)
     {
         try {
-            $authorizedEmail = AuthorizedEmail::where('verification_token', $token)
+            $authorizedEmail = AuthorizedEmail::query()
+                ->where('verification_token', $token)
                 ->where('is_registered', false)
                 ->where('token_expires_at', '>', now())
                 ->firstOrFail();
 
+            $defaultParcour = $this->defaultParcour();
+
             return view('livewire.auth.register-form', [
-                'email' => $authorizedEmail->email,
-                'token' => $token,
-                'niveaux' => Niveau::where('status', true)->get(),
-                'parcours' => Parcour::where('status', true)->get(),
+                'email'          => $authorizedEmail->email,
+                'token'          => $token,
+                'niveaux'        => Niveau::where('status', true)->get(),
+                'defaultParcour' => $defaultParcour, // utile pour affichage "lecture seule"
             ]);
 
         } catch (\Exception $e) {
@@ -38,34 +56,42 @@ class RegisterFormController extends Controller
     public function register(RegisterFormRequest $request, $token)
     {
         try {
-            $authorizedEmail = AuthorizedEmail::where('verification_token', $token)
+            $authorizedEmail = AuthorizedEmail::query()
+                ->where('verification_token', $token)
                 ->where('is_registered', false)
                 ->where('token_expires_at', '>', now())
                 ->firstOrFail();
 
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $authorizedEmail->email,
-                'password' => Hash::make($request->password),
-                'niveau_id' => $request->niveau_id,
-                'parcour_id' => $request->parcour_id,
-            ]);
+            $defaultParcour = $this->defaultParcour();
 
-            $user->profil()->create([
-                'sexe' => $request->sexe,
-                'telephone' => $request->telephone,
-            ]);
+            $user = DB::transaction(function () use ($request, $authorizedEmail, $defaultParcour) {
 
-            $user->assignRole('student');
+                $user = User::create([
+                    'name'      => $request->name,
+                    'email'     => $authorizedEmail->email,
+                    'password'  => Hash::make($request->password),
+                    'niveau_id' => $request->niveau_id,
+                    'parcour_id'=> $defaultParcour->id, // <- imposé ici
+                ]);
 
-            // Invalider le token après utilisation
-            $authorizedEmail->update([
-                'is_registered' => true,
-                'verification_token' => null,
-                'token_expires_at' => null
-            ]);
+                $user->profil()->create([
+                    'sexe'      => $request->sexe,
+                    'telephone' => $request->telephone,
+                ]);
 
-            auth()->login($user);
+                $user->assignRole('student');
+
+                // Invalider le token après utilisation
+                $authorizedEmail->update([
+                    'is_registered'       => true,
+                    'verification_token'  => null,
+                    'token_expires_at'    => null,
+                ]);
+
+                return $user;
+            });
+
+            Auth::login($user);
 
             return redirect()
                 ->route('studentEspace')

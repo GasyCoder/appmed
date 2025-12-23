@@ -1,75 +1,150 @@
 <x-guest-layout>
-    <x-authentication-card>
-        <x-slot name="logo">
-            <x-authentication-card-logo />
-        </x-slot>
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
+        <div class="w-full max-w-md">
 
-        @if(session('error'))
-            <div class="mb-4 font-medium text-sm text-red-600">
-                {{ session('error') }}
-            </div>
-        @endif
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
 
-        <x-validation-errors class="mb-4" />
+                {{-- Header --}}
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center gap-4">
+                        <div class="flex-shrink-0">
+                            <img
+                                src="{{ asset('assets/image/logo_med.png') }}"
+                                alt="Faculté de Médecine"
+                                class="h-12 w-12 rounded-xl object-contain bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-1"
+                            >
+                        </div>
 
-        <div>
-            <h2 class="text-lg font-medium text-gray-900">
-                {{ __('Vérification de l\'email') }}
-            </h2>
-            <p class="mt-1 text-sm text-gray-600">
-                {{ __('Veuillez entrer votre adresse email universitaire pour commencer l\'inscription.') }}
-            </p>
+                        <div class="min-w-0">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                AppMed — Inscription
+                            </div>
+                            <h1 class="text-lg font-semibold text-gray-900 dark:text-white leading-tight">
+                                Vérification de l’email
+                            </h1>
+                        </div>
+                    </div>
 
-            <form method="POST" action="{{ route('email.verify') }}">
-                @csrf
-
-                <div class="mt-4">
-                    <x-label for="email" value="{{ __('Email') }}" />
-                    <x-input
-                        id="email"
-                        name="email"
-                        class="block mt-1 w-full"
-                        type="email"
-                        value="{{ old('email') }}"
-                        placeholder="exemple@facmed.mg"
-                        required
-                        autofocus
-                    />
+                    <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                        Pour des raisons de sécurité, seuls les emails universitaires déjà enregistrés dans la base sont autorisés à continuer l’inscription.
+                    </p>
                 </div>
 
-                <div class="flex items-center justify-end mt-4">
-                    <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
-                        {{ __('Déjà inscrit?') }}
-                    </a>
-                    <button type="submit"
-                    id="submitBtn"
-                    class="ms-4 inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                        <span class="flex items-center">
-                            <span class="normal-state">{{ __('Continuer') }}</span>
-                            <span class="loading-state hidden">
-                                <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                {{-- Alerts --}}
+                <div class="px-6 pt-4 space-y-3">
+                    @if(session('error'))
+                        <div class="p-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20">
+                            <div class="flex items-start gap-2">
+                                <svg class="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M12 9v2m0 4h.01M10.29 3.86l-8.3 14.38A2 2 0 003.72 21h16.56a2 2 0 001.73-2.76l-8.3-14.38a2 2 0 00-3.42 0z"/>
                                 </svg>
-                                Vérification...
-                            </span>
-                        </span>
-                    </button>
+                                <div class="text-sm text-red-700 dark:text-red-300">
+                                    {{ session('error') }}
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <x-validation-errors class="mb-0" />
                 </div>
-            </form>
+
+                {{-- Form --}}
+                <form id="emailVerificationForm" method="POST" action="{{ route('email.verify') }}" class="p-6 space-y-5">
+                    @csrf
+
+                    <div class="space-y-1.5">
+                        <x-label for="email" value="Email universitaire" class="text-sm text-gray-700 dark:text-gray-300" />
+
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                            </span>
+
+                            <x-input
+                                id="email"
+                                name="email"
+                                type="email"
+                                value="{{ old('email') }}"
+                                placeholder="ex: prenom.nom@facmed.mg"
+                                required
+                                autofocus
+                                class="block w-full pl-10 pr-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600
+                                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                       placeholder-gray-400 dark:placeholder-gray-500
+                                       focus:border-gray-900 dark:focus:border-white focus:ring-0"
+                            />
+                        </div>
+
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Astuce : utilisez l’email officiel transmis par la Faculté.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-3 pt-1">
+                        <a
+                            href="{{ route('login') }}"
+                            class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:underline underline-offset-2"
+                        >
+                            Déjà inscrit ?
+                        </a>
+
+                        <button
+                            type="submit"
+                            id="submitBtn"
+                            class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold
+                                   bg-gray-900 text-white hover:bg-gray-800
+                                   dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100
+                                   transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            <span class="normal-state">Continuer</span>
+
+                            <span class="loading-state hidden items-center gap-2">
+                                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Vérification…
+                            </span>
+                        </button>
+                    </div>
+                </form>
+
+                {{-- Footer --}}
+                <div class="px-6 py-5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Si votre email n’est pas reconnu, contactez le secrétariat pour l’ajout dans la liste autorisée.
+                    </p>
+                </div>
+
+            </div>
         </div>
-    </x-authentication-card>
+    </div>
 
     <script>
-        document.getElementById('emailVerificationForm').addEventListener('submit', function(e) {
-            const button = this.querySelector('#submitBtn');
-            const normalState = button.querySelector('.normal-state');
-            const loadingState = button.querySelector('.loading-state');
+        (function () {
+            const form = document.getElementById('emailVerificationForm');
+            if (!form) return;
 
-            button.disabled = true;
-            normalState.classList.add('hidden');
-            loadingState.classList.remove('hidden');
-        });
+            form.addEventListener('submit', function () {
+                const button = document.getElementById('submitBtn');
+                if (!button) return;
+
+                const normalState = button.querySelector('.normal-state');
+                const loadingState = button.querySelector('.loading-state');
+
+                button.disabled = true;
+
+                if (normalState) normalState.classList.add('hidden');
+                if (loadingState) {
+                    loadingState.classList.remove('hidden');
+                    loadingState.classList.add('inline-flex');
+                }
+            });
+        })();
     </script>
-
 </x-guest-layout>

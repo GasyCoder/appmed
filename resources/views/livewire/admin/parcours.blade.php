@@ -1,6 +1,6 @@
 <div class="py-6">
     {{-- En-tête avec recherche et filtre --}}
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="max-w-10xl mx-auto sm:px-6 lg:px-8">
         @include('livewire.admin.sections.parcour-section')
         {{-- Liste des parcour --}}
         <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">

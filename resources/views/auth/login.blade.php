@@ -1,22 +1,20 @@
 <x-guest-layout>
     <div class="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
-        <div class="w-full max-w-md">
+        <div class="w-full max-w-lg">
 
             {{-- Card --}}
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 
                 {{-- Header --}}
-                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="p-6">
                     <div class="flex items-center gap-4">
-                        <div class="flex-shrink-0">
-                            <img
-                                width="56"
-                                height="56"
-                                src="{{ asset('assets/image/logo_med.png') }}"
-                                alt="Faculté de Médecine"
-                                class="h-14 w-14 rounded-xl object-contain bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-1"
-                            >
-                        </div>
+                        <img
+                            width="56"
+                            height="56"
+                            src="{{ asset('assets/image/logo_med.png') }}"
+                            alt="Faculté de Médecine"
+                            class="h-14 w-14 rounded-xl object-contain bg-white dark:bg-gray-900 p-1 ring-1 ring-black/5 dark:ring-white/10"
+                        />
 
                         <div class="min-w-0">
                             <h1 class="text-lg font-semibold text-gray-900 dark:text-white leading-tight">
@@ -39,11 +37,11 @@
                 </div>
 
                 {{-- Flash / Errors --}}
-                <div class="px-6 pt-4">
+                <div class="px-6">
                     <x-validation-errors class="mb-4" />
 
                     @session('status')
-                        <div class="mb-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3">
+                        <div class="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 ring-1 ring-emerald-600/15 dark:ring-emerald-400/15">
                             <div class="flex items-start gap-2">
                                 <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -61,15 +59,15 @@
                 <form
                     method="POST"
                     action="{{ route('login') }}"
-                    class="p-6 space-y-5"
-                    x-data="{ loading: false }"
-                    x-on:submit="loading = true"
+                    id="loginForm"
+                    class="px-6 pb-6 space-y-5"
                 >
                     @csrf
 
                     {{-- Email --}}
                     <div class="space-y-1.5">
                         <x-label for="email" value="Adresse email" class="text-sm text-gray-700 dark:text-gray-300" />
+
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,9 +85,12 @@
                                 autofocus
                                 autocomplete="username"
                                 placeholder="ex: prenom.nom@umg.mg"
-                                class="block w-full pl-10 pr-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600
-                                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                                       focus:border-gray-900 dark:focus:border-white focus:ring-0"
+                                class="block w-full pl-10 pr-3 py-2.5 rounded-xl border-0
+                                       ring-1 ring-gray-300/70 dark:ring-white/10
+                                       bg-white dark:bg-gray-900/40
+                                       text-gray-900 dark:text-white
+                                       placeholder:text-gray-400 dark:placeholder:text-gray-500
+                                       focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:outline-none"
                             />
                         </div>
                     </div>
@@ -119,9 +120,12 @@
                                 required
                                 autocomplete="current-password"
                                 placeholder="••••••••"
-                                class="block w-full pl-10 pr-12 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600
-                                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                                       focus:border-gray-900 dark:focus:border-white focus:ring-0"
+                                class="block w-full pl-10 pr-12 py-2.5 rounded-xl border-0
+                                       ring-1 ring-gray-300/70 dark:ring-white/10
+                                       bg-white dark:bg-gray-900/40
+                                       text-gray-900 dark:text-white
+                                       placeholder:text-gray-400 dark:placeholder:text-gray-500
+                                       focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:outline-none"
                             />
 
                             <button
@@ -139,7 +143,7 @@
 
                                 <svg id="eye-off-icon" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
                                 </svg>
                             </button>
                         </div>
@@ -162,51 +166,52 @@
                     <div class="pt-1">
                         <button
                             type="submit"
-                            :disabled="loading"
+                            id="submitBtn"
                             class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold
                                    bg-gray-900 text-white hover:bg-gray-800
                                    dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100
                                    disabled:opacity-60 disabled:cursor-not-allowed transition"
                         >
-                            <template x-if="!loading">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-                                </svg>
-                            </template>
+                            {{-- Icône normale --}}
+                            <svg id="normalIcon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                            </svg>
 
-                            <template x-if="loading">
-                                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor"
-                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </template>
+                            {{-- Spinner --}}
+                            <svg id="spinnerIcon" class="h-5 w-5 hidden animate-spin"
+                                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
 
-                            <span x-text="loading ? 'Connexion…' : 'Se connecter'"></span>
+                            <span id="btnText">Se connecter</span>
                         </button>
                     </div>
                 </form>
 
                 {{-- Footer --}}
-                <div class="px-6 py-5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+                <div class="px-6 py-5 bg-gray-50 dark:bg-gray-800/40">
                     <p class="text-sm text-center text-gray-600 dark:text-gray-400">
-                        Vous n’avez pas de compte ?
+                        Vous n'avez pas de compte ?
                         <a href="/inscription"
                            class="font-semibold text-gray-900 dark:text-white hover:underline underline-offset-2">
-                            S’inscrire
+                            S'inscrire
                         </a>
                     </p>
 
                     <p class="mt-2 text-xs text-center text-gray-500 dark:text-gray-400">
-                        En cas de problème d’accès, contactez le service informatique.
+                        En cas de problème d'accès, contactez le service informatique.
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
+    {{-- ✅ JavaScript vanilla pour le loading --}}
     <script>
+        // Toggle password visibility
         function togglePasswordVisibility() {
             const passwordInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eye-icon');
@@ -214,10 +219,41 @@
 
             if (!passwordInput || !eyeIcon || !eyeOffIcon) return;
 
-            const isHidden = passwordInput.type === 'password';
-            passwordInput.type = isHidden ? 'text' : 'password';
-            eyeIcon.classList.toggle('hidden', isHidden);
-            eyeOffIcon.classList.toggle('hidden', !isHidden);
+            const toText = passwordInput.type === 'password';
+            passwordInput.type = toText ? 'text' : 'password';
+            eyeIcon.classList.toggle('hidden', toText);
+            eyeOffIcon.classList.toggle('hidden', !toText);
         }
+
+        // ✅ Gestion du loading state
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('loginForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const normalIcon = document.getElementById('normalIcon');
+            const spinnerIcon = document.getElementById('spinnerIcon');
+            const btnText = document.getElementById('btnText');
+
+            if (!form || !submitBtn) return;
+
+            form.addEventListener('submit', function(e) {
+                // Vérifier la validation HTML5
+                if (!form.checkValidity()) {
+                    return; // Laisser le navigateur gérer l'affichage des erreurs
+                }
+
+                // Empêcher les doubles soumissions
+                if (submitBtn.disabled) {
+                    e.preventDefault();
+                    return;
+                }
+
+                // Activer l'état de chargement
+                submitBtn.disabled = true;
+                
+                if (normalIcon) normalIcon.classList.add('hidden');
+                if (spinnerIcon) spinnerIcon.classList.remove('hidden');
+                if (btnText) btnText.textContent = 'Connexion…';
+            });
+        });
     </script>
 </x-guest-layout>

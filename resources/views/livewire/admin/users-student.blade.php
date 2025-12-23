@@ -1,5 +1,5 @@
 <div class="py-6">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="max-w-10xl mx-auto sm:px-6 lg:px-8">
         @include('livewire.admin.sections.user-section')
         <!-- Liste des étudiants -->
         <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">

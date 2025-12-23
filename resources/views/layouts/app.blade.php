@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
       x-data="theme()"
-      x-init="init()"
-      :class="{ 'dark': darkMode }">
+      x-init="init()">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,12 +16,26 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    {{-- Anti flash: applique la classe AVANT le chargement du CSS --}}
+    {{-- x-cloak (évite le flash des éléments x-show) --}}
+    <style>[x-cloak]{display:none !important;}</style>
+    
+    {{-- ✅ Script de persistance du mode dark/light --}}
     <script>
         (function () {
-            const v = localStorage.getItem('darkMode');
-            if (v === 'true') document.documentElement.classList.add('dark');
-            if (v === 'false') document.documentElement.classList.remove('dark');
+            try {
+                const stored = localStorage.getItem('darkMode');
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const isDark = stored !== null ? (stored === 'true') : prefersDark;
+                
+                // Appliquer immédiatement avant le chargement de la page
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {
+                console.error('Error loading dark mode:', e);
+            }
         })();
     </script>
 

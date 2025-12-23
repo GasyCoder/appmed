@@ -80,6 +80,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::get('/documents/serve/{document}', [DocumentController::class, 'serve'])->name('document.serve');
 
+    Route::view('/faq', 'support.faq')->name('faq');
+    Route::view('/aide', 'support.help')->name('help');
     /*
     |--------------------------------------------------------------------------
     | Routes Administrateur
@@ -116,7 +118,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             Route::get('/documents/upload', DocumentUpload::class)->name('document.upload');
             Route::get('/documents/{document}/edit', DocumentEdit::class)->name('document.edit');
 
-            // ✅ NOUVELLE ROUTE EMPLOI DU TEMPS TEACHER
+            // ROUTE EMPLOI DU TEMPS TEACHER
             Route::get('/emploi-du-temps', ScheduleViewer::class)->name('teacher.timetable');
 
             Route::get('/scolarites', ComingSoon::class)->name('teacher.scolarites');

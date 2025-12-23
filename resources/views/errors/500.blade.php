@@ -1,15 +1,15 @@
 @php
-  $title = 'Erreur interne du serveur';
-  $subtitle = "Le serveur a rencontré un problème inattendu.";
+  $title = 'Erreur serveur';
+  $subtitle = "Une erreur interne s’est produite.";
   $code = 500;
-  $message = "Une erreur technique est survenue pendant le traitement de votre demande.";
-  $hint = "Réessayez dans quelques minutes. Si le problème persiste, contactez le support (Service Informatique).";
-  $icon = '<svg class="h-5 w-5 text-gray-700 dark:text-gray-200" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+  $message = "Impossible de traiter votre demande pour le moment.";
+  $hint = "Réessayez plus tard. Si le problème persiste, contactez l’équipe technique.";
+  $showReload = true;
+
+  $icon = '<svg class="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 7a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 9h8M8 13h5"/>
-           </svg>';
+                    d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>';
 @endphp
 
-@include('errors.layout', compact('title','subtitle','code','message','hint','icon'))
+@include('errors.layout', compact('title','subtitle','code','message','hint','icon','showReload'))

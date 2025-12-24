@@ -1,7 +1,7 @@
 {{-- resources/views/livewire/programmes.blade.php --}}
 
 <div>
-   <div class="max-w-10xl mx-auto">
+   <div class="max-w-10xl mx-auto w-full px-4 sm:px-6 lg:px-8">
 
         @php
             // UI tokens (cohérents light/dark)
@@ -22,24 +22,24 @@
         @endphp
 
         {{-- HEADER --}}
-        <div class="mb-8">
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="mb-6 sm:mb-8">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div class="min-w-0">
                     <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight {{ $title }}">
                         Programme Master MERC
                     </h1>
-                    <p class="mt-1 flex items-center gap-2 text-sm {{ $muted }}">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <p class="mt-1 flex items-start sm:items-center gap-2 text-sm {{ $muted }}">
+                        <svg class="h-4 w-4 mt-0.5 sm:mt-0 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <span class="truncate">Master en Épidémiologie et Recherche Clinique</span>
+                        <span class="min-w-0 break-words sm:truncate">Master en Épidémiologie et Recherche Clinique</span>
                     </p>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3">
+                <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
                     <button wire:click="toggleShowEnseignants"
-                            class="{{ $btnGhost }}"
+                            class="{{ $btnGhost }} w-full sm:w-auto justify-center sm:justify-start"
                             wire:loading.attr="disabled"
                             wire:target="toggleShowEnseignants">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,7 +52,7 @@
                     </button>
 
                     @can('manage programmes')
-                        <button class="{{ $btnPrimary }}">
+                        <button class="{{ $btnPrimary }} w-full sm:w-auto justify-center sm:justify-start">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -65,86 +65,172 @@
         </div>
 
         {{-- FILTER: ANNÉE (segmented control sobre) --}}
-        <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div class="mb-5 sm:mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-2 text-sm font-medium {{ $muted }}">
                 <span>Filtrer par année :</span>
             </div>
 
-            <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <button wire:click="$set('annee', null)"
-                        class="px-4 py-2 rounded-md text-sm font-medium transition
-                               {{ $annee === null
-                                    ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800' }}">
-                    Toutes
-                </button>
+            {{-- Mobile: scroll horizontal si nécessaire --}}
+            <div class="w-full sm:w-auto overflow-x-auto">
+                <div class="inline-flex w-max sm:w-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <button wire:click="$set('annee', null)"
+                            class="shrink-0 px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap
+                                   {{ $annee === null
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800' }}">
+                        Toutes
+                    </button>
 
-                <button wire:click="$set('annee', 4)"
-                        class="px-4 py-2 rounded-md text-sm font-medium transition
-                               {{ (int)$annee === 4
-                                    ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800' }}">
-                    4<sup>ème</sup> année
-                </button>
+                    <button wire:click="$set('annee', 4)"
+                            class="shrink-0 px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap
+                                   {{ (int)$annee === 4
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800' }}">
+                        4<sup>ème</sup> année
+                    </button>
 
-                <button wire:click="$set('annee', 5)"
-                        class="px-4 py-2 rounded-md text-sm font-medium transition
-                               {{ (int)$annee === 5
-                                    ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800' }}">
-                    5<sup>ème</sup> année
-                </button>
+                    <button wire:click="$set('annee', 5)"
+                            class="shrink-0 px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap
+                                   {{ (int)$annee === 5
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800' }}">
+                        5<sup>ème</sup> année
+                    </button>
+                </div>
             </div>
         </div>
 
-        {{-- STATS (sobre, même style, accent minimal) --}}
-        <div class="mb-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            @php
-                $statCard = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition
-                             dark:border-slate-800 dark:bg-slate-900";
-                $statLabel= "text-xs font-medium text-slate-500 dark:text-slate-400";
-                $statValue= "mt-1 text-2xl font-semibold text-slate-900 dark:text-white";
-                $statMeta = "mt-1 text-xs text-slate-500 dark:text-slate-400";
-            @endphp
+        {{-- STATS (mobile collapsible) --}}
+        <div class="mb-6 sm:mb-8"
+            x-data="{ statsOpen: false }">
 
-            <div class="{{ $statCard }}">
-                <div class="flex items-center justify-between">
-                    <span class="{{ $statLabel }}">Total UEs</span>
-                    <span class="{{ $pillSoft }}">Global</span>
+            {{-- Mobile header (résumé + toggle) --}}
+            <div class="sm:hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <button type="button"
+                        class="w-full px-4 py-3 flex items-center justify-between gap-3"
+                        @click="statsOpen = !statsOpen"
+                        :aria-expanded="statsOpen">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                            Statistiques
+                        </p>
+                        <p class="mt-0.5 text-xs text-slate-600 dark:text-slate-400 truncate">
+                            {{ $stats['totalUE'] }} UEs · {{ $stats['totalEC'] }} ECs
+                        </p>
+                    </div>
+
+                    <span class="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-lg
+                                text-slate-600 hover:bg-slate-50 hover:text-slate-900
+                                dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">
+                        <svg class="h-5 w-5 transform transition-transform duration-200"
+                            :class="{ 'rotate-180': statsOpen }"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </span>
+                </button>
+
+                {{-- Mobile content (collapsed) --}}
+                <div x-show="statsOpen" x-collapse x-cloak class="px-4 pb-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        @php
+                            $statCard = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition
+                                        dark:border-slate-800 dark:bg-slate-900";
+                            $statLabel= "text-xs font-medium text-slate-500 dark:text-slate-400";
+                            $statValue= "mt-1 text-2xl font-semibold text-slate-900 dark:text-white";
+                            $statMeta = "mt-1 text-xs text-slate-500 dark:text-slate-400";
+                        @endphp
+
+                        <div class="{{ $statCard }} p-3">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="{{ $statLabel }}">UEs</span>
+                                <span class="{{ $pillSoft }} shrink-0">Total</span>
+                            </div>
+                            <div class="mt-1 text-xl font-semibold text-slate-900 dark:text-white">
+                                {{ $stats['totalUE'] }}
+                            </div>
+                        </div>
+
+                        <div class="{{ $statCard }} p-3">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="{{ $statLabel }}">ECs</span>
+                                <span class="{{ $pillSoft }} shrink-0">Total</span>
+                            </div>
+                            <div class="mt-1 text-xl font-semibold text-slate-900 dark:text-white">
+                                {{ $stats['totalEC'] }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                        @foreach([1,2,3,4] as $s)
+                            @php $key = 'semestre'.$s; @endphp
+
+                            <div class="{{ $statCard }} p-3">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="{{ $pill }} shrink-0">S{{ $s }}</span>
+                                </div>
+
+                                <div class="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                                    {{ $stats[$key]['ue'] ?? 0 }}
+                                    <span class="text-xs font-normal text-slate-500 dark:text-slate-400">UEs</span>
+                                </div>
+
+                                <div class="{{ $statMeta }}">{{ $stats[$key]['ec'] ?? 0 }} ECs</div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
-                <div class="{{ $statValue }}">{{ $stats['totalUE'] }}</div>
             </div>
 
-            <div class="{{ $statCard }}">
-                <div class="flex items-center justify-between">
-                    <span class="{{ $statLabel }}">Total ECs</span>
-                    <span class="{{ $pillSoft }}">Global</span>
-                </div>
-                <div class="{{ $statValue }}">{{ $stats['totalEC'] }}</div>
-            </div>
-
-            @foreach([1,2,3,4] as $s)
+            {{-- Desktop/tablet (toujours visible) --}}
+            <div class="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                 @php
-                    $key = 'semestre'.$s;
+                    $statCard = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition
+                                dark:border-slate-800 dark:bg-slate-900";
+                    $statLabel= "text-xs font-medium text-slate-500 dark:text-slate-400";
+                    $statValue= "mt-1 text-2xl font-semibold text-slate-900 dark:text-white";
+                    $statMeta = "mt-1 text-xs text-slate-500 dark:text-slate-400";
                 @endphp
-                <div class="{{ $statCard }}">
-                    <div class="flex items-center justify-between">
-                        <span class="{{ $statLabel }}">Semestre {{ $s }}</span>
-                        <span class="{{ $pill }}">S{{ $s }}</span>
+
+                <div class="{{ $statCard }} p-4 sm:p-5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="{{ $statLabel }}">Total UEs</span>
+                        <span class="{{ $pillSoft }} shrink-0">Global</span>
                     </div>
-                    <div class="{{ $statValue }}">
-                        {{ $stats[$key]['ue'] ?? 0 }}
-                        <span class="text-sm font-normal text-slate-500 dark:text-slate-400">UEs</span>
-                    </div>
-                    <div class="{{ $statMeta }}">{{ $stats[$key]['ec'] ?? 0 }} ECs</div>
+                    <div class="{{ $statValue }}">{{ $stats['totalUE'] }}</div>
                 </div>
-            @endforeach
+
+                <div class="{{ $statCard }} p-4 sm:p-5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="{{ $statLabel }}">Total ECs</span>
+                        <span class="{{ $pillSoft }} shrink-0">Global</span>
+                    </div>
+                    <div class="{{ $statValue }}">{{ $stats['totalEC'] }}</div>
+                </div>
+
+                @foreach([1,2,3,4] as $s)
+                    @php $key = 'semestre'.$s; @endphp
+
+                    <div class="{{ $statCard }} p-4 sm:p-5">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="{{ $pill }} shrink-0">S{{ $s }}</span>
+                        </div>
+                        <div class="{{ $statValue }}">
+                            {{ $stats[$key]['ue'] ?? 0 }}
+                            <span class="text-sm font-normal text-slate-500 dark:text-slate-400">UEs</span>
+                        </div>
+                        <div class="{{ $statMeta }}">{{ $stats[$key]['ec'] ?? 0 }} ECs</div>
+                    </div>
+                @endforeach
+            </div>
         </div>
+
 
         {{-- SEARCH + FILTERS CARD --}}
         <div class="{{ $card }} mb-6">
             <div class="{{ $cardPad }}">
-                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div class="grid gap-4 lg:grid-cols-3">
                     {{-- Search --}}
                     <div class="lg:col-span-2">
                         <label class="block text-sm font-medium {{ $muted }} mb-2">
@@ -248,7 +334,7 @@
                         @endif
 
                         <button wire:click="$set('search',''); $set('semestre', null); $set('annee', null);"
-                                class="ml-auto text-sm font-medium text-slate-600 hover:text-slate-900 underline underline-offset-4
+                                class="basis-full sm:basis-auto sm:ml-auto text-left sm:text-right text-sm font-medium text-slate-600 hover:text-slate-900 underline underline-offset-4
                                        dark:text-slate-400 dark:hover:text-white">
                             Réinitialiser tous
                         </button>
@@ -259,7 +345,7 @@
 
 
         {{-- LISTE UEs --}}
-        <div class="space-y-5"
+        <div class="space-y-4 sm:space-y-5"
             wire:loading.class="opacity-60 pointer-events-none"
             x-data="{ openId: @js(optional($programmes->first())->id) }">
             @forelse($programmes as $ue)
@@ -275,20 +361,20 @@
                     <header class="bg-gray-50/80 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-800">
                         <button
                             type="button"
-                            class="w-full px-5 sm:px-6 py-5 text-left"
+                            class="w-full px-4 sm:px-6 py-4 sm:py-5 text-left"
                             @click="openId = (openId === {{ $ue->id }} ? null : {{ $ue->id }})"
                             :aria-expanded="openId === {{ $ue->id }}"
                         >
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="flex items-start gap-4 min-w-0">
+                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                <div class="flex items-start gap-3 sm:gap-4 min-w-0">
                                     {{-- UE Code --}}
-                                    <span class="shrink-0 inline-flex items-center rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white">
+                                    <span class="shrink-0 inline-flex items-center rounded-xl bg-indigo-600 px-3 py-1.5 sm:px-3.5 sm:py-2 text-sm font-bold text-white">
                                         {{ $ue->code }}
                                     </span>
 
                                     {{-- UE Title + meta --}}
                                     <div class="min-w-0">
-                                        <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
+                                        <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white leading-snug break-words sm:truncate">
                                             {{ $ue->name }}
                                         </h3>
 
@@ -317,7 +403,7 @@
                                 </div>
 
                                 {{-- Toggle icon --}}
-                                <span class="shrink-0 mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-xl
+                                <span class="shrink-0 self-start inline-flex h-10 w-10 items-center justify-center rounded-xl
                                             text-gray-500 hover:bg-gray-100 hover:text-gray-700
                                             dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white">
                                     <svg
@@ -349,7 +435,7 @@
                         x-show="openId === {{ $ue->id }}"
                         x-collapse
                         x-cloak
-                        class="p-5 sm:p-6"
+                        class="p-4 sm:p-6"
                     >
                         @forelse($ue->elements as $ec)
                             @php
@@ -359,7 +445,7 @@
 
                             {{-- EC cards grid --}}
                             @if($loop->first)
-                                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                <div class="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
                             @endif
 
                             <div
@@ -371,13 +457,13 @@
                                 {{-- EC Header --}}
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0 flex-1">
-                                        <div class="flex flex-wrap items-center gap-2">
+                                        <div class="flex flex-wrap items-start gap-2">
                                             <span class="inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700
                                                         dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-200">
                                                 {{ $ec->code }}
                                             </span>
 
-                                            <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                                            <h4 class="text-sm font-semibold text-gray-900 dark:text-white break-words">
                                                 {{ $ec->name }}
                                             </h4>
                                         </div>
@@ -436,7 +522,7 @@
                                                 x-transition:leave="transition ease-in duration-75"
                                                 x-transition:leave-start="transform opacity-100 scale-100"
                                                 x-transition:leave-end="transform opacity-0 scale-95"
-                                                class="absolute right-0 mt-2 w-56 origin-top-right rounded-xl border border-gray-200 bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none
+                                                class="absolute right-0 mt-2 w-56 max-w-[calc(100vw-2rem)] origin-top-right rounded-xl border border-gray-200 bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none
                                                     dark:border-gray-700 dark:bg-gray-800 z-50"
                                                 style="display: none;"
                                             >
@@ -453,7 +539,7 @@
                                                         </svg>
                                                         Assigner enseignant
                                                     </button>
-                                                    
+
                                                     <button
                                                         type="button"
                                                         wire:click="$dispatch('openEditModal', { programmeId: {{ $ec->id }} })"
@@ -467,7 +553,7 @@
                                                         Modifier l'EC
                                                     </button>
                                                 </div>
-                                                
+
                                                 <div class="border-t border-gray-200 dark:border-gray-700 py-1">
                                                     <button
                                                         type="button"
@@ -500,36 +586,36 @@
                                                         $tot = $cm + $td + $tp;
                                                     @endphp
 
-                                                    <div wire:key="ens-{{ $ens->id }}-{{ $ec->id }}" 
-                                                        class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2
+                                                    <div wire:key="ens-{{ $ens->id }}-{{ $ec->id }}"
+                                                        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2
                                                                 dark:border-gray-800 dark:bg-gray-900">
                                                         <div class="flex items-center gap-3 min-w-0">
                                                             <img
                                                                 src="{{ $ens->profile_photo_url }}"
                                                                 alt="{{ $ens->name }}"
-                                                                class="h-9 w-9 rounded-full object-cover ring-1 ring-gray-200 dark:ring-gray-800"
+                                                                class="h-9 w-9 rounded-full object-cover ring-1 ring-gray-200 dark:ring-gray-800 shrink-0"
                                                             />
 
                                                             <div class="min-w-0">
-                                                                <div class="flex items-center gap-2">
-                                                                    <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                                                <div class="flex flex-wrap items-center gap-2">
+                                                                    <p class="text-sm font-semibold text-gray-900 dark:text-white break-words sm:truncate">
                                                                         {{ $ens->full_name_with_grade ?? $ens->name }}
                                                                     </p>
 
                                                                     @if(!empty($ens->pivot->is_responsable))
-                                                                        <span class="inline-flex items-center rounded-full bg-indigo-600 px-2 py-0.5 text-[11px] font-semibold text-white">
+                                                                        <span class="inline-flex items-center rounded-full bg-indigo-600 px-2 py-0.5 text-[11px] font-semibold text-white shrink-0">
                                                                             Responsable
                                                                         </span>
                                                                     @endif
                                                                 </div>
 
-                                                                <p class="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                                                <p class="text-xs text-gray-600 dark:text-gray-400 break-words sm:truncate">
                                                                     {{ $ens->email }}
                                                                 </p>
                                                             </div>
                                                         </div>
 
-                                                        <div class="shrink-0 text-xs font-semibold text-gray-700 dark:text-gray-200">
+                                                        <div class="shrink-0 text-xs font-semibold text-gray-700 dark:text-gray-200 sm:text-right">
                                                             {{ $tot }}h
                                                         </div>
                                                     </div>
@@ -570,7 +656,7 @@
                     </section>
                 </article>
             @empty
-                <div class="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <div class="rounded-2xl border border-gray-200 bg-white p-8 sm:p-10 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Aucun programme trouvé</h3>
                     <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
                         Aucun programme ne correspond à vos critères. Essayez d'ajuster les filtres.
@@ -583,15 +669,15 @@
         {{-- Pagination --}}
         @if($programmes->hasPages())
             <div class="mt-8 {{ $card }}">
-                <div class="px-6 py-4">
+                <div class="px-4 sm:px-6 py-4">
                     {{ $programmes->links() }}
                 </div>
             </div>
         @endif
 
         {{-- Loading overlay --}}
-        <div wire:loading class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+        <div wire:loading class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+            <div class="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
                 <div class="flex items-center gap-3">
                     <svg class="h-6 w-6 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -607,6 +693,6 @@
  {{-- Modal d'assignation --}}
 <livewire:programmes.assign-enseignant />
 <livewire:programmes.edit-programme />
-<livewire:programmes.delete-programme /> 
+<livewire:programmes.delete-programme />
 
 </div>

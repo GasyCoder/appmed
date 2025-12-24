@@ -217,33 +217,44 @@ class DocumentUpload extends Component
 
     private function convertToPdf($file, string $title): array
     {
-        $conversionService = app(PdfConversionService::class);
+        $conversionService = app(\App\Services\PdfConversionService::class);
 
-        $tempPath = $file->storeAs(
-            'temp',
-            Str::random(10) . '.' . strtolower($file->getClientOriginalExtension())
-        );
+        $ext = strtolower($file->getClientOriginalExtension());
 
-        $absoluteTempPath = storage_path('app/' . $tempPath);
+        // 1) Stocker TOUJOURS le fichier temporaire sur le disk "local"
+        \Illuminate\Support\Facades\Storage::disk('local')->makeDirectory('temp');
+
+        $tmpName  = \Illuminate\Support\Str::random(16) . '.' . $ext;
+        $tempPath = $file->storeAs('temp', $tmpName, 'local'); // => temp/xxxx.docx
+
+        $absoluteTempPath = \Illuminate\Support\Facades\Storage::disk('local')->path($tempPath);
+
+        // Sécurité: vérifier que le fichier existe réellement
+        clearstatcache(true, $absoluteTempPath);
+        if (!is_file($absoluteTempPath)) {
+            throw new \RuntimeException("Le fichier temporaire n'a pas été créé: {$absoluteTempPath}");
+        }
+
+        // 2) Dossier de sortie sur le disk "public"
+        \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('documents');
+        $outputDir = \Illuminate\Support\Facades\Storage::disk('public')->path('documents');
+
+        $pdfFileName = time() . '_' . \Illuminate\Support\Str::slug($title) . '_' . \Illuminate\Support\Str::random(6) . '.pdf';
 
         try {
-            $outputDir = storage_path('app/public/documents');
-            if (!file_exists($outputDir)) {
-                mkdir($outputDir, 0755, true);
-            }
-
-            $pdfFileName = time() . '_' . Str::slug($title) . '_' . Str::random(6) . '.pdf';
             $conversionService->convertToPdf($absoluteTempPath, $outputDir, $pdfFileName);
 
             return [
-                'path' => 'documents/' . $pdfFileName,
+                'path'      => 'documents/' . $pdfFileName,
                 'converted' => true,
-                'mime' => 'application/pdf',
+                'mime'      => 'application/pdf',
             ];
         } finally {
-            Storage::delete($tempPath);
+            // IMPORTANT: supprimer sur le MÊME disk (local)
+            \Illuminate\Support\Facades\Storage::disk('local')->delete($tempPath);
         }
     }
+
 
     public function render()
     {

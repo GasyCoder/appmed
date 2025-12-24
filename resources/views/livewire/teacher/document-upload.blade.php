@@ -1,4 +1,23 @@
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    {{-- Fullscreen Loading Overlay --}}
+    <div
+        wire:loading.flex
+        wire:target="uploadDocuments,files"
+        class="fixed inset-0 z-[9999] items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-xl dark:border-gray-700 dark:bg-gray-800">
+            <div class="flex items-center gap-3">
+                <svg class="h-5 w-5 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">Upload en cours…</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-300">Veuillez patienter</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     {{-- Header --}}
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -27,7 +46,7 @@
             <div class="lg:col-span-8 space-y-6">
 
                 {{-- Destination --}}
-                <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-5">
+                <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 p-5">
                     <div class="flex items-center justify-between gap-3">
                         <h2 class="text-base font-bold text-gray-900 dark:text-white">
                             Destination
@@ -44,7 +63,7 @@
                                 Niveau <span class="text-red-500">*</span>
                             </label>
                             <select wire:model.live="niveau_id"
-                                    class="w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500">
+                                    class="w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500">
                                 <option value="">Sélectionnez</option>
                                 @foreach($niveaux as $niveau)
                                     <option value="{{ $niveau->id }}">{{ $niveau->name }}</option>
@@ -67,7 +86,7 @@
                                 UE <span class="text-red-500">*</span>
                             </label>
                             <select wire:model.live="ue_id"
-                                    class="w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
                                     @if(!$niveau_id) disabled @endif>
                                 <option value="">Sélectionnez</option>
                                 @foreach($ues as $ue)
@@ -85,7 +104,7 @@
                                 EC (optionnel)
                             </label>
                             <select wire:model.live="ec_id"
-                                    class="w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
                                     @if(!$ue_id || $ecs->isEmpty()) disabled @endif>
                                 <option value="">Toute l’UE</option>
                                 @foreach($ecs as $ec)
@@ -100,7 +119,7 @@
                 </div>
 
                 {{-- Dropzone --}}
-                <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-5">
+                <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 p-5">
                     <div class="flex items-center justify-between gap-3">
                         <h2 class="text-base font-bold text-gray-900 dark:text-white">
                             Fichiers
@@ -136,7 +155,7 @@
                         <label for="fileInput"
                                class="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed p-8 cursor-pointer transition
                                       border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 hover:bg-gray-100 dark:hover:bg-gray-900/40"
-                               :class="dragging ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20' : ''">
+                               :class="dragging ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20' : ''">
 
                             <svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -176,7 +195,7 @@
             <aside class="lg:col-span-4 space-y-6 lg:sticky lg:top-20 h-fit">
 
                 {{-- LISTE FICHIERS (compact) --}}
-                <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+                <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800">
                     <div class="flex items-center justify-between px-3 py-2.5 border-b border-gray-200 dark:border-gray-800">
                         <p class="text-sm font-bold text-gray-900 dark:text-white">
                             Liste des fichiers
@@ -208,7 +227,7 @@
                                          wire:key="sidebar-file-{{ $index }}">
 
                                         <div class="flex items-start gap-2">
-                                            <div class="h-8 w-8 rounded-md bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 flex items-center justify-center shrink-0">
+                                            <div class="h-8 w-8 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 flex items-center justify-center shrink-0">
                                                 <svg class="h-4 w-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -234,7 +253,7 @@
                                                     wire:click="removeFile({{ $index }})"
                                                     class="h-8 w-8 inline-flex items-center justify-center rounded-md
                                                            border border-gray-200 dark:border-gray-800
-                                                           bg-white dark:bg-gray-950
+                                                           bg-white dark:bg-gray-800
                                                            text-gray-500 dark:text-gray-300
                                                            hover:text-red-600 dark:hover:text-red-400"
                                                     title="Retirer">
@@ -251,7 +270,7 @@
                                                    wire:model.lazy="titles.{{ $index }}"
                                                    placeholder="Titre du document"
                                                    class="w-full h-9 rounded-md border-gray-300 dark:border-gray-700
-                                                          bg-white dark:bg-gray-950 text-sm
+                                                          bg-white dark:bg-gray-800 text-sm
                                                           text-gray-900 dark:text-gray-100
                                                           focus:border-indigo-500 focus:ring-indigo-500">
 
@@ -259,7 +278,7 @@
                                                 <p class="text-xs font-semibold text-red-600 dark:text-red-400">{{ $message }}</p>
                                             @enderror
 
-                                            <label class="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2">
+                                            <label class="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 px-3 py-2">
                                                 <span class="text-xs font-bold text-gray-700 dark:text-gray-300">
                                                     Publier
                                                 </span>
@@ -288,7 +307,7 @@
                 </div>
 
                 {{-- ACTIONS (sticky + bouton pas en bas) --}}
-                <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-4">
+                <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 p-4">
                     <div class="flex items-center justify-between">
                         <p class="text-sm font-bold text-gray-900 dark:text-white">Actions</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400">

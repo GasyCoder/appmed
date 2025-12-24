@@ -210,12 +210,15 @@ class PdfConversionService
 
     /**
      * Exécuter la conversion avec LibreOffice
-     */
+    */
     private function executeConversion($inputPath, $outputDir)
     {
         $command = $this->getLibreOfficeCommand();
 
-        $process = new Process([
+        $profileDir = storage_path('app/lo-profile/' . uniqid('lo_', true));
+        $this->ensureDirectoryExists($profileDir);
+
+        $process = new \Symfony\Component\Process\Process([
             $command,
             '--headless',
             '--invisible',
@@ -223,54 +226,39 @@ class PdfConversionService
             '--nolockcheck',
             '--nologo',
             '--norestore',
+
+            // ✅ IMPORTANT: LibreOffice attend -env:... (pas --env:...)
+            '-env:UserInstallation=file://' . $profileDir,
+
             '--convert-to', 'pdf',
             '--outdir', $outputDir,
-            $inputPath
+            $inputPath,
         ]);
 
         $process->setTimeout(self::CONVERSION_TIMEOUT);
 
-        // Définir les variables d'environnement
+        // Optionnel: tu peux garder, mais DISPLAY n’est pas nécessaire en headless
         $process->setEnv([
-            'DISPLAY' => ':99',
-            'HOME' => storage_path('app/temp')
-        ]);
-
-        Log::info("Executing LibreOffice conversion", [
-            'command' => $process->getCommandLine(),
-            'timeout' => self::CONVERSION_TIMEOUT,
-            'input_exists' => file_exists($inputPath),
-            'input_readable' => is_readable($inputPath),
-            'input_size' => file_exists($inputPath) ? filesize($inputPath) : 0
+            'HOME' => storage_path('app/temp'),
         ]);
 
         try {
             $process->mustRun();
-
-            if (!$process->isSuccessful()) {
-                throw new ProcessFailedException($process);
-            }
-
-            Log::info("LibreOffice conversion successful", [
-                'output' => trim($process->getOutput()),
-                'error_output' => trim($process->getErrorOutput())
-            ]);
-
-        } catch (ProcessFailedException $e) {
-            Log::error('Échec de la conversion LibreOffice', [
+        } catch (\Symfony\Component\Process\Exception\ProcessFailedException $e) {
+            \Illuminate\Support\Facades\Log::error('Échec de la conversion LibreOffice', [
                 'command' => $process->getCommandLine(),
                 'output' => $process->getOutput(),
                 'error_output' => $process->getErrorOutput(),
                 'exit_code' => $process->getExitCode(),
                 'input_path' => $inputPath,
                 'output_dir' => $outputDir,
-                'input_exists' => file_exists($inputPath),
-                'input_readable' => is_readable($inputPath)
             ]);
 
             throw new \Exception('La conversion LibreOffice a échoué : ' . $process->getErrorOutput());
         }
     }
+
+
 
     /**
      * Trouver le fichier PDF converti

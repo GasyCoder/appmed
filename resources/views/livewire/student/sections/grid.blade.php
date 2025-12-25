@@ -178,41 +178,38 @@
                     </span>
                 </div>
 
-{{-- Actions (compact, pas plein largeur) --}}
-<div class="mt-4 flex items-center justify-end gap-2">
-    {{-- Ouvrir / Consulter --}}
-    <a href="{{ $m['isExternal'] ? ($document->file_path) : route('document.serve', $document) }}"
-       target="_blank" rel="noopener noreferrer"
-       class="inline-flex h-9 items-center justify-center gap-2
-              rounded-xl px-3 text-xs font-semibold
-              text-white bg-blue-600 hover:bg-blue-700
-              focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:ring-offset-2 dark:focus:ring-offset-gray-950
-              transition">
-        {!! $openIcon !!}
-        <span class="hidden sm:inline">{{ $openLabel }}</span>
-    </a>
+                {{-- Actions (compact, pas plein largeur) --}}
+                <div class="mt-4 flex items-center justify-end gap-2">
+                    {{-- Ouvrir / Consulter --}}
+                    <a href="{{ $m['isExternal'] ? ($document->file_path) : route('document.serve', $document) }}"
+                    target="_blank" rel="noopener noreferrer"
+                    class="inline-flex h-9 items-center justify-center gap-2
+                            rounded-xl px-3 text-xs font-semibold
+                            text-white bg-blue-600 hover:bg-blue-700
+                            focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:ring-offset-2 dark:focus:ring-offset-gray-950
+                            transition">
+                        {!! $openIcon !!}
+                        <span class="hidden sm:inline">{{ $openLabel }}</span>
+                    </a>
 
-    {{-- Télécharger (icône seulement) --}}
-    @if(!$m['isExternal'])
-        <a href="{{ route('document.download', $document) }}"
-           class="inline-flex h-9 w-9 items-center justify-center
-                  rounded-xl border border-gray-200 bg-gray-50 text-gray-700
-                  hover:bg-gray-100
-                  dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800
-                  focus:outline-none focus:ring-2 focus:ring-gray-400/70 focus:ring-offset-2 dark:focus:ring-offset-gray-950
-                  transition"
-           aria-label="Télécharger"
-           title="Télécharger">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-        </a>
-    @endif
-</div>
-
-
-
+                    {{-- Télécharger (icône seulement) --}}
+                    @if(!$m['isExternal'])
+                        <a href="{{ route('document.download', $document) }}"
+                        class="inline-flex h-9 w-9 items-center justify-center
+                                rounded-xl border border-gray-200 bg-gray-50 text-gray-700
+                                hover:bg-gray-100
+                                dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800
+                                focus:outline-none focus:ring-2 focus:ring-gray-400/70 focus:ring-offset-2 dark:focus:ring-offset-gray-950
+                                transition"
+                        aria-label="Télécharger"
+                        title="Télécharger">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </a>
+                    @endif
+                </div>
 
                 <div class="mt-3 text-center sm:hidden">
                     @if($m['isExternal'])

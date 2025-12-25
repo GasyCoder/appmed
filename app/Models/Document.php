@@ -2,38 +2,24 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Document extends Model
 {
     use SoftDeletes;
 
     protected $fillable = [
-        'uploaded_by',
-        'niveau_id',
-        'parcour_id',
-        'semestre_id',
-        'programme_id',
-
-        'title',
-        'file_path',
-        'protected_path',
-
-        'original_filename',
-        'original_extension',
-        'converted_from',
-        'converted_at',
-
-        'file_type',
-        'file_size',
-
-        'is_actif',
-        'download_count',
-        'view_count',
+        'uploaded_by', 'niveau_id', 'parcour_id', 'semestre_id', 'programme_id',
+        'title', 'file_path', 'protected_path', 'original_filename', 'original_extension',
+        'converted_from', 'converted_at', 'file_type', 'file_size', 'is_actif',
+        'download_count', 'view_count',
     ];
 
     protected $dates = ['deleted_at', 'converted_at'];
@@ -45,391 +31,217 @@ class Document extends Model
         'converted_at' => 'datetime',
     ];
 
-    public function programme()
-    {
-        return $this->belongsTo(Programme::class);
-    }
-
     // Relations
-    public function teacher()
+    public function programme() { return $this->belongsTo(Programme::class); }
+    public function teacher() { return $this->belongsTo(User::class, 'uploaded_by'); }
+    public function uploader() { return $this->belongsTo(User::class, 'uploaded_by'); }
+    public function niveau() { return $this->belongsTo(Niveau::class); }
+    public function parcour() { return $this->belongsTo(Parcour::class); }
+    public function semestre() { return $this->belongsTo(Semestre::class); }
+    public function views(): HasMany { return $this->hasMany(DocumentView::class); }
+
+    // ----------------------------
+    // Règles / Helpers
+    // ----------------------------
+
+    public function isExternalLink(): bool
     {
-        return $this->belongsTo(User::class, 'uploaded_by');
+        return Str::startsWith((string) $this->file_path, ['http://', 'https://']);
     }
 
-    public function uploader()
+    public function extensionFromPath(): string
     {
-        return $this->belongsTo(User::class, 'uploaded_by');
-    }
+        $path = (string) ($this->file_path ?? '');
 
-    public function niveau()
-    {
-        return $this->belongsTo(Niveau::class);
-    }
-
-    public function parcour()
-    {
-        return $this->belongsTo(Parcour::class);
-    }
-
-    public function semestre()
-    {
-        return $this->belongsTo(Semestre::class);
-    }
-
-    // ✅ Nouvelles méthodes pour la conversion
-    public function wasConverted(): bool
-    {
-        return !empty($this->converted_from);
-    }
-
-    public function getConversionInfo(): array
-    {
-        return [
-            'was_converted' => $this->wasConverted(),
-            'original_extension' => $this->original_extension,
-            'converted_from' => $this->converted_from,
-            'converted_at' => $this->converted_at,
-            'current_extension' => $this->getExtensionAttribute()
-        ];
-    }
-
-    public function getConversionStatusAttribute(): string
-    {
-        if (!$this->wasConverted()) {
-            return 'original';
+        if ($this->isExternalLink()) {
+            $urlPath = (string) (parse_url($path, PHP_URL_PATH) ?? '');
+            return strtolower(pathinfo($urlPath, PATHINFO_EXTENSION) ?: '');
         }
 
-        return "converti de {$this->converted_from} en " . $this->getExtensionAttribute();
+        return strtolower(pathinfo($path, PATHINFO_EXTENSION) ?: '');
     }
 
-    // ✅ SOLUTION 1: Méthode d'accès simplifiée et debuggée
+    public function isDirectDownloadType(): bool
+    {
+        // DOC/Office => téléchargement direct obligatoire
+        $ext = $this->extensionFromPath();
+        return in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'csv'], true);
+    }
+
+    public function isViewerLocalType(): bool
+    {
+        // viewer obligatoire UNIQUEMENT pour local PDF/PPTX
+        if ($this->isExternalLink()) return false;
+
+        $ext = $this->extensionFromPath();
+        return in_array($ext, ['pdf', 'ppt', 'pptx'], true);
+    }
+
+    public function isPdfLocal(): bool
+    {
+        return !$this->isExternalLink() && $this->extensionFromPath() === 'pdf';
+    }
+
+    // ----------------------------
+    // Google Drive / Docs helpers
+    // ----------------------------
+
+    public static function extractGoogleId(string $url): ?string
+    {
+        if (preg_match('~drive\.google\.com/file/d/([^/]+)~', $url, $m)) return $m[1];
+        if (preg_match('~drive\.google\.com/open\?id=([^&]+)~', $url, $m)) return $m[1];
+        if (preg_match('~drive\.google\.com/uc\?id=([^&]+)~', $url, $m)) return $m[1];
+        if (preg_match('~docs\.google\.com/(document|spreadsheets|presentation)/d/([^/]+)~', $url, $m)) return $m[2];
+        return null;
+    }
+
+    /**
+     * URL de lecture EXTERNE (nouvel onglet)
+     * - Drive => preview
+     * - Docs/Sheets/Slides => preview
+     * - Autres pdf/ppt => gview
+     * - Sinon => lien brut
+     */
+    public function externalReadUrl(): string
+    {
+        $url = (string) ($this->file_path ?? '');
+        if ($url === '') return $url;
+
+        $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
+        $id = self::extractGoogleId($url);
+
+        if ($id && str_contains($host, 'drive.google.com')) {
+            return "https://drive.google.com/file/d/{$id}/preview";
+        }
+
+        if ($id && str_contains($host, 'docs.google.com')) {
+            if (str_contains($url, '/presentation/')) return "https://docs.google.com/presentation/d/{$id}/preview";
+            if (str_contains($url, '/spreadsheets/')) return "https://docs.google.com/spreadsheets/d/{$id}/preview";
+            if (str_contains($url, '/document/')) return "https://docs.google.com/document/d/{$id}/preview";
+        }
+
+        $ext = $this->extensionFromPath();
+        if (in_array($ext, ['pdf', 'ppt', 'pptx'], true)) {
+            return 'https://docs.google.com/gview?embedded=1&url=' . urlencode($url);
+        }
+
+        return $url;
+    }
+
+    /**
+     * URL de téléchargement EXTERNE
+     * - Drive/Docs => uc?export=download&id=
+     * - Sinon => lien brut
+     */
+    public function externalDownloadUrl(): string
+    {
+        $url = (string) ($this->file_path ?? '');
+        if ($url === '') return $url;
+
+        $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
+        $id = self::extractGoogleId($url);
+
+        if ($id && (str_contains($host, 'drive.google.com') || str_contains($host, 'docs.google.com'))) {
+            return "https://drive.google.com/uc?export=download&id={$id}";
+        }
+
+        return $url;
+    }
+
+    // ----------------------------
+    // Compteurs
+    // ----------------------------
+
+    /**
+     * Vue unique par user (1 fois par document)
+     */
+    public function registerView(?User $user = null): void
+    {
+        $user = $user ?? Auth::user();
+        if (!$user) return;
+
+        try {
+            DB::beginTransaction();
+
+            $exists = $this->views()->where('user_id', $user->id)->exists();
+            if (!$exists) {
+                $this->views()->create(['user_id' => $user->id]);
+                $this->increment('view_count');
+                $this->refresh();
+                Log::info("Document {$this->id}: Vue enregistrée pour user {$user->id}. Total: {$this->view_count}");
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Document {$this->id}: Erreur registerView - " . $e->getMessage());
+        }
+    }
+
+    public function registerDownload(?User $user = null): void
+    {
+        try {
+            DB::beginTransaction();
+            $this->increment('download_count');
+            $this->refresh();
+            DB::commit();
+
+            $userId = $user?->id ?? (Auth::id() ?? 'guest');
+            Log::info("Document {$this->id}: Téléchargement enregistré pour user {$userId}. Total: {$this->download_count}");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Document {$this->id}: Erreur registerDownload - " . $e->getMessage());
+        }
+    }
+
+    // ----------------------------
+    // Access + fichiers
+    // ----------------------------
+
     public function canAccess(User $user): bool
     {
-        try {
-            // Admin et enseignants ont toujours accès
-            if ($user->hasRole(['admin', 'teacher'])) {
-                Log::info("Document {$this->id}: Admin/Teacher access granted for user {$user->id}");
-                return true;
-            }
+        if ($user->hasRole(['admin', 'teacher'])) return true;
 
-            // Pour les étudiants - vérifications étape par étape
-            if ($user->hasRole('student')) {
-                // Le document doit être actif
-                if (!$this->is_actif) {
-                    Log::warning("Document {$this->id}: Document not active for student {$user->id}");
-                    return false;
-                }
-
-                // Vérifier le niveau
-                if ($this->niveau_id && $this->niveau_id !== $user->niveau_id) {
-                    Log::warning("Document {$this->id}: Niveau mismatch. Doc: {$this->niveau_id}, User: {$user->niveau_id}");
-                    return false;
-                }
-
-                // Vérifier le parcours
-                if ($this->parcour_id && $this->parcour_id !== $user->parcour_id) {
-                    Log::warning("Document {$this->id}: Parcour mismatch. Doc: {$this->parcour_id}, User: {$user->parcour_id}");
-                    return false;
-                }
-
-                Log::info("Document {$this->id}: Student access granted for user {$user->id}");
-                return true;
-            }
-
-            Log::warning("Document {$this->id}: No role match for user {$user->id}");
-            return false;
-
-        } catch (\Exception $e) {
-            Log::error("Error checking document access: " . $e->getMessage());
-            return false;
+        if ($user->hasRole('student')) {
+            if (!$this->is_actif) return false;
+            if ($this->niveau_id && $this->niveau_id !== $user->niveau_id) return false;
+            if ($this->parcour_id && $this->parcour_id !== $user->parcour_id) return false;
+            return true;
         }
+
+        return false;
     }
 
-    // ✅ SOLUTION 2: Vérification complète de l'existence du fichier
     public function fileExists(): bool
     {
-        try {
-            if (empty($this->file_path)) {
-                Log::error("Document {$this->id}: Empty file_path");
-                return false;
-            }
+        if (empty($this->file_path)) return false;
 
-            $exists = Storage::disk('public')->exists($this->file_path);
-            if (!$exists) {
-                Log::error("Document {$this->id}: File not found at path: {$this->file_path}");
-            }
+        if ($this->isExternalLink()) return true;
 
-            return $exists;
-        } catch (\Exception $e) {
-            Log::error("Document {$this->id}: Error checking file existence: " . $e->getMessage());
-            return false;
-        }
+        return Storage::disk('public')->exists($this->file_path);
     }
 
-    // ✅ SOLUTION 3: URL sécurisée avec vérifications
-    public function getSecureUrl(): string
+    public function getDisplayFilename(): string
     {
-        try {
-            // Vérifier que le fichier existe
-            if (!$this->fileExists()) {
-                throw new \Exception("File does not exist");
-            }
-
-            // Pour S3 ou autres cloud storage
-            if (config('filesystems.default') === 's3') {
-                return Storage::temporaryUrl($this->file_path, now()->addHours(2));
-            }
-
-            // Pour stockage local - avec timestamp pour éviter le cache
-            $url = Storage::url($this->file_path) . '?v=' . $this->updated_at->timestamp;
-            
-            Log::info("Document {$this->id}: Generated URL: " . $url);
-            return $url;
-
-        } catch (\Exception $e) {
-            Log::error("Document {$this->id}: Error generating secure URL: " . $e->getMessage());
-            // Retourner une URL d'erreur ou placeholder
-            return url('/images/document-error.png');
-        }
+        return $this->original_filename ?: basename((string) $this->file_path);
     }
-
-    // ✅ SOLUTION 4: Validation robuste du PDF
-    public function isPdf(): bool
-    {
-        $extension = strtolower(pathinfo($this->file_path, PATHINFO_EXTENSION));
-        $mimeType = $this->file_type;
-        
-        return $extension === 'pdf' || $mimeType === 'application/pdf';
-    }
-
-    // ✅ SOLUTION 5: Vérification de la lisibilité du fichier
-    public function isReadable(): bool
-    {
-        try {
-            if (!$this->fileExists()) {
-                return false;
-            }
-
-            $filePath = Storage::disk('public')->path($this->file_path);
-            
-            // Vérifier les permissions de lecture
-            if (!is_readable($filePath)) {
-                Log::error("Document {$this->id}: File not readable: {$filePath}");
-                return false;
-            }
-
-            // Vérifier la taille du fichier
-            $fileSize = filesize($filePath);
-            if ($fileSize === false || $fileSize === 0) {
-                Log::error("Document {$this->id}: File empty or corrupted: {$filePath}");
-                return false;
-            }
-
-            // Pour les PDF, vérifier l'en-tête
-            if ($this->isPdf()) {
-                $handle = fopen($filePath, 'rb');
-                $header = fread($handle, 4);
-                fclose($handle);
-                
-                if ($header !== '%PDF') {
-                    Log::error("Document {$this->id}: Invalid PDF header");
-                    return false;
-                }
-            }
-
-            return true;
-
-        } catch (\Exception $e) {
-            Log::error("Document {$this->id}: Error checking readability: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    // ✅ SOLUTION 6: Méthode de diagnostic complète
-    public function diagnose(): array
-    {
-        $diagnosis = [
-            'id' => $this->id,
-            'title' => $this->title,
-            'file_path' => $this->file_path,
-            'is_active' => $this->is_actif,
-            'file_exists' => false,
-            'is_readable' => false,
-            'file_size' => $this->file_size,
-            'actual_file_size' => null,
-            'is_pdf' => $this->isPdf(),
-            'was_converted' => $this->wasConverted(),
-            'conversion_info' => $this->getConversionInfo(),
-            'url' => null,
-            'errors' => []
-        ];
-
-        try {
-            // Test d'existence
-            $diagnosis['file_exists'] = $this->fileExists();
-            if (!$diagnosis['file_exists']) {
-                $diagnosis['errors'][] = 'File does not exist at path: ' . $this->file_path;
-            }
-
-            // Test de lisibilité
-            if ($diagnosis['file_exists']) {
-                $diagnosis['is_readable'] = $this->isReadable();
-                if (!$diagnosis['is_readable']) {
-                    $diagnosis['errors'][] = 'File exists but is not readable';
-                }
-
-                // Taille réelle du fichier
-                $filePath = Storage::disk('public')->path($this->file_path);
-                $diagnosis['actual_file_size'] = filesize($filePath);
-                
-                if ($diagnosis['actual_file_size'] !== $this->file_size) {
-                    $diagnosis['errors'][] = 'File size mismatch. DB: ' . $this->file_size . ', Actual: ' . $diagnosis['actual_file_size'];
-                }
-            }
-
-            // Test URL
-            try {
-                $diagnosis['url'] = $this->getSecureUrl();
-            } catch (\Exception $e) {
-                $diagnosis['errors'][] = 'Error generating URL: ' . $e->getMessage();
-            }
-
-        } catch (\Exception $e) {
-            $diagnosis['errors'][] = 'General error: ' . $e->getMessage();
-        }
-
-        return $diagnosis;
-    }
-
-    // ✅ SOLUTION 7: Méthode de réparation automatique
-    public function repair(): bool
-    {
-        try {
-            Log::info("Attempting to repair document {$this->id}");
-
-            // Vérifier et corriger le chemin du fichier
-            if (!$this->fileExists() && !empty($this->file_path)) {
-                // Essayer de trouver le fichier avec différents chemins
-                $possiblePaths = [
-                    $this->file_path,
-                    'documents/' . basename($this->file_path),
-                    'uploads/' . basename($this->file_path),
-                    'files/' . basename($this->file_path),
-                ];
-
-                foreach ($possiblePaths as $path) {
-                    if (Storage::disk('public')->exists($path)) {
-                        Log::info("Found file at alternative path: {$path}");
-                        $this->file_path = $path;
-                        $this->save();
-                        return true;
-                    }
-                }
-            }
-
-            // Recalculer la taille du fichier
-            if ($this->fileExists()) {
-                $filePath = Storage::disk('public')->path($this->file_path);
-                $actualSize = filesize($filePath);
-                
-                if ($actualSize !== $this->file_size) {
-                    Log::info("Updating file size for document {$this->id}: {$this->file_size} -> {$actualSize}");
-                    $this->file_size = $actualSize;
-                    $this->save();
-                }
-                
-                return true;
-            }
-
-            return false;
-
-        } catch (\Exception $e) {
-            Log::error("Error repairing document {$this->id}: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    // Méthodes existantes améliorées...
-    public function views()
-    {
-        return $this->hasMany(DocumentView::class);
-    }
-
-    public function registerView(): void
-    {
-        if (!Auth::check()) {
-            return;
-        }
-
-        $user = Auth::user();
-
-        // On ne compte que les vues des étudiants
-        if (!$user->hasRole('student')) {
-            return;
-        }
-
-        // Vérifier l'accès
-        if (!$this->canAccess($user)) {
-            return;
-        }
-
-        // 1) Vue "unique" (1 fois par étudiant) => table document_views (unique index)
-        $this->views()->firstOrCreate([
-            'user_id' => $user->id,
-        ]);
-
-        // 2) Compteur global "hits" (chaque ouverture) => colonne documents.view_count
-        $this->increment('view_count');
-    }
-
 
     public function getFormattedSizeAttribute()
     {
-        $bytes = $this->file_size;
-        if ($bytes === 0) return '0 Bytes';
+        $bytes = (int) ($this->file_size ?? 0);
+        if ($bytes <= 0) return '0 Bytes';
 
         $k = 1024;
-        $decimals = 2;
-        $sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        $sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        $i = (int) floor(log($bytes) / log($k));
 
-        $i = floor(log($bytes) / log($k));
-        return number_format($bytes / pow($k, $i), $decimals) . ' ' . $sizes[$i];
+        return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
     }
 
     public function getExtensionAttribute()
     {
-        return strtolower(pathinfo($this->file_path, PATHINFO_EXTENSION));
-    }
-
-    // ✅ Méthode pour obtenir le nom de fichier original ou actuel
-    public function getDisplayFilename(): string
-    {
-        return $this->original_filename ?: basename($this->file_path);
-    }
-
-    // ✅ Scope pour les documents convertis
-    public function scopeConverted($query)
-    {
-        return $query->whereNotNull('converted_from');
-    }
-
-    // ✅ Scope pour les documents par format original
-    public function scopeByOriginalFormat($query, $format)
-    {
-        return $query->where('original_extension', $format);
-    }
-
-
-    public function getFileSizeFormattedAttribute()
-    {
-        $bytes = $this->file_size;
-        
-        if ($bytes >= 1048576) {
-            return round($bytes / 1048576, 2) . ' MB';
-        } elseif ($bytes >= 1024) {
-            return round($bytes / 1024, 2) . ' KB';
-        }
-        
-        return $bytes . ' octets';
+        // compat: si ancien code l’utilise
+        $ext = $this->extensionFromPath();
+        return $ext !== '' ? $ext : ($this->isExternalLink() ? 'link' : '');
     }
 }

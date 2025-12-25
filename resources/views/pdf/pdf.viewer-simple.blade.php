@@ -1,3 +1,4 @@
+{{-- resources/views/pdf/pdf.viewer-simple.blade.php --}}
 <x-app-layout>
     <div class="min-h-screen bg-gray-50">
         <!-- Header avec contrôles -->

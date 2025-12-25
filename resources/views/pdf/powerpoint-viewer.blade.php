@@ -1,3 +1,4 @@
+{{-- view/pdf/powerpoint-viewer.blade.php --}}
 <x-app-layout>
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <!-- Header avec contrôles -->

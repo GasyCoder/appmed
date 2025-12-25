@@ -94,9 +94,7 @@ namespace App\Models{
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read string $conversion_status
  * @property-read mixed $extension
- * @property-read mixed $file_size_formatted
  * @property-read mixed $formatted_size
  * @property-read \App\Models\Niveau $niveau
  * @property-read \App\Models\Parcour $parcour
@@ -106,8 +104,6 @@ namespace App\Models{
  * @property-read \App\Models\User $uploader
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DocumentView> $views
  * @property-read int|null $views_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Document byOriginalFormat($format)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Document converted()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document onlyTrashed()
@@ -356,6 +352,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme ues()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme visibleForStudent(\App\Models\User $student)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme whereCode($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme whereCoefficient($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Programme whereCreatedAt($value)

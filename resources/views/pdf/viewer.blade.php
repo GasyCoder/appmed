@@ -1,3 +1,4 @@
+{{-- resources/views/pdf/viewer.blade.php --}}
 <x-app-layout>
     <div class="min-h-screen pt-16 pb-20"> <!-- Ajouté pb-20 pour l'espace en bas -->
         <!-- Container principal -->

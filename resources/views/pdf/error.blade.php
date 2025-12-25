@@ -1,3 +1,4 @@
+{{-- resources/views/pdf/error.blade.php --}}
 <x-app-layout>
     <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">

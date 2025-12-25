@@ -4,9 +4,8 @@
     {{-- ✅ VERSION APP --}}
     <div class="pt-1 text-center">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">
-            Version {{ config('app.version') }}
             @if(config('app.build'))
-                • Build {{ config('app.build') }}
+                Version {{ config('app.build') }}
             @endif
         </p>
     </div>

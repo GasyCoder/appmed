@@ -40,7 +40,7 @@
         </div>
     @endif
 
-    <x-student.footer-student />
+    <x-footer-version />
 
 
 </div>

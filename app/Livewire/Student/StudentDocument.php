@@ -34,6 +34,12 @@ class StudentDocument extends Component
        'viewType' => ['except' => 'grid'],
    ];
 
+   // ✅ AJOUT : Listeners pour rafraîchir les compteurs
+   protected $listeners = [
+       'refreshDocuments' => '$refresh',
+       'documentViewed' => '$refresh',
+   ];
+
    public function toggleView($type)
    {
        $this->viewType = $type;
@@ -80,6 +86,13 @@ class StudentDocument extends Component
    public function updatedTeacherFilter()
    {
        $this->resetPage();
+   }
+
+   // ✅ AJOUT : Méthode pour rafraîchir manuellement
+   public function refreshCounters()
+   {
+       // Force le rechargement complet des données
+       $this->render();
    }
 
    public function getTeachersProperty()

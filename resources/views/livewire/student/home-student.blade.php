@@ -301,6 +301,6 @@
         </div>
     </div>
 
-    <x-student.footer-student />
+    <x-footer-version />
 
 </div>

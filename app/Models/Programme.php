@@ -10,7 +10,6 @@ class Programme extends Model
 {
     use HasFactory, SoftDeletes;
 
-    // Types de programme
     const TYPE_UE = 'UE';
     const TYPE_EC = 'EC';
 
@@ -40,34 +39,24 @@ class Programme extends Model
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Les éléments constitutifs (EC) d'une UE
-     */
     public function elements()
     {
         return $this->hasMany(Programme::class, 'parent_id')
             ->orderBy('order');
     }
 
-    /**
-     * L'unité d'enseignement parente (pour un EC)
-     */
     public function parent()
     {
         return $this->belongsTo(Programme::class, 'parent_id');
     }
 
-    /**
-     * Les enseignants assignés à ce programme (EC)
-     * Uniquement les users avec le rôle 'teacher'
-     */
     public function enseignant()
     {
         return $this->belongsToMany(User::class, 'programme_user')
             ->withPivot(['heures_cm', 'heures_td', 'heures_tp', 'is_responsable', 'note'])
             ->withTimestamps()
             ->whereHas('roles', fn($q) => $q->where('name', 'teacher'))
-            ->first(); // Retourne UN SEUL enseignant
+            ->first();
     }
 
     public function enseignants()
@@ -78,10 +67,6 @@ class Programme extends Model
             ->whereHas('roles', fn($q) => $q->where('name', 'teacher'));
     }
 
-
-    /**
-     * L'enseignant responsable du programme
-     */
     public function responsable()
     {
         return $this->belongsToMany(User::class, 'programme_user')
@@ -92,25 +77,16 @@ class Programme extends Model
             ->first();
     }
 
-    /**
-     * Le semestre
-     */
     public function semestre()
     {
         return $this->belongsTo(Semestre::class);
     }
 
-    /**
-     * Le niveau (M1, M2, etc.)
-     */
     public function niveau()
     {
         return $this->belongsTo(Niveau::class);
     }
 
-    /**
-     * Le parcours
-     */
     public function parcour()
     {
         return $this->belongsTo(Parcour::class);
@@ -122,85 +98,111 @@ class Programme extends Model
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Scope pour les UEs uniquement
-     */
     public function scopeUes($query)
     {
         return $query->whereNull('parent_id')
             ->where('type', self::TYPE_UE);
     }
 
-    /**
-     * Scope pour les ECs uniquement
-     */
     public function scopeEcs($query)
     {
         return $query->whereNotNull('parent_id')
             ->where('type', self::TYPE_EC);
     }
 
-    /**
-     * Scope pour les programmes actifs
-     */
     public function scopeActive($query)
     {
         return $query->where('status', true);
     }
 
-    /**
-     * Scope par semestre
-     */
     public function scopeBySemestre($query, $semestreId)
     {
         return $query->where('semestre_id', $semestreId);
     }
 
-    /**
-     * Scope par niveau
-     */
     public function scopeByNiveau($query, $niveauId)
     {
         return $query->where('niveau_id', $niveauId);
     }
 
-    /**
-     * Scope par parcours
-     */
     public function scopeByParcours($query, $parcourId)
     {
         return $query->where('parcour_id', $parcourId);
     }
 
-    /**
-     * Scope par année (4ème ou 5ème)
-     * 4ème année : Semestre 1 et 2
-     * 5ème année : Semestre 3 et 4
-     */
     public function scopeByAnnee($query, $annee)
     {
-        if ($annee == 4) {
-            return $query->whereIn('semestre_id', [1, 2]);
-        } elseif ($annee == 5) {
-            return $query->whereIn('semestre_id', [3, 4]);
-        }
+        if ($annee == 4) return $query->whereIn('semestre_id', [1, 2]);
+        if ($annee == 5) return $query->whereIn('semestre_id', [3, 4]);
         return $query;
     }
 
-    /**
-     * Scope pour les programmes avec enseignants
-     */
     public function scopeWithEnseignants($query)
     {
         return $query->whereHas('enseignants');
     }
 
-    /**
-     * Scope pour les programmes sans enseignants
-     */
     public function scopeWithoutEnseignants($query)
     {
         return $query->whereDoesntHave('enseignants');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ✅ Scopes “Étudiant” (M1/M2 + Parcours)
+    |--------------------------------------------------------------------------
+    | Règles:
+    | - Étudiant M1 => Semestre 1-2 uniquement + (niveau_id si rempli) + parcour_id
+    | - Étudiant M2 => Semestre 3-4 uniquement + (niveau_id si rempli) + parcour_id
+    */
+
+    public static function semestresForM1(): array
+    {
+        return [1, 2];
+    }
+
+    public static function semestresForM2(): array
+    {
+        return [3, 4];
+    }
+
+    /**
+     * Filtre générique selon user (niveau/parcours + mapping semestre).
+     * - Si niveau_id existe dans programmes => on filtre aussi par niveau_id.
+     * - Sinon, le mapping semestre suffit (S1-2 vs S3-4).
+     */
+    public function scopeVisibleForStudent($query, User $student)
+    {
+        $query->where('status', true);
+
+        // Parcours (tu dis "un seul parcours", mais on garde la sécurité)
+        if (!empty($student->parcour_id)) {
+            $query->where('parcour_id', $student->parcour_id);
+        }
+
+        // Filtre niveau si programmes stockent bien niveau_id
+        if (!empty($student->niveau_id)) {
+            $query->where('niveau_id', $student->niveau_id);
+        } else {
+            // Fallback basé sur semestre si student.niveau_id est absent
+            // (rare, mais safe)
+            $query->whereIn('semestre_id', self::semestresForM1()); // défaut M1
+        }
+
+        // Anti-erreur: si un admin a mal rempli niveau_id mais semestre indique M1/M2,
+        // on renforce via mapping semestre
+        // -> on déduit M1/M2 à partir des semestres autorisés pour le niveau de l'étudiant
+        // Si ton user a toujours niveau_id, ce bloc est suffisant:
+        if (!empty($student->niveau_id) && $student->relationLoaded('niveau') && $student->niveau) {
+            $sigle = strtoupper((string) ($student->niveau->sigle ?? $student->niveau->name ?? ''));
+            if ($sigle === 'M1') {
+                $query->whereIn('semestre_id', self::semestresForM1());
+            } elseif ($sigle === 'M2') {
+                $query->whereIn('semestre_id', self::semestresForM2());
+            }
+        }
+
+        return $query;
     }
 
     /*
@@ -209,119 +211,72 @@ class Programme extends Model
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Vérifie si c'est une UE
-     */
-    public function isUe(): bool
-    {
-        return $this->type === self::TYPE_UE;
-    }
+    public function isUe(): bool { return $this->type === self::TYPE_UE; }
+    public function isEc(): bool { return $this->type === self::TYPE_EC; }
 
-    /**
-     * Vérifie si c'est un EC
-     */
-    public function isEc(): bool
-    {
-        return $this->type === self::TYPE_EC;
-    }
-
-    /**
-     * Vérifie si l'UE a des ECs
-     */
     public function hasElements(): bool
     {
         return $this->elements()->count() > 0;
     }
 
-    /**
-     * Retourne le nom complet (code + nom)
-     */
     public function getFullName(): string
     {
         return "{$this->code} - {$this->name}";
     }
 
-    /**
-     * Retourne l'année académique (4 ou 5)
-     */
     public function getAnneeAttribute(): int
     {
         return in_array($this->semestre_id, [1, 2]) ? 4 : 5;
     }
 
-    /**
-     * Retourne le semestre de l'année (1 ou 2)
-     */
     public function getSemestreAnneeAttribute(): int
     {
         return in_array($this->semestre_id, [1, 3]) ? 1 : 2;
     }
 
-    /**
-     * Retourne le nombre total d'heures pour un EC
-     */
     public function getTotalHeures(): int
     {
         if ($this->isUe()) {
-            return $this->elements->sum(function ($ec) {
-                return $ec->getTotalHeures();
-            });
+            return $this->elements->sum(fn($ec) => $ec->getTotalHeures());
         }
 
-        // Pour un EC : heures d'UN SEUL enseignant
         $enseignant = $this->enseignants->first();
-        if (!$enseignant) {
-            return 0;
-        }
+        if (!$enseignant) return 0;
 
-        return $enseignant->pivot->heures_cm +
-            $enseignant->pivot->heures_td +
-            $enseignant->pivot->heures_tp;
+        return (int) $enseignant->pivot->heures_cm
+            + (int) $enseignant->pivot->heures_td
+            + (int) $enseignant->pivot->heures_tp;
     }
 
-    /**
-     * Retourne le détail des heures par type
-     */
     public function getHeuresDetail(): array
     {
         if ($this->isUe()) {
             $cm = $td = $tp = 0;
             foreach ($this->elements as $ec) {
                 $detail = $ec->getHeuresDetail();
-                $cm += $detail['cm'];
-                $td += $detail['td'];
-                $tp += $detail['tp'];
+                $cm += (int) $detail['cm'];
+                $td += (int) $detail['td'];
+                $tp += (int) $detail['tp'];
             }
             return compact('cm', 'td', 'tp');
         }
 
-        // Pour un EC : heures d'UN SEUL enseignant
         $enseignant = $this->enseignants->first();
-        if (!$enseignant) {
-            return ['cm' => 0, 'td' => 0, 'tp' => 0];
-        }
+        if (!$enseignant) return ['cm' => 0, 'td' => 0, 'tp' => 0];
 
         return [
-            'cm' => $enseignant->pivot->heures_cm,
-            'td' => $enseignant->pivot->heures_td,
-            'tp' => $enseignant->pivot->heures_tp,
+            'cm' => (int) $enseignant->pivot->heures_cm,
+            'td' => (int) $enseignant->pivot->heures_td,
+            'tp' => (int) $enseignant->pivot->heures_tp,
         ];
     }
 
-    /**
-     * Retourne le total de crédits pour une UE
-     */
     public function getTotalCredits(): int
     {
-        if ($this->isUe()) {
-            return $this->elements->sum('credits');
-        }
-        return $this->credits ?? 0;
+        if ($this->isUe()) return (int) $this->elements->sum('credits');
+        return (int) ($this->credits ?? 0);
     }
 
-    /**
-     * Assigner un enseignant à un EC
-     */
     public function assignerEnseignant(
         User $user,
         int $heuresCm = 0,
@@ -329,49 +284,29 @@ class Programme extends Model
         int $heuresTp = 0,
         ?string $note = null
     ): void {
-        if (!$this->isEc()) {
-            throw new \Exception('Seuls les ECs peuvent avoir un enseignant assigné.');
-        }
+        if (!$this->isEc()) throw new \Exception('Seuls les ECs peuvent avoir un enseignant assigné.');
+        if (!$user->hasRole('teacher')) throw new \Exception('L\'utilisateur doit avoir le rôle "teacher".');
 
-        if (!$user->hasRole('teacher')) {
-            throw new \Exception('L\'utilisateur doit avoir le rôle "teacher".');
-        }
-
-        // SYNC remplace l'ancien enseignant (pas syncWithoutDetaching)
         $this->enseignants()->sync([
             $user->id => [
                 'heures_cm' => $heuresCm,
                 'heures_td' => $heuresTd,
                 'heures_tp' => $heuresTp,
-                'is_responsable' => true, // Toujours responsable puisque c'est le seul
+                'is_responsable' => true,
                 'note' => $note,
             ]
         ]);
     }
 
-
-    /**
-     * Retirer l'enseignant d'un EC
-     */
     public function retirerEnseignant(): void
     {
         $this->enseignants()->detach();
     }
 
-
-    
-
-    /*
-    |--------------------------------------------------------------------------
-    | Boot Method
-    |--------------------------------------------------------------------------
-    */
-
     protected static function boot()
     {
         parent::boot();
 
-        // Définir l'ordre automatiquement lors de la création
         static::creating(function ($programme) {
             if (!$programme->order) {
                 $maxOrder = static::where('parent_id', $programme->parent_id)
@@ -382,7 +317,6 @@ class Programme extends Model
             }
         });
 
-        // Valider que les ECs ont un parent_id et que les UEs n'en ont pas
         static::saving(function ($programme) {
             if ($programme->type === self::TYPE_EC && !$programme->parent_id) {
                 throw new \Exception('Un EC doit avoir une UE parente.');
@@ -392,7 +326,6 @@ class Programme extends Model
             }
         });
 
-        // Supprimer les relations avec les enseignants lors de la suppression
         static::deleting(function ($programme) {
             $programme->enseignants()->detach();
         });

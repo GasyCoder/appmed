@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
         Schema::create('document_views', function (Blueprint $table) {
             $table->id();
@@ -14,12 +14,16 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
 
-            // Index unique pour éviter les doublons
+            // ✅ CRUCIAL: Contrainte unique pour éviter les doublons
             $table->unique(['document_id', 'user_id']);
+            
+            // Index pour performance
+            $table->index('document_id');
+            $table->index('user_id');
         });
     }
 
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('document_views');
     }

@@ -13,24 +13,27 @@ class Document extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'title',
-        'file_path',
-        'file_type',
-        'file_size',
         'uploaded_by',
-        'is_actif',
-        'download_count',
-        'view_count',
-        'protected_path',
         'niveau_id',
         'parcour_id',
         'semestre_id',
-        // Nouvelles colonnes pour la conversion
+        'programme_id',
+
+        'title',
+        'file_path',
+        'protected_path',
+
         'original_filename',
         'original_extension',
         'converted_from',
-        'programme_id',
-        'converted_at'
+        'converted_at',
+
+        'file_type',
+        'file_size',
+
+        'is_actif',
+        'download_count',
+        'view_count',
     ];
 
     protected $dates = ['deleted_at', 'converted_at'];

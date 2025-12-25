@@ -292,44 +292,52 @@
             </div>
             @endrole
 
-<div class="mb-4">
-    <p class="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Support</p>
+            <div class="mb-4">
+                <p class="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Support</p>
 
-    <nav class="mt-3 space-y-1">
-        {{-- FAQ --}}
-        <a href="{{ route('faq') }}"
-           class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors
-           {{ request()->routeIs('faq') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/75' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}"
-           wire:navigate>
-            <svg class="flex-shrink-0 w-5 h-5 mr-3 {{ request()->routeIs('faq') ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400' }}"
-                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M8.228 9a3 3 0 115.544 0c0 1.5-1.5 2.25-1.5 2.25S11 12 11 13m1 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/>
-            </svg>
-            FAQ
-        </a>
+                <nav class="mt-3 space-y-1">
+                    {{-- FAQ --}}
+                    <a href="{{ route('faq') }}"
+                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors
+                    {{ request()->routeIs('faq') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/75' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}"
+                    wire:navigate>
+                        <svg class="flex-shrink-0 w-5 h-5 mr-3 {{ request()->routeIs('faq') ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400' }}"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8.228 9a3 3 0 115.544 0c0 1.5-1.5 2.25-1.5 2.25S11 12 11 13m1 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/>
+                        </svg>
+                        FAQ
+                    </a>
 
-        {{-- Aide --}}
-        <a href="{{ route('help') }}"
-           class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors
-           {{ request()->routeIs('help') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/75' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}"
-           wire:navigate>
-            <svg class="flex-shrink-0 w-5 h-5 mr-3 {{ request()->routeIs('help') ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400' }}"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                aria-hidden="true">
-                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-                <path d="M12 16a4 4 0 100-8 4 4 0 000 8z"/>
-                <path d="M4.93 4.93l3.54 3.54"/>
-                <path d="M19.07 4.93l-3.54 3.54"/>
-                <path d="M19.07 19.07l-3.54-3.54"/>
-                <path d="M4.93 19.07l3.54-3.54"/>
-            </svg>
-            Aide/Support
-        </a>
-    </nav>
-</div>
+                    {{-- Aide --}}
+                    <a href="{{ route('help') }}"
+                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors
+                    {{ request()->routeIs('help') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/75' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}"
+                    wire:navigate>
+                        <svg class="flex-shrink-0 w-5 h-5 mr-3 {{ request()->routeIs('help') ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400' }}"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            aria-hidden="true">
+                            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                            <path d="M12 16a4 4 0 100-8 4 4 0 000 8z"/>
+                            <path d="M4.93 4.93l3.54 3.54"/>
+                            <path d="M19.07 4.93l-3.54 3.54"/>
+                            <path d="M19.07 19.07l-3.54-3.54"/>
+                            <path d="M4.93 19.07l3.54-3.54"/>
+                        </svg>
+                        Aide/Support
+                    </a>
+                </nav>
+            </div>
 
+        </div>
+        <div class="px-6 pb-3 text-[11px] text-gray-400 dark:text-gray-500">
+            <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                Version {{ config('app.version') }}
+                @if(config('app.build'))
+                    • Build {{ config('app.build') }}
+                @endif
+            </p>
         </div>
             <!-- Profile Section -->
             <div class="border-t border-gray-200 dark:border-gray-700 p-4">

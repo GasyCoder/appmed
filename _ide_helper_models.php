@@ -14,6 +14,43 @@
 namespace App\Models{
 /**
  * @property int $id
+ * @property string $type
+ * @property string $title
+ * @property string $body
+ * @property string|null $action_label
+ * @property string|null $action_url
+ * @property bool $is_active
+ * @property array<array-key, mixed>|null $audience_roles
+ * @property \Illuminate\Support\Carbon|null $starts_at
+ * @property \Illuminate\Support\Carbon|null $ends_at
+ * @property int|null $created_by
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement forUser($user)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereActionLabel($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereActionUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereAudienceRoles($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereBody($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereCreatedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereEndsAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereStartsAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereTitle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereUpdatedAt($value)
+ */
+	class Announcement extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property string $email
  * @property int $is_registered
  * @property string|null $verification_token
@@ -51,8 +88,8 @@ namespace App\Models{
  * @property int $view_count
  * @property int $niveau_id
  * @property int $semestre_id
- * @property int $parcour_id
  * @property int|null $programme_id
+ * @property int $parcour_id
  * @property int $uploaded_by
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at

@@ -10,6 +10,7 @@ use App\Models\Document;
 use App\Models\Semestre;
 use Livewire\WithPagination;
 use Livewire\Attributes\Reactive;
+use Illuminate\Support\Facades\Auth;
 
 class StudentDocument extends Component
 {
@@ -41,12 +42,12 @@ class StudentDocument extends Component
 
    public function mount()
    {
-       if (!auth()->user()->hasRole('student')) {
+       if (!Auth::user()->hasRole('student')) {
            return redirect()->route('login');
        }
 
-       $this->filterNiveau = auth()->user()->niveau_id;
-       $this->filterParcour = auth()->user()->parcour_id;
+       $this->filterNiveau = Auth::user()->niveau_id;
+       $this->filterParcour = Auth::user()->parcour_id;
    }
 
    public function updatedFilterNiveau($value)
@@ -83,7 +84,7 @@ class StudentDocument extends Component
 
    public function getTeachersProperty()
    {
-       $studentNiveauId = auth()->user()->niveau_id;
+       $studentNiveauId = Auth::user()->niveau_id;
 
        return User::query()
            ->role('teacher')
@@ -115,7 +116,7 @@ class StudentDocument extends Component
 
    public function getSemestresProperty()
    {
-       $user = auth()->user();
+       $user = Auth::user();
        return Semestre::where('niveau_id', $user->niveau_id)
                     ->where('status', true)
                     ->orderBy('name')
@@ -125,7 +126,7 @@ class StudentDocument extends Component
    public function downloadDocument($id)
    {
        $document = Document::findOrFail($id);
-       if ($document->canDownload(auth()->user())) {
+       if ($document->canDownload(Auth::user())) {
            $document->incrementDownloadCount();
            return response()->download(storage_path('app/public/' . $document->file_path));
        }
@@ -133,7 +134,7 @@ class StudentDocument extends Component
 
    public function render()
    {
-       $user = auth()->user();
+       $user = Auth::user();
 
        $documents = Document::query()
            ->where('is_actif', true)

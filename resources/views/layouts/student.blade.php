@@ -50,15 +50,12 @@
     x-data="{ sidebarOpen: false }"
 >
     <div class="flex-1 flex flex-col">
-        @unless($isStudent)
-            @include('layouts.partials.top-bar')
-        @else
-            @include('layouts.partials.top-bar-student')
-        @endunless
+        @include('top-bar')
+
         <div class="flex flex-1 min-h-0">
             {{-- Sidebar uniquement pour admin/teacher --}}
             @unless($isStudent)
-                @include('layouts.partials.sidebar-menu')
+                @include('sidebar-menu')
             @endunless
 
             <main class="{{ $isStudent ? 'flex-1 min-h-0' : 'flex-1 lg:pl-80 min-h-0' }}">

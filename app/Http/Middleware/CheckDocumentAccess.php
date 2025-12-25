@@ -2,76 +2,62 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
 use App\Models\Document;
+use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class CheckDocumentAccess
 {
     public function handle(Request $request, Closure $next)
     {
-        $user = Auth::user();
-        
-        if (!$user || !$user->roles->contains('name', 'teacher')) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'error' => 'Permission denied',
-                    'message' => 'Accès réservé aux enseignants'
-                ], 403);
-            }
-            
-            return redirect()->route('login')->with('error', 'Accès réservé aux enseignants');
+        $user = $request->user();
+
+        // Non connecté
+        if (!$user) {
+            abort(403);
         }
 
-        try {
-            // Pour la route d'upload des documents
-            if ($request->routeIs('document.upload')) {
-                return $next($request);
+        // IMPORTANT:
+        // Si la route n'a pas de {document}, on ne bloque pas ici.
+        // Le contrôle d'accès des pages est fait par middleware role:teacher/student/admin.
+        $document = $request->route('document');
+        if (!$document instanceof Document) {
+            return $next($request);
+        }
+
+        // Admin : full access
+        if ($user->hasRole('admin')) {
+            return $next($request);
+        }
+
+        // Teacher : autorisé si c'est lui qui a uploadé
+        // (optionnel: ou si le document est dans un niveau qu'il enseigne)
+        if ($user->hasRole('teacher')) {
+            $ok = ((int) $document->uploaded_by === (int) $user->id);
+
+            // Optionnel si tu veux aussi autoriser par niveau
+            if (!$ok && method_exists($user, 'teacherNiveaux')) {
+                $niveauIds = $user->teacherNiveaux->pluck('id')->all(); // teacherNiveaux => models Niveau
+                $ok = in_array((int) $document->niveau_id, array_map('intval', $niveauIds), true);
             }
 
-            // Pour les autres routes de documents
-            if ($request->routeIs('document.*')) {
-                return $next($request);
-            }
+            abort_unless($ok, 403);
+            return $next($request);
+        }
 
-            // Pour les fichiers dans storage
-            if (str_contains($request->path(), 'documents/')) {
-                $path = 'documents/' . basename($request->path());
-                
-                $hasAccess = Document::where('file_path', $path)
-                    ->where(function($query) use ($user) {
-                        $query->where('uploaded_by', $user->id)
-                            ->orWhereIn('niveau_id', $user->teacherNiveaux->pluck('id'));
-                    })
-                    ->exists();
-                    
-                if ($hasAccess) {
-                    return $next($request);
-                }
+        // Student : doc actif + même niveau (+ même parcours si la colonne existe)
+        if ($user->hasRole('student')) {
+            abort_unless((bool) $document->is_actif, 403);
+            abort_unless((int) $document->niveau_id === (int) $user->niveau_id, 403);
 
-                throw new \Exception('Accès au document non autorisé');
+            if (Schema::hasColumn('documents', 'parcour_id') && !empty($user->parcour_id)) {
+                abort_unless((int) $document->parcour_id === (int) $user->parcour_id, 403);
             }
 
             return $next($request);
-
-        } catch (\Exception $e) {
-            Log::error('Document access error', [
-                'user' => $user->id,
-                'path' => $request->path(),
-                'error' => $e->getMessage(),
-                'route' => $request->route()->getName()
-            ]);
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'error' => 'Permission denied',
-                    'message' => $e->getMessage()
-                ], 403);
-            }
-
-            return back()->with('error', 'Accès non autorisé');
         }
+
+        abort(403);
     }
 }

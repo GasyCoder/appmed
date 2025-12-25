@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('converted_from', 10)->nullable();
             $table->timestamp('converted_at')->nullable();
             $table->string('protected_path')->nullable();
-            $table->string('file_type');
+            $table->string('file_type')->default('other');
             $table->bigInteger('file_size');
             $table->boolean('is_actif')->default(false);
             $table->integer('download_count')->default(0);

@@ -23,7 +23,11 @@ class DocumentUpload extends Component
 
     public string $source_url = '';
     public const MAX_FILES = 10;
-    private const MAX_BYTES = 10485760; // 10MB
+    private const MAX_BYTES = 536870912;
+
+    // ✅ AJOUTER CES 2 LIGNES
+    public string $maxUploadSize = '';
+    public int $maxUploadBytes = 0;
 
     public $niveaux;
     public $ues;
@@ -65,11 +69,63 @@ class DocumentUpload extends Component
         'image/png' => 'png',
     ];
 
-    public function mount(): void
+public function mount(): void
+{
+    $this->niveaux = Niveau::query()->where('status', true)->orderBy('name')->get();
+    $this->ues = collect();
+    $this->ecs = collect();
+
+    $this->maxUploadBytes = $this->getMaxUploadBytes();
+    $this->maxUploadSize = $this->formatBytes($this->maxUploadBytes);
+    
+    // ✅ DEBUG TEMPORAIRE
+    \Log::info('Upload limits', [
+        'upload_max_filesize' => ini_get('upload_max_filesize'),
+        'post_max_size' => ini_get('post_max_size'),
+        'maxUploadBytes' => $this->maxUploadBytes,
+        'maxUploadSize' => $this->maxUploadSize,
+    ]);
+}
+
+    // MÉTHODE - Récupérer taille max PHP
+    private function getMaxUploadBytes(): int
     {
-        $this->niveaux = Niveau::query()->where('status', true)->orderBy('name')->get();
-        $this->ues = collect();
-        $this->ecs = collect();
+        $upload = ini_get('upload_max_filesize');
+        $post = ini_get('post_max_size');
+        
+        $uploadBytes = $this->parseSize($upload);
+        $postBytes = $this->parseSize($post);
+        
+        return min($uploadBytes, $postBytes);
+    }
+
+    // MÉTHODE - Convertir taille PHP en bytes
+    private function parseSize(string $size): int
+    {
+        $value = (int) $size;
+        $unit = strtolower(substr($size, -1));
+        
+        return match($unit) {
+            'g' => $value * 1024 * 1024 * 1024,
+            'm' => $value * 1024 * 1024,
+            'k' => $value * 1024,
+            default => $value,
+        };
+    }
+
+    // MÉTHODE - Formater bytes en texte
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes >= 1073741824) {
+            return number_format($bytes / 1073741824, 1) . ' Go';
+        }
+        if ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 1) . ' Mo';
+        }
+        if ($bytes >= 1024) {
+            return number_format($bytes / 1024, 1) . ' Ko';
+        }
+        return $bytes . ' octets';
     }
 
     public function updatedNiveauId($value): void
@@ -126,10 +182,78 @@ class DocumentUpload extends Component
     {
         if (!is_array($this->files)) return;
 
+        // ✅ VÉRIFIER LES ERREURS D'UPLOAD
+        foreach ($this->files as $index => $file) {
+            if (!is_object($file)) continue;
+            
+            // Vérifier erreur PHP upload
+            if (method_exists($file, 'getError')) {
+                $error = $file->getError();
+                
+                if ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
+                    $fileName = $file->getClientOriginalName();
+                    $fileSize = $this->formatBytes($file->getSize());
+                    
+                    $this->alert('error', 'Fichier trop volumineux', [
+                        'position' => 'center',
+                        'timer' => 0,
+                        'toast' => false,
+                        'showConfirmButton' => true,
+                        'text' => "Le fichier « {$fileName} » ({$fileSize}) dépasse la limite du serveur ({$this->maxUploadSize}). Réduisez la taille ou contactez l'administrateur.",
+                    ]);
+                    
+                    unset($this->files[$index]);
+                    $this->files = array_values($this->files);
+                    return;
+                }
+                
+                if ($error === UPLOAD_ERR_PARTIAL) {
+                    $this->alert('error', 'Upload incomplet', [
+                        'position' => 'center',
+                        'timer' => 0,
+                        'toast' => false,
+                        'showConfirmButton' => true,
+                        'text' => 'Le fichier n\'a été que partiellement téléversé. Vérifiez votre connexion et réessayez.',
+                    ]);
+                    
+                    unset($this->files[$index]);
+                    $this->files = array_values($this->files);
+                    return;
+                }
+            }
+            
+            // Vérifier taille
+            if ($file->getSize() > $this->maxUploadBytes) {
+                $fileName = $file->getClientOriginalName();
+                $fileSize = $this->formatBytes($file->getSize());
+                
+                $this->alert('error', 'Fichier trop volumineux', [
+                    'position' => 'center',
+                    'timer' => 0,
+                    'toast' => false,
+                    'showConfirmButton' => true,
+                    'text' => "Le fichier « {$fileName} » ({$fileSize}) dépasse la limite autorisée ({$this->maxUploadSize}).",
+                ]);
+                
+                unset($this->files[$index]);
+                $this->files = array_values($this->files);
+                return;
+            }
+        }
+
+        // Limiter nombre de fichiers
         if (count($this->files) > self::MAX_FILES) {
+            $this->alert('warning', 'Trop de fichiers', [
+                'position' => 'top-end',
+                'timer' => 3500,
+                'toast' => true,
+                'text' => 'Maximum ' . self::MAX_FILES . ' fichiers. Les fichiers excédentaires ont été retirés.',
+            ]);
+            
             $this->files = array_slice($this->files, 0, self::MAX_FILES);
         }
 
+        // Pré-remplir titres et statuts
         foreach ($this->files as $i => $file) {
             if (!isset($this->titles[$i])) {
                 $this->titles[$i] = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -210,19 +334,29 @@ class DocumentUpload extends Component
             'ec_id'     => 'nullable|integer|exists:programmes,id',
         ];
 
-        // 2) Règles selon la source (on garde votre logique)
+        // 2) Règles selon la source
         if ($this->source === 'local') {
             $rules['files']   = 'required|array|min:1|max:' . self::MAX_FILES;
-            $rules['files.*'] = 'file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png';
+            $maxKb = floor($this->maxUploadBytes / 1024);
+            $rules['files.*'] = "file|max:{$maxKb}|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png";
         } else {
             $rules['links']   = 'nullable|array|max:' . self::MAX_FILES;
             $rules['links.*'] = 'required|url|max:2048';
             $rules['source_url'] = 'nullable|string';
         }
 
-        $this->validate($rules, [
+        $messages = [
+            'niveau_id.required' => 'Veuillez sélectionner un niveau.',
+            'ue_id.required' => 'Veuillez sélectionner une UE.',
             'files.required' => 'Veuillez ajouter au moins un fichier.',
-        ]);
+            'files.*.max' => 'Un fichier dépasse la taille maximale (' . $this->maxUploadSize . ').',
+            'files.*.mimes' => 'Format non autorisé. Acceptés: PDF, Word, PowerPoint, Excel, Images.',
+            
+            // ✅ AJOUTER CES LIGNES
+            'files.*.uploaded' => 'Le fichier n\'a pas pu être téléversé. Taille maximale : ' . $this->maxUploadSize . '.',
+            'files.*.file' => 'Le fichier sélectionné n\'est pas valide.',
+        ];
+        $this->validate($rules, $messages);
 
         // 3) Charger UE + contrôler type / niveau
         $ue = Programme::query()

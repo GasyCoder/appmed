@@ -148,7 +148,7 @@ return [
     'timezone'               => 'Le champ :attribute doit être un fuseau horaire valide.',
     'ulid'                   => 'Le champ :attribute doit être un ULID valide.',
     'unique'                 => 'La valeur du champ :attribute est déjà utilisée.',
-    'uploaded'               => 'Le fichier du champ :attribute n\'a pu être téléversé.',
+    'uploaded'               => 'Le fichier n\'a pas pu être téléversé. Sa taille est trop grande.',
     'uppercase'              => 'Le champ :attribute doit être en majuscules.',
     'url'                    => 'Le format de l\'URL de :attribute n\'est pas valide.',
     'uuid'                   => 'Le champ :attribute doit être un UUID valide',
@@ -278,5 +278,8 @@ return [
         'winner'                   => 'gagnant',
         'work'                     => 'travail',
         'year'                     => 'année',
+        'files.*'                   => 'fichier',
+        'files.0'                   => 'premier fichier',
+        'files.1'                   => 'deuxième fichier',
     ],
 ];

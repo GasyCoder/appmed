@@ -151,7 +151,8 @@
                             Fichiers
                         </h2>
                         <p class="text-xs text-gray-500 dark:text-gray-400">
-                            Max {{ \App\Livewire\Teacher\DocumentUpload::MAX_FILES }} fichiers — 10MB/fichier
+                            Max {{ \App\Livewire\Teacher\DocumentUpload::MAX_FILES }} fichiers · 
+                            <strong class="font-semibold">{{ $maxUploadSize }}</strong> par fichier
                         </p>
                     </div>
 
@@ -180,7 +181,28 @@
                                 Depuis un lien (Drive, etc.)
                             </button>
                         </div>
+                        @php
+                            $limitMo = (float) str_replace(' Mo', '', $maxUploadSize);
+                        @endphp
 
+                        @if($limitMo < 5) 
+                            <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/40 dark:bg-amber-900/20">
+                                <div class="flex gap-2.5">
+                                    <svg class="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-bold text-amber-900 dark:text-amber-200">
+                                            Limite serveur réduite
+                                        </p>
+                                        <p class="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
+                                            Le serveur limite les uploads à <strong>{{ $maxUploadSize }}</strong>. 
+                                            Pour augmenter cette limite, contactez l'administrateur système.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                         <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                             Google Drive : le fichier doit être partagé “Toute personne ayant le lien”.
                         </p>

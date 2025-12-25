@@ -67,19 +67,79 @@ class DocumentController extends Controller
      */
     public function serve(Document $document)
     {
-        if ($document->isExternalLink()) abort(404);
-        if (!$document->fileExists()) abort(404, 'Fichier introuvable');
+        if ($document->isExternalLink()) {
+            abort(404);
+        }
+        
+        if (!$document->fileExists()) {
+            Log::error("FILE NOT FOUND", [
+                'document_id' => $document->id,
+                'file_path' => $document->file_path,
+            ]);
+            abort(404, 'Fichier introuvable');
+        }
 
         $disk = Storage::disk('public');
         $path = $document->file_path;
+        
+        // ✅ RÉCUPÉRER LE CONTENU DIRECTEMENT
+        $fullPath = storage_path('app/public/' . $path);
+        
+        if (!file_exists($fullPath)) {
+            Log::error("PHYSICAL FILE NOT FOUND", [
+                'document_id' => $document->id,
+                'full_path' => $fullPath,
+            ]);
+            abort(404, 'Fichier physique introuvable');
+        }
+
+        $size = filesize($fullPath);
+        $content = file_get_contents($fullPath);
+        
+        // ✅ VÉRIFIER QUE LE FICHIER N'EST PAS VIDE
+        if ($size === 0 || $size === false || !$content) {
+            Log::error("FILE IS EMPTY", [
+                'document_id' => $document->id,
+                'size' => $size,
+            ]);
+            abort(500, 'Le fichier est vide');
+        }
 
         $filename = $document->getDisplayFilename();
-        $mime = $document->file_type ?: $disk->mimeType($path) ?: 'application/octet-stream';
+        $ext = $document->extensionFromPath();
+        
+        // ✅ DÉTECTER LE BON MIME TYPE
+        $mimeTypes = [
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'ppt' => 'application/vnd.ms-powerpoint',
+            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+        ];
+        
+        $mime = $mimeTypes[$ext] ?? 'application/octet-stream';
 
-        // inline => lecture
-        return $disk->response($path, $filename, [
+        Log::info("SERVING FILE", [
+            'document_id' => $document->id,
+            'path' => $path,
+            'filename' => $filename,
+            'size' => $size,
+            'mime' => $mime,
+            'ext' => $ext,
+        ]);
+
+        // ✅ RENVOYER LE CONTENU AVEC LES BONS HEADERS
+        return response($content, 200, [
             'Content-Type' => $mime,
-            'Content-Disposition' => 'inline; filename="' . addslashes($filename) . '"',
+            'Content-Length' => $size,
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            'Accept-Ranges' => 'bytes',
+            'Cache-Control' => 'public, max-age=3600',
         ]);
     }
 

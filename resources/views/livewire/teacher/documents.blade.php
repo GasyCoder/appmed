@@ -6,7 +6,7 @@
     }"
 >
     @php
-        // Helpers (Blade-safe)
+        // ✅ Helpers (Blade-safe)
         $isHttp = fn ($u) => \Illuminate\Support\Str::startsWith((string)$u, ['http://', 'https://']);
 
         $googleMeta = function (string $url): array {
@@ -63,8 +63,10 @@
             };
         };
 
+        // ✅ Fonction pour déterminer le type de fichier (pour l'icône)
         $fileKindFromExt = function (?string $ext): string {
             $e = strtolower((string)$ext);
+            
             return match (true) {
                 in_array($e, ['pdf'], true) => 'pdf',
                 in_array($e, ['doc','docx','dot','dotx'], true) => 'word',
@@ -312,22 +314,28 @@
                 $rawUrl = $sourceUrl ?: $filePath;
                 $isExternal = $isHttp($rawUrl);
 
-                // URL d'ouverture (preview si Google)
+                // ✅ Extension ACTUELLE (ce qui est stocké)
+                $currentExt = strtolower((string) pathinfo($filePath, PATHINFO_EXTENSION));
+                
+                // ✅ Extension ORIGINALE (avant conversion éventuelle)
+                $originalExt = strtolower((string) ($document->original_extension ?? ''));
+                
+                // ✅ Info de conversion
+                $convertedFrom = $document->converted_from ? strtolower((string) $document->converted_from) : null;
+
+                // ✅ URL d'ouverture
                 $openUrl = $isExternal
                     ? $toPreviewUrl($rawUrl)
                     : route('document.serve', $document);
 
-                // URL de téléchargement
+                // ✅ URL de téléchargement
                 $downloadUrl = $isExternal
                     ? $toDownloadUrl($rawUrl)
                     : route('document.download', $document);
 
-                // Extension (priorité original_extension si tu l'as)
-                $ext = strtolower((string) ($document->original_extension
-                    ?? pathinfo($filePath, PATHINFO_EXTENSION)
-                    ?? ''));
-
-                $kind = $fileKindFromExt($ext);
+                // ✅ Type pour l'icône (basé sur l'extension ACTUELLE)
+                $kind = $fileKindFromExt($currentExt);
+                
                 $isOn = (bool) $document->is_actif;
 
                 $meta = $isExternal ? $googleMeta($rawUrl) : ['provider' => 'local', 'id' => null];
@@ -347,7 +355,14 @@
                     default => 'border-gray-200 bg-white text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200',
                 };
 
-                $typePill = $isExternal ? 'LIEN' : strtoupper($ext ?: 'DOC');
+                // ✅ Badge de type : montrer ACTUEL + origine si converti
+                if ($convertedFrom && $convertedFrom !== $currentExt) {
+                    $typePill = strtoupper($currentExt) . ' ← ' . strtoupper($convertedFrom);
+                } else if ($isExternal) {
+                    $typePill = 'LIEN';
+                } else {
+                    $typePill = strtoupper($currentExt ?: 'DOC');
+                }
             @endphp
 
             <article wire:key="doc-card-{{ $document->id }}"
@@ -375,6 +390,15 @@
                                     <line x1="16" y1="13" x2="8" y2="13" />
                                     <line x1="16" y1="17" x2="8" y2="17" />
                                     <line x1="10" y1="9" x2="8" y2="9" />
+                                </svg>
+                            @elseif($kind === 'word')
+                                {{-- Word Icon --}}
+                                <svg class="h-7 w-7 text-blue-700 dark:text-blue-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                    <path d="M12 18v-6" />
+                                    <path d="M8 18v-1" />
+                                    <path d="M16 18v-3" />
                                 </svg>
                             @elseif($kind === 'ppt')
                                 {{-- Presentation/MonitorIcon (PPT) - Moderne --}}
@@ -569,9 +593,8 @@
                     <div class="w-full flex flex-col items-center gap-3">
                         <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 ring-1 ring-gray-200 dark:bg-gray-900/30 dark:ring-gray-700">
                             {{-- DocumentIcon --}}
-                            <svg class="h-7 w-7 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                      d="M19.5 14.25V6A2.25 2.25 0 0 0 17.25 3.75H8.25A2.25 2.25 0 0 0 6 6v12A2.25 2.25 0 0 0 8.25 20.25h8.5"/>
+                            <svg class="h-7 w-7 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                             </svg>
                         </div>
 

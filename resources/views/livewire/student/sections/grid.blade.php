@@ -88,9 +88,9 @@
                 (!$m['isExternal'] && $document->isViewerLocalType());
 
             if ($m['isExternal']) {
-                $consultUrl = route('document.openExternal', $document); // nouvel onglet
+                $consultUrl = route('document.openExternal', $document);
             } else {
-                $consultUrl = route('document.viewer', $document); // local pdf/pptx
+                $consultUrl = route('document.serve', $document); // ✅ Ouverture directe
             }
 
             // Download obligatoire pour doc/xls (local ou externe)
@@ -175,8 +175,8 @@
                     {{-- Consulter/Ouvrir --}}
                     @if($canConsult)
                         <a href="{{ $consultUrl }}"
-                           @if($m['isExternal']) target="_blank" rel="noopener noreferrer" @endif
-                           class="inline-flex h-9 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition">
+                        onclick="event.preventDefault(); window.open(this.href, '_blank');"
+                        class="inline-flex h-9 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition cursor-pointer">
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>

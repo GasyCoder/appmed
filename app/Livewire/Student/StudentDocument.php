@@ -23,6 +23,11 @@ class StudentDocument extends Component
    public $filterSemestre = '';
    public $semesterFilter = '';
    public $viewType = 'grid';
+   
+   // ✅ NOUVEAU : Filtre vu/non vu
+   public $viewedFilter = 'all'; // 'all', 'viewed', 'unviewed'
+
+   public bool $isStudent = false;
 
    protected $queryString = [
        'search' => ['except' => ''],
@@ -32,9 +37,9 @@ class StudentDocument extends Component
        'filterSemestre' => ['except' => ''],
        'semesterFilter' => ['except' => ''],
        'viewType' => ['except' => 'grid'],
+       'viewedFilter' => ['except' => 'all'], // ✅ AJOUT
    ];
 
-   // ✅ AJOUT : Listeners pour rafraîchir les compteurs
    protected $listeners = [
        'refreshDocuments' => '$refresh',
        'documentViewed' => '$refresh',
@@ -46,12 +51,20 @@ class StudentDocument extends Component
        $this->dispatch('viewToggled', $type);
    }
 
+   // ✅ NOUVEAU : Changer le filtre vu/non vu
+   public function setViewedFilter($filter)
+   {
+       $this->viewedFilter = $filter;
+       $this->resetPage();
+   }
+
    public function mount()
    {
        if (!Auth::user()->hasRole('student')) {
            return redirect()->route('login');
        }
 
+       $this->isStudent = true;
        $this->filterNiveau = Auth::user()->niveau_id;
        $this->filterParcour = Auth::user()->parcour_id;
    }
@@ -88,10 +101,8 @@ class StudentDocument extends Component
        $this->resetPage();
    }
 
-   // ✅ AJOUT : Méthode pour rafraîchir manuellement
    public function refreshCounters()
    {
-       // Force le rechargement complet des données
        $this->render();
    }
 
@@ -139,10 +150,15 @@ class StudentDocument extends Component
    public function downloadDocument($id)
    {
        $document = Document::findOrFail($id);
-       if ($document->canDownload(Auth::user())) {
-           $document->incrementDownloadCount();
-           return response()->download(storage_path('app/public/' . $document->file_path));
+       
+       if (!$document->canAccess(Auth::user())) {
+           session()->flash('error', 'Accès non autorisé');
+           return;
        }
+
+       $document->registerDownload(Auth::user());
+       
+       return response()->download(storage_path('app/public/' . $document->file_path));
    }
 
    public function render()
@@ -166,6 +182,17 @@ class StudentDocument extends Component
            ->when($this->search, function($query) {
                $query->where('title', 'like', "%{$this->search}%");
            })
+           // ✅ NOUVEAU : Filtre vu/non vu
+           ->when($this->viewedFilter === 'viewed', function($query) use ($user) {
+               $query->whereHas('views', function($q) use ($user) {
+                   $q->where('user_id', $user->id);
+               });
+           })
+           ->when($this->viewedFilter === 'unviewed', function($query) use ($user) {
+               $query->whereDoesntHave('views', function($q) use ($user) {
+                   $q->where('user_id', $user->id);
+               });
+           })
            ->with([
                'uploader.teacherNiveaux',
                'niveau',
@@ -175,12 +202,27 @@ class StudentDocument extends Component
            ->latest()
            ->paginate(12);
 
+       // ✅ NOUVEAU : Compteurs pour les badges
+       $viewedCount = Document::where('is_actif', true)
+           ->where('niveau_id', $user->niveau_id)
+           ->where('parcour_id', $user->parcour_id)
+           ->whereHas('views', fn($q) => $q->where('user_id', $user->id))
+           ->count();
+
+       $unviewedCount = Document::where('is_actif', true)
+           ->where('niveau_id', $user->niveau_id)
+           ->where('parcour_id', $user->parcour_id)
+           ->whereDoesntHave('views', fn($q) => $q->where('user_id', $user->id))
+           ->count();
+
        return view('livewire.student.student-document', [
            'documents' => $documents,
            'teachers' => $this->teachers,
            'niveaux' => $this->niveaux,
            'parcours' => $this->parcours,
            'semestres' => $this->semestres,
+           'viewedCount' => $viewedCount,
+           'unviewedCount' => $unviewedCount,
            'recentDocuments' => Document::query()
                ->where('is_actif', true)
                ->where('niveau_id', $user->niveau_id)

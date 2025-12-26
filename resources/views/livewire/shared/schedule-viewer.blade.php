@@ -1,4 +1,36 @@
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-data="{ viewMode: 'grid' }">
+<div class="mx-auto w-full max-w-[88rem] px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-6 space-y-6" x-data="{ viewMode: 'grid' }">
+
+@php
+    $authUser = auth()->user();
+    $isStudent = $authUser && method_exists($authUser, 'hasRole') && $authUser->hasRole('student');
+@endphp
+
+    {{-- Bouton retour (uniquement pour les étudiants) --}}
+    @if($isStudent)
+        <div class="mb-4">
+            <a href="{{ route('studentEspace') }}"
+               class="inline-flex items-center gap-3 px-4 py-3 rounded-2xl
+                      text-gray-700 dark:text-gray-300
+                      hover:bg-gray-50 dark:hover:bg-gray-900/50
+                      transition">
+                <div class="h-10 w-10 rounded-xl bg-gray-100 dark:bg-gray-900
+                            flex items-center justify-center
+                            text-gray-700 dark:text-gray-200">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                        Retour à l'accueil
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        Menu étudiant
+                    </div>
+                </div>
+            </a>
+        </div>
+    @endif
 
     {{-- Header --}}
     <div class="mb-6">
@@ -29,37 +61,64 @@
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 
                     {{-- Left: Filter pills --}}
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button wire:click="$set('typeFilter', '')"
-                                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition
-                                       focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/70"
-                                :class="$wire.typeFilter === '' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'">
-                            <span>Tous</span>
-                            <span class="inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-xs font-semibold"
-                                  :class="$wire.typeFilter === '' ? 'bg-white/20 text-white' : 'bg-white text-gray-700 dark:bg-gray-900 dark:text-gray-200'">
-                                {{ $schedules->count() }}
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 
+                                [-ms-overflow-style:none] [scrollbar-width:none] 
+                                [&::-webkit-scrollbar]:hidden">
+                        
+                        {{-- Tous --}}
+                        <button wire:click="setViewedFilter('all')"
+                                class="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition shrink-0
+                                    focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/70
+                                    {{ $viewedFilter === 'all' 
+                                        ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20' 
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span class="hidden min-[375px]:inline">Tous</span>
+                            <span class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold
+                                        {{ $viewedFilter === 'all' ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700' }}">
+                                {{ ($viewedCount ?? 0) + ($unviewedCount ?? 0) }}
                             </span>
                         </button>
 
-                        <button wire:click="$set('typeFilter', 'emploi_du_temps')"
-                                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition
-                                       focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/70"
-                                :class="$wire.typeFilter === 'emploi_du_temps' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'">
-                            Emplois du temps
+                        {{-- Non vus --}}
+                        <button wire:click="setViewedFilter('unviewed')"
+                                class="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition shrink-0
+                                    focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/70
+                                    {{ $viewedFilter === 'unviewed' 
+                                        ? 'bg-red-600 text-white shadow-sm ring-2 ring-red-600/20' 
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                            </svg>
+                            <span class="hidden min-[375px]:inline whitespace-nowrap">Non vus</span>
+                            @if(($unviewedCount ?? 0) > 0)
+                                <span class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold
+                                            {{ $viewedFilter === 'unviewed' ? 'bg-white/20' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' }}">
+                                    {{ $unviewedCount }}
+                                </span>
+                            @endif
                         </button>
 
-                        <button wire:click="$set('typeFilter', 'planning_examens')"
-                                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition
-                                       focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/70"
-                                :class="$wire.typeFilter === 'planning_examens' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'">
-                            Plannings examens
-                        </button>
-
-                        <button wire:click="$set('typeFilter', 'calendrier')"
-                                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition
-                                       focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/70"
-                                :class="$wire.typeFilter === 'calendrier' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'">
-                            Calendrier
+                        {{-- Vus --}}
+                        <button wire:click="setViewedFilter('viewed')"
+                                class="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition shrink-0
+                                    focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70
+                                    {{ $viewedFilter === 'viewed' 
+                                        ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/20' 
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            <span class="hidden min-[375px]:inline">Vus</span>
+                            @if(($viewedCount ?? 0) > 0)
+                                <span class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold
+                                            {{ $viewedFilter === 'viewed' ? 'bg-white/20' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' }}">
+                                    {{ $viewedCount }}
+                                </span>
+                            @endif
                         </button>
                     </div>
 
@@ -139,24 +198,9 @@
                         $extension = pathinfo($schedule->file_path, PATHINFO_EXTENSION);
                         $isImage = in_array(strtolower($extension), $imageExtensions);
                     @endphp
-
-                    @if($isImage)
-                        <img src="{{ Storage::url($schedule->file_path) }}"
-                             alt="{{ $schedule->title }}"
-                             class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]">
-                    @else
-                        <div class="h-full w-full flex items-center justify-center">
-                            <div class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                                <div class="rounded-xl bg-white/70 dark:bg-gray-900/60 p-2 backdrop-blur border border-gray-200/70 dark:border-gray-800/70">
-                                    <svg class="h-8 w-8 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-
+                    <img src="{{ asset('assets/image/shedule.jpg') }}"
+                            alt="{{ $schedule->title }}"
+                            class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]">
                     {{-- Type badge --}}
                     <div class="absolute top-2 right-2">
                         <span class="inline-flex items-center rounded-full bg-white/85 dark:bg-gray-950/60 backdrop-blur px-2.5 py-1 text-[11px] font-semibold text-gray-800 dark:text-gray-100 border border-gray-200/70 dark:border-gray-800/70">
@@ -239,14 +283,13 @@
                     <div class="mt-4 flex gap-2">
                         <a href="{{ route('schedule.view', $schedule->id) }}"
                            target="_blank"
-                           wire:click="viewSchedule({{ $schedule->id }})"
                            class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700
                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 transition">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
-                            Voir
+                            Voir PDF
                         </a>
 
                         <button wire:click="downloadSchedule({{ $schedule->id }})"
@@ -365,7 +408,6 @@
                             <div class="flex items-center gap-2 sm:ml-4">
                                 <a href="{{ route('schedule.view', $schedule->id) }}"
                                    target="_blank"
-                                   wire:click="viewSchedule({{ $schedule->id }})"
                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700
                                           focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 transition">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -10,9 +10,9 @@ class ScheduleController extends Controller
 {
     public function view(Schedule $schedule)
     {
-        // Incrémenter le compteur de vues
-        $schedule->incrementViewCount();
-
+        // ✅ Enregistrer la vue (unique par user)
+        $schedule->registerView();
+        
         if ($schedule->isPdf()) {
             return view('schedules.pdf-viewer', compact('schedule'));
         } else {

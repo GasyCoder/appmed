@@ -9,7 +9,7 @@
     @PwaHead
 
     <title>{{ config('app.name', 'Laravel') }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('assets/image/logo_med.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('assets/image/logo.png') }}">
 
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">

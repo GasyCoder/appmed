@@ -1,33 +1,58 @@
 {{-- resources/views/livewire/programmes/programme-index.blade.php --}}
-<div>
-    <div class="max-w-10xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        @php
-            $user = auth()->user();
-            $isStudent = $user?->hasRole('student') ?? false;
+<div class="mx-auto w-full max-w-[88rem] px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-6 space-y-6">
+    @php
+        $user = auth()->user();
+        $isStudent = $user?->hasRole('student') ?? false;
 
-            // UI tokens (cohérents light/dark)
-            $card      = "rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900";
-            $cardPad   = "p-5 sm:p-6";
-            $muted     = "text-slate-600 dark:text-slate-400";
-            $title     = "text-slate-900 dark:text-white";
-            $btnGhost  = "inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm
-                          hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
-                          dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800";
-            $btnPrimary= "inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm
-                          hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
-                          dark:focus-visible:ring-offset-slate-950";
-            $pill      = "inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700
-                          dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200";
-            $pillSoft  = "inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700
-                          dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-200";
-        @endphp
+        // UI tokens (cohérents light/dark)
+        $card      = "rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900";
+        $cardPad   = "p-5 sm:p-6";
+        $muted     = "text-slate-600 dark:text-slate-400";
+        $title     = "text-slate-900 dark:text-white";
+        $btnGhost  = "inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm
+                      hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
+                      dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800";
+        $btnPrimary= "inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm
+                      hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
+                      dark:focus-visible:ring-offset-slate-950";
+        $pill      = "inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700
+                      dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200";
+        $pillSoft  = "inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700
+                      dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-200";
+    @endphp
 
+    {{-- Bouton retour (uniquement pour les étudiants) --}}
+    @if($isStudent)
+        <div class="mb-4">
+            <a href="{{ route('studentEspace') }}"
+               class="inline-flex items-center gap-3 px-4 py-3 rounded-2xl
+                      text-slate-700 dark:text-slate-300
+                      hover:bg-slate-50 dark:hover:bg-slate-900/50
+                      transition">
+                <div class="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-900
+                            flex items-center justify-center
+                            text-slate-700 dark:text-slate-200">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-sm font-semibold {{ $title }}">
+                        Retour à l'accueil
+                    </div>
+                    <div class="text-xs {{ $muted }}">
+                        Menu étudiant
+                    </div>
+                </div>
+            </a>
+        </div>
+    @endif
         {{-- HEADER --}}
         <div class="mb-6 sm:mb-8">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div class="min-w-0">
                     <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight {{ $title }}">
-                        Programme Master MERC
+                        Programme UE/EC
                     </h1>
                     <p class="mt-1 flex items-start sm:items-center gap-2 text-sm {{ $muted }}">
                         <svg class="h-4 w-4 mt-0.5 sm:mt-0 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,27 +60,9 @@
                                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <span class="min-w-0 break-words sm:truncate">
-                            Master en Épidémiologie et Recherche Clinique
+                            Master en ÉPI R.C
                         </span>
                     </p>
-
-                    @if($isStudent)
-                        <div class="mt-3 flex flex-wrap items-center gap-2">
-                            <span class="{{ $pillSoft }}">
-                                Accès étudiant : filtré automatiquement (niveau + parcours)
-                            </span>
-                            @if(!empty($user?->niveau?->sigle) || !empty($user?->niveau?->name))
-                                <span class="{{ $pill }}">
-                                    Niveau : {{ $user->niveau->sigle ?? $user->niveau->name }}
-                                </span>
-                            @endif
-                            @if(!empty($user?->parcour?->sigle) || !empty($user?->parcour?->name))
-                                <span class="{{ $pill }}">
-                                    Parcours : {{ $user->parcour->sigle ?? $user->parcour->name }}
-                                </span>
-                            @endif
-                        </div>
-                    @endif
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
@@ -72,7 +79,7 @@
                         {{ $showEnseignants ? 'Masquer' : 'Afficher' }} les enseignants
                     </button>
 
-                    @can('manage programmes')
+                    @role('admin')
                         <button class="{{ $btnPrimary }} w-full sm:w-auto justify-center sm:justify-start">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -80,7 +87,7 @@
                             </svg>
                             Nouveau programme
                         </button>
-                    @endcan
+                    @endrole
                 </div>
             </div>
         </div>
@@ -271,7 +278,7 @@
                             @endif
                         </div>
                     </div>
-
+                    @if(!$isStudent)
                     {{-- Semestre (admin/teacher seulement) --}}
                     <div>
                         <label class="block text-sm font-semibold {{ $muted }} mb-2">
@@ -300,66 +307,68 @@
                             </p>
                         @endif
                     </div>
+                    @endif
                 </div>
+                 @if(!$isStudent)
+                    {{-- Active filters --}}
+                    @if($search || $semestre || $annee)
+                        <div class="mt-4 flex flex-wrap items-center gap-2">
+                            <span class="text-sm font-semibold {{ $muted }}">Filtres actifs :</span>
 
-                {{-- Active filters --}}
-                @if($search || $semestre || $annee)
-                    <div class="mt-4 flex flex-wrap items-center gap-2">
-                        <span class="text-sm font-semibold {{ $muted }}">Filtres actifs :</span>
+                            @if($search)
+                                <span class="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-800
+                                            dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-200">
+                                    Recherche: “{{ \Illuminate\Support\Str::limit($search, 22) }}”
+                                    <button wire:click="$set('search', '')" class="opacity-80 hover:opacity-100">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </span>
+                            @endif
 
-                        @if($search)
-                            <span class="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-800
-                                         dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-200">
-                                Recherche: “{{ \Illuminate\Support\Str::limit($search, 22) }}”
-                                <button wire:click="$set('search', '')" class="opacity-80 hover:opacity-100">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
+                            @if(!$isStudent && $annee)
+                                <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-700
+                                            dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                                    {{ (int)$annee === 4 ? 'M1 (S1–S2)' : 'M2 (S3–S4)' }}
+                                    <button wire:click="$set('annee', null)" class="opacity-80 hover:opacity-100">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </span>
+                            @endif
+
+                            @if(!$isStudent && $semestre)
+                                <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-700
+                                            dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                                    Semestre {{ $semestre }}
+                                    <button wire:click="$set('semestre', null)" class="opacity-80 hover:opacity-100">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </span>
+                            @endif
+
+                            @if(!$isStudent)
+                                <button wire:click="$set('search',''); $set('semestre', null); $set('annee', null);"
+                                        class="basis-full sm:basis-auto sm:ml-auto text-left sm:text-right text-sm font-semibold text-slate-600 hover:text-slate-900 underline underline-offset-4
+                                            dark:text-slate-400 dark:hover:text-white">
+                                    Réinitialiser tous
                                 </button>
-                            </span>
-                        @endif
-
-                        @if(!$isStudent && $annee)
-                            <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-700
-                                         dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200">
-                                {{ (int)$annee === 4 ? 'M1 (S1–S2)' : 'M2 (S3–S4)' }}
-                                <button wire:click="$set('annee', null)" class="opacity-80 hover:opacity-100">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
+                            @else
+                                <button wire:click="$set('search','')"
+                                        class="basis-full sm:basis-auto sm:ml-auto text-left sm:text-right text-sm font-semibold text-slate-600 hover:text-slate-900 underline underline-offset-4
+                                            dark:text-slate-400 dark:hover:text-white">
+                                    Réinitialiser la recherche
                                 </button>
-                            </span>
-                        @endif
-
-                        @if(!$isStudent && $semestre)
-                            <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-700
-                                         dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200">
-                                Semestre {{ $semestre }}
-                                <button wire:click="$set('semestre', null)" class="opacity-80 hover:opacity-100">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                </button>
-                            </span>
-                        @endif
-
-                        @if(!$isStudent)
-                            <button wire:click="$set('search',''); $set('semestre', null); $set('annee', null);"
-                                    class="basis-full sm:basis-auto sm:ml-auto text-left sm:text-right text-sm font-semibold text-slate-600 hover:text-slate-900 underline underline-offset-4
-                                           dark:text-slate-400 dark:hover:text-white">
-                                Réinitialiser tous
-                            </button>
-                        @else
-                            <button wire:click="$set('search','')"
-                                    class="basis-full sm:basis-auto sm:ml-auto text-left sm:text-right text-sm font-semibold text-slate-600 hover:text-slate-900 underline underline-offset-4
-                                           dark:text-slate-400 dark:hover:text-white">
-                                Réinitialiser la recherche
-                            </button>
-                        @endif
-                    </div>
+                            @endif
+                        </div>
+                    @endif
                 @endif
             </div>
         </div>
@@ -664,7 +673,7 @@
                 </div>
             </div>
         </div>
-    </div>
+
 
     {{-- Modals --}}
     <livewire:programmes.assign-enseignant />

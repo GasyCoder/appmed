@@ -9,23 +9,20 @@
                 <div class="p-6">
                     <div class="flex items-center gap-4">
                         <img
-                            width="56"
-                            height="56"
-                            src="{{ asset('assets/image/logo_med.png') }}"
+                            src="{{ asset('assets/image/logo.png') }}"
                             alt="Faculté de Médecine"
-                            class="h-14 w-14 rounded-xl object-contain bg-white dark:bg-gray-900 p-1 ring-1 ring-black/5 dark:ring-white/10"
+                            class="w-[120px] h-[120px] lg:w-[140px] lg:h-[140px] object-contain"
                         />
 
                         <div class="min-w-0">
-                            <h1 class="text-lg font-semibold text-gray-900 dark:text-white leading-tight">
-                                AppMed
+                            <h1 class="lg:text-xl md:text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+                              <span class="font-bold text-blue-500">EpiRC</span> - Faculté de Médecine
                             </h1>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                Plateforme de la Faculté de Médecine
+                            <p class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
+                                Université de Mahajanga
                             </p>
                         </div>
                     </div>
-
                     <div class="mt-5">
                         <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
                             Connexion

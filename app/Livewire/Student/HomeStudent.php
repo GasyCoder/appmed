@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use Livewire\Component;
 use App\Models\Document;
+use App\Models\Schedule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -35,7 +36,7 @@ class HomeStudent extends Component
 
         $base = $this->documentsBaseQuery();
 
-        // STATS
+        // STATS DOCUMENTS
         $this->stats['total'] = (clone $base)->count();
         $this->stats['today'] = (clone $base)->whereDate('created_at', Carbon::today())->count();
         $this->stats['views'] = (int) (clone $base)->sum('view_count');
@@ -88,8 +89,43 @@ class HomeStudent extends Component
         return $q;
     }
 
+    // ✅ NOUVELLE MÉTHODE - Query des schedules
+    private function schedulesBaseQuery()
+    {
+        $u = Auth::user();
+
+        $q = Schedule::query()
+            ->active()
+            ->where('niveau_id', $u->niveau_id);
+
+        if (!empty($u->parcour_id) && Schema::hasColumn('schedules', 'parcour_id')) {
+            $q->where('parcour_id', $u->parcour_id);
+        }
+
+        return $q;
+    }
+
     public function render()
     {
-        return view('livewire.student.home-student');
+        $u = Auth::user();
+
+        // ✅ COMPTEUR DOCUMENTS NON VUS
+        $unviewedDocumentsCount = $this->documentsBaseQuery()
+            ->whereDoesntHave('views', function ($q) use ($u) {
+                $q->where('user_id', $u->id);
+            })
+            ->count();
+
+        // ✅ COMPTEUR SCHEDULES NON VUS
+        $unviewedSchedulesCount = $this->schedulesBaseQuery()
+            ->unviewedBy($u)
+            ->count();
+
+        return view('livewire.student.home-student', [
+            'menuStats' => [
+                'documents' => $unviewedDocumentsCount,     // ✅ Documents NON VUS
+                'schedules' => $unviewedSchedulesCount,     // ✅ Schedules NON VUS
+            ]
+        ]);
     }
 }

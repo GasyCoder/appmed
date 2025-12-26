@@ -2,9 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Schedule extends Model
 {
@@ -35,6 +39,12 @@ class Schedule extends Model
         'view_count' => 'integer',
         'download_count' => 'integer',
     ];
+
+    // ✅ NOUVELLE RELATION
+    public function views(): HasMany
+    {
+        return $this->hasMany(ScheduleView::class);
+    }
 
     // Relations
     public function uploader()
@@ -91,7 +101,31 @@ class Schedule extends Model
         return in_array($this->extension, ['jpg', 'jpeg', 'png', 'gif']);
     }
 
-    // Méthodes
+    // ✅ NOUVELLE MÉTHODE - Enregistrer une vue unique
+    public function registerView(?User $user = null): void
+    {
+        $user = $user ?? Auth::user();
+        if (!$user) return;
+
+        try {
+            DB::beginTransaction();
+
+            $exists = $this->views()->where('user_id', $user->id)->exists();
+            if (!$exists) {
+                $this->views()->create(['user_id' => $user->id]);
+                $this->increment('view_count');
+                $this->refresh();
+                Log::info("Schedule {$this->id}: Vue enregistrée pour user {$user->id}. Total: {$this->view_count}");
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Schedule {$this->id}: Erreur registerView - " . $e->getMessage());
+        }
+    }
+
+    // Méthodes (anciennes - gardées pour compatibilité)
     public function incrementViewCount()
     {
         $this->increment('view_count');
@@ -100,6 +134,23 @@ class Schedule extends Model
     public function incrementDownloadCount()
     {
         $this->increment('download_count');
+    }
+
+    // ✅ NOUVELLE MÉTHODE - Enregistrer un téléchargement
+    public function registerDownload(?User $user = null): void
+    {
+        try {
+            DB::beginTransaction();
+            $this->increment('download_count');
+            $this->refresh();
+            DB::commit();
+
+            $userId = $user?->id ?? (Auth::id() ?? 'guest');
+            Log::info("Schedule {$this->id}: Téléchargement enregistré pour user {$userId}. Total: {$this->download_count}");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Schedule {$this->id}: Erreur registerDownload - " . $e->getMessage());
+        }
     }
 
     // Scopes
@@ -128,6 +179,14 @@ class Schedule extends Model
         ->where(function($q) use ($now) {
             $q->where('end_date', '>=', $now)
               ->orWhereNull('end_date');
+        });
+    }
+
+    // ✅ NOUVEAU SCOPE - Schedules non vus par un user
+    public function scopeUnviewedBy($query, User $user)
+    {
+        return $query->whereDoesntHave('views', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         });
     }
 }

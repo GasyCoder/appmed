@@ -133,7 +133,7 @@
                             <div class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-900
                                         ring-2 ring-white dark:ring-gray-900
                                         flex items-center justify-center">
-                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                <span class="text-sm font-bold text-gray-700 dark:text-gray-200">
                                     {{ mb_substr(Auth::user()->name, 0, 1) }}
                                 </span>
                             </div>
@@ -163,7 +163,7 @@
                            shadow-lg"
                 >
                     <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-                        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                        <p class="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
                             {{ Auth::user()->name }}
                         </p>
                         <p class="text-xs text-gray-500 dark:text-gray-400 truncate">

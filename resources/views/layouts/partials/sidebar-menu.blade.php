@@ -4,30 +4,44 @@
 
     <!-- Sidebar Container -->
     <div class="flex flex-col h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-        <!-- Logo Section -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-            @role('admin')
-                <a href="{{ route('adminEspace') }}" class="flex items-center space-x-3">
-            @endrole
-            @role('teacher')
-                <a href="{{ route('teacherEspace') }}" class="flex items-center space-x-3">
-            @endrole
-            @role('student')
-                <a href="{{ route('studentEspace') }}" class="flex items-center space-x-3">
-            @endrole
-                <x-application-mark class="block h-10 w-auto" />
-                <div class="flex flex-col">
-                    <span class="text-sm font-semibold text-gray-900 dark:text-white">Faculté de Médecine</span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">Université de Mahajanga</span>
+    @php
+        $homeRoute = match(true) {
+            auth()->user()?->hasRole('admin')   => route('adminEspace'),
+            auth()->user()?->hasRole('teacher') => route('teacherEspace'),
+            default                            => route('studentEspace'),
+        };
+    @endphp
+
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <a href="{{ $homeRoute }}" class="flex items-center gap-3 min-w-0">
+            <img
+                src="{{ asset('assets/image/logo.png') }}"
+                alt="logo"
+                class="w-11 h-11 md:w-12 md:h-12 lg:w-[72px] lg:h-[72px] object-contain shrink-0"
+            />
+
+            <div class="min-w-0 leading-tight">
+                <div class="text-sm lg:text-base font-semibold text-gray-900 dark:text-white truncate">
+                    EpiRC
                 </div>
-            </a>
-            <!-- Mobile Close Button -->
-            <button @click="sidebarOpen = false" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
+                <div class="text-xs lg:text-sm text-gray-500 dark:text-gray-400 truncate">
+                    Faculté de Médecine • UMG
+                </div>
+            </div>
+        </a>
+
+        <button
+            type="button"
+            @click="sidebarOpen = false"
+            class="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900/15 dark:focus:ring-white/15"
+            aria-label="Fermer le menu"
+        >
+            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
 
         <!-- Navigation Links -->
         <div class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">

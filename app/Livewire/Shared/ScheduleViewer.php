@@ -10,14 +10,18 @@ use Illuminate\Support\Facades\Storage;
 class ScheduleViewer extends Component
 {
     public $typeFilter = '';
+    public $viewedFilter = 'all'; // ✅ NOUVEAU : 'all', 'viewed', 'unviewed'
+    public bool $isStudent = false;
 
-    public function viewSchedule($scheduleId)
+    public function mount()
     {
-        $schedule = Schedule::find($scheduleId);
-        
-        if ($schedule) {
-            $schedule->increment('view_count');
-        }
+        $this->isStudent = Auth::check() && Auth::user()->hasRole('student');
+    }
+
+    // ✅ NOUVEAU : Changer le filtre vu/non vu
+    public function setViewedFilter($filter)
+    {
+        $this->viewedFilter = $filter;
     }
 
     public function downloadSchedule($scheduleId)
@@ -25,7 +29,7 @@ class ScheduleViewer extends Component
         $schedule = Schedule::find($scheduleId);
         
         if ($schedule && Storage::disk('public')->exists($schedule->file_path)) {
-            $schedule->increment('download_count');
+            $schedule->registerDownload(Auth::user());
             
             return Storage::disk('public')->download(
                 $schedule->file_path,
@@ -41,7 +45,7 @@ class ScheduleViewer extends Component
         $user = Auth::user();
         
         $schedules = Schedule::query()
-            ->with(['niveau', 'parcour'])
+            ->with(['niveau', 'parcour', 'uploader'])
             ->where('is_active', true)
             ->where(function($query) {
                 $now = now();
@@ -56,7 +60,18 @@ class ScheduleViewer extends Component
             ->when($this->typeFilter, function($query) {
                 $query->where('type', $this->typeFilter);
             })
-            ->when($user->hasRole('student'), function($query) use ($user) {
+            // ✅ NOUVEAU : Filtre vu/non vu
+            ->when($this->viewedFilter === 'viewed' && $user, function($query) use ($user) {
+                $query->whereHas('views', function($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+            })
+            ->when($this->viewedFilter === 'unviewed' && $user, function($query) use ($user) {
+                $query->whereDoesntHave('views', function($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+            })
+            ->when($user && $user->hasRole('student'), function($query) use ($user) {
                 $query->where(function($q) use ($user) {
                     $q->whereNull('niveau_id')
                       ->orWhere('niveau_id', $user->niveau_id);
@@ -69,8 +84,32 @@ class ScheduleViewer extends Component
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // ✅ NOUVEAU : Compteurs pour les badges
+        $viewedCount = 0;
+        $unviewedCount = 0;
+
+        if ($user && $user->hasRole('student')) {
+            $baseQuery = Schedule::where('is_active', true)
+                ->where(function($q) use ($user) {
+                    $q->whereNull('niveau_id')->orWhere('niveau_id', $user->niveau_id);
+                })
+                ->where(function($q) use ($user) {
+                    $q->whereNull('parcour_id')->orWhere('parcour_id', $user->parcour_id);
+                });
+
+            $viewedCount = (clone $baseQuery)
+                ->whereHas('views', fn($q) => $q->where('user_id', $user->id))
+                ->count();
+
+            $unviewedCount = (clone $baseQuery)
+                ->whereDoesntHave('views', fn($q) => $q->where('user_id', $user->id))
+                ->count();
+        }
+
         return view('livewire.shared.schedule-viewer', [
             'schedules' => $schedules,
+            'viewedCount' => $viewedCount,
+            'unviewedCount' => $unviewedCount,
         ]);
     }
 }

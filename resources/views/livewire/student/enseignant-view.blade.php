@@ -1,7 +1,33 @@
-<div class="py-6">
-    <div class="mx-auto sm:px-6 lg:px-8 space-y-5">
+<div class="mx-auto w-full max-w-[88rem] px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-6 space-y-6">
 
-        {{-- Header --}}
+    {{-- Header --}}
+    <div class="space-y-4">
+    {{-- Bouton retour (style minimaliste) --}}
+    <div>
+        <a href="{{ route('studentEspace') }}"
+        class="inline-flex items-center gap-3 px-4 py-3 rounded-2xl
+                text-gray-700 dark:text-gray-300
+                hover:bg-gray-50 dark:hover:bg-gray-900/50
+                transition">
+            <div class="h-10 w-10 rounded-xl bg-gray-100 dark:bg-gray-900
+                        flex items-center justify-center
+                        text-gray-700 dark:text-gray-200">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </div>
+            <div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                    Retour à l'accueil
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                    Menu étudiant
+                </div>
+            </div>
+        </a>
+    </div>
+
+        {{-- Titre et compteur --}}
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
             <div>
                 <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
@@ -16,6 +42,7 @@
                 {{ $teachers->total() ?? $teachers->count() }} enseignant(s)
             </div>
         </div>
+    </div>
 
         {{-- Search --}}
         <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
@@ -161,8 +188,6 @@
                 {{ $teachers->links() }}
             </div>
         @endif
-    </div>
-
     {{-- Modal du profil détaillé --}}
     @include('livewire.student.modal.teacher-info')
 </div>

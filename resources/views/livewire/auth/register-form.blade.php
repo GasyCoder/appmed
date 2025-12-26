@@ -1,32 +1,34 @@
 <x-guest-layout>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-950 px-4 py-10">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-950 px-4 py-10 flex items-center">
         <div class="mx-auto w-full max-w-2xl">
 
-            <div class="rounded-2xl bg-white dark:bg-gray-900 shadow-sm">
+            <div class="rounded-2xl bg-white dark:bg-gray-900 shadow-sm border border-gray-200/70 dark:border-gray-800/70 overflow-hidden">
+
                 {{-- Header --}}
-                <div class="px-8 pt-7">
+                <div class="px-6 sm:px-8 pt-7 pb-6 border-b border-gray-200/70 dark:border-gray-800/70">
                     <div class="flex items-center gap-3">
                         <img
-                            src="{{ asset('assets/image/logo_med.png') }}"
+                            src="{{ asset('assets/image/logo.png') }}"
                             alt="Faculté de Médecine"
-                            class="h-10 w-10 rounded-lg object-contain"
+                            class="w-[120px] h-[120px] lg:w-[140px] lg:h-[140px] rounded-lg object-contain shrink-0"
                         />
 
                         <div class="min-w-0">
-                            <div class="text-sm font-semibold text-gray-900 dark:text-white">AppMed</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">Finaliser l’inscription</div>
+                            <div class="text-sm font-semibold text-gray-900 dark:text-white truncate">Faculté de Médecine</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 truncate">Inscription</div>
                         </div>
                     </div>
 
                     <div class="mt-5">
-                        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
+                        <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
                             Créer votre compte
                         </h1>
 
-                        {{-- Email affiché en haut (pas d’input visible) --}}
-                        <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                             <span>Email autorisé :</span>
-                            <span class="inline-flex items-center rounded-full bg-green-100/80 dark:bg-green-800/80 px-3 py-1 text-sm font-medium text-green-900 dark:text-green-100">
+                            <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium
+                                         bg-green-100 text-green-900
+                                         dark:bg-green-900/30 dark:text-green-100">
                                 {{ $email }}
                             </span>
                         </div>
@@ -34,15 +36,15 @@
                 </div>
 
                 {{-- Alerts --}}
-                <div class="px-8 pt-5 space-y-3">
+                <div class="px-6 sm:px-8 pt-5 space-y-3" aria-live="polite">
                     @if(session('error'))
-                        <div class="rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                        <div class="rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
                             {{ session('error') }}
                         </div>
                     @endif
 
                     @if(session('success'))
-                        <div class="rounded-xl bg-green-50 dark:bg-green-900/20 px-4 py-3 text-sm text-green-700 dark:text-green-300">
+                        <div class="rounded-xl border border-green-200 dark:border-green-900/40 bg-green-50 dark:bg-green-900/20 px-4 py-3 text-sm text-green-700 dark:text-green-300">
                             {{ session('success') }}
                         </div>
                     @endif
@@ -54,24 +56,23 @@
                 <form
                     method="POST"
                     action="{{ route('register.store', ['token' => $token]) }}"
-                    class="px-8 pt-4 pb-8 space-y-5"
+                    class="px-6 sm:px-8 pt-4 pb-8 space-y-6"
                     x-data="{ loading:false }"
-                    x-on:submit="loading = true"
-                >
+                    x-on:submit="if(loading) { $event.preventDefault(); return } loading = true"
+                    x-bind:aria-busy="loading ? 'true' : 'false'">
                     @csrf
 
                     {{-- Email envoyé au serveur (hidden) --}}
                     <input type="hidden" name="email" value="{{ $email }}" />
 
-                    {{-- Optionnel : si votre backend exige encore parcour_id --}}
                     @isset($defaultParcourId)
                         <input type="hidden" name="parcour_id" value="{{ $defaultParcourId }}" />
                     @endisset
 
                     {{-- Infos perso --}}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <x-label for="name" value="Nom complet" />
+                            <x-label for="name" value="Nom complet" class="text-sm text-gray-700 dark:text-gray-300" />
                             <x-input
                                 id="name"
                                 name="name"
@@ -79,68 +80,73 @@
                                 value="{{ old('name') }}"
                                 placeholder="Nom et Prénom(s)"
                                 required
-                                class="block mt-1 w-full rounded-xl"
+                                autocomplete="name"
+                                class="mt-1 block w-full rounded-xl
+                                       border border-gray-300 dark:border-gray-700
+                                       bg-white dark:bg-gray-950 text-gray-900 dark:text-white
+                                       focus:outline-none focus:ring-2 focus:ring-gray-900/15 dark:focus:ring-white/15
+                                       focus:border-gray-900 dark:focus:border-white"
                             />
+                            @error('name')
+                                <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <div>
-                            <x-label for="telephone" value="Téléphone" />
+                            <x-label for="telephone" value="Téléphone" class="text-sm text-gray-700 dark:text-gray-300" />
                             <x-input
                                 id="telephone"
                                 name="telephone"
-                                class="block mt-1 w-full"
                                 type="tel"
                                 inputmode="tel"
                                 autocomplete="tel"
                                 placeholder="Ex : 034 12 345 67"
                                 value="{{ old('telephone') }}"
                                 required
+                                class="mt-1 block w-full rounded-xl
+                                       border border-gray-300 dark:border-gray-700
+                                       bg-white dark:bg-gray-950 text-gray-900 dark:text-white
+                                       focus:outline-none focus:ring-2 focus:ring-gray-900/15 dark:focus:ring-white/15
+                                       focus:border-gray-900 dark:focus:border-white"
                             />
+                            @error('telephone')
+                                <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
                         </div>
-
                     </div>
 
-                    {{-- Sexe (radio UI) --}}
+                    {{-- Sexe --}}
                     @php $sexeOld = old('sexe'); @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-800 dark:text-gray-200">Sexe</label>
 
                         <div class="mt-2 grid grid-cols-2 gap-2">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="sexe" value="homme" class="peer sr-only" {{ $sexeOld === 'homme' ? 'checked' : '' }}>
-                                <div class="rounded-xl px-3 py-2 text-sm font-medium text-center transition
-                                            bg-gray-100/80 text-gray-800 hover:bg-gray-200/70
-                                            dark:bg-gray-800/80 dark:text-gray-200 dark:hover:bg-gray-800
-                                            peer-checked:bg-gray-900 peer-checked:text-white
-                                            dark:peer-checked:bg-white dark:peer-checked:text-gray-900">
-                                    Homme
-                                </div>
-                            </label>
-
-                            <label class="cursor-pointer">
-                                <input type="radio" name="sexe" value="femme" class="peer sr-only" {{ $sexeOld === 'femme' ? 'checked' : '' }}>
-                                <div class="rounded-xl px-3 py-2 text-sm font-medium text-center transition
-                                            bg-gray-100/80 text-gray-800 hover:bg-gray-200/70
-                                            dark:bg-gray-800/80 dark:text-gray-200 dark:hover:bg-gray-800
-                                            peer-checked:bg-gray-900 peer-checked:text-white
-                                            dark:peer-checked:bg-white dark:peer-checked:text-gray-900">
-                                    Femme
-                                </div>
-                            </label>
+                            @foreach([['homme','Homme'],['femme','Femme']] as [$value, $label])
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="sexe" value="{{ $value }}" class="peer sr-only" {{ $sexeOld === $value ? 'checked' : '' }} required>
+                                    <div class="rounded-xl px-3 py-2 text-sm font-semibold text-center transition
+                                                border border-gray-200 dark:border-gray-800
+                                                bg-gray-50 text-gray-800 hover:bg-gray-100
+                                                dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900
+                                                peer-checked:bg-gray-900 peer-checked:text-white peer-checked:border-gray-900
+                                                dark:peer-checked:bg-white dark:peer-checked:text-gray-900 dark:peer-checked:border-white">
+                                        {{ $label }}
+                                    </div>
+                                </label>
+                            @endforeach
                         </div>
 
                         @error('sexe')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
 
-
-                    {{-- Niveau (radio UI) --}}
+                    {{-- Niveau --}}
                     @php $niveauOld = (string) old('niveau_id'); @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-800 dark:text-gray-200">Niveau</label>
 
-                       <div class="mt-2 grid grid-cols-2 gap-2">
+                        <div class="mt-2 grid grid-cols-2 gap-2">
                             @foreach($niveaux as $niveau)
                                 @php $isChecked = $niveauOld === (string) $niveau->id; @endphp
 
@@ -151,13 +157,14 @@
                                         value="{{ $niveau->id }}"
                                         class="peer sr-only"
                                         {{ $isChecked ? 'checked' : '' }}
-                                        required>
-
+                                        required
+                                    >
                                     <div class="rounded-xl px-3 py-2 text-sm font-semibold text-center transition
-                                                bg-gray-100/80 text-gray-800 hover:bg-gray-200/70
-                                                dark:bg-gray-800/80 dark:text-gray-200 dark:hover:bg-gray-800
-                                                peer-checked:bg-gray-900 peer-checked:text-white
-                                                dark:peer-checked:bg-white dark:peer-checked:text-gray-900">
+                                                border border-gray-200 dark:border-gray-800
+                                                bg-gray-50 text-gray-800 hover:bg-gray-100
+                                                dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900
+                                                peer-checked:bg-gray-900 peer-checked:text-white peer-checked:border-gray-900
+                                                dark:peer-checked:bg-white dark:peer-checked:text-gray-900 dark:peer-checked:border-white">
                                         {{ $niveau->sigle }}
                                     </div>
                                 </label>
@@ -165,20 +172,32 @@
                         </div>
 
                         @error('niveau_id')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
 
-
                     {{-- Passwords --}}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <x-label for="password" value="Mot de passe" />
+                            <x-label for="password" value="Mot de passe" class="text-sm text-gray-700 dark:text-gray-300" />
                             <div class="relative mt-1">
-                                <x-input id="password" name="password" placeholder="*********"  type="password" required class="block w-full pr-10 rounded-xl" />
+                                <x-input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    placeholder="*********"
+                                    required
+                                    autocomplete="new-password"
+                                    class="block w-full pr-10 rounded-xl
+                                           border border-gray-300 dark:border-gray-700
+                                           bg-white dark:bg-gray-950 text-gray-900 dark:text-white
+                                           focus:outline-none focus:ring-2 focus:ring-gray-900/15 dark:focus:ring-white/15
+                                           focus:border-gray-900 dark:focus:border-white"
+                                />
                                 <button type="button"
                                         onclick="togglePassword('password', this)"
-                                        class="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">
+                                        class="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                                        aria-label="Afficher/Masquer le mot de passe">
                                     <svg class="show-password h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -188,15 +207,31 @@
                                     </svg>
                                 </button>
                             </div>
+                            @error('password')
+                                <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <div>
-                            <x-label for="password_confirmation" value="Confirmation" />
+                            <x-label for="password_confirmation" value="Confirmation" class="text-sm text-gray-700 dark:text-gray-300" />
                             <div class="relative mt-1">
-                                <x-input id="password_confirmation" placeholder="*********" name="password_confirmation" type="password" required class="block w-full pr-10 rounded-xl" />
+                                <x-input
+                                    id="password_confirmation"
+                                    name="password_confirmation"
+                                    type="password"
+                                    placeholder="*********"
+                                    required
+                                    autocomplete="new-password"
+                                    class="block w-full pr-10 rounded-xl
+                                           border border-gray-300 dark:border-gray-700
+                                           bg-white dark:bg-gray-950 text-gray-900 dark:text-white
+                                           focus:outline-none focus:ring-2 focus:ring-gray-900/15 dark:focus:ring-white/15
+                                           focus:border-gray-900 dark:focus:border-white"
+                                />
                                 <button type="button"
                                         onclick="togglePassword('password_confirmation', this)"
-                                        class="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">
+                                        class="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                                        aria-label="Afficher/Masquer la confirmation">
                                     <svg class="show-password h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -243,7 +278,7 @@
                         </button>
 
                         <div class="mt-3 text-center">
-                            <a href="{{ route('login') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
+                            <a href="{{ route('login') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:underline underline-offset-2">
                                 Déjà inscrit ? Se connecter
                             </a>
                         </div>
@@ -268,12 +303,12 @@
 
             if (input.type === 'password') {
                 input.type = 'text';
-                showIcon.classList.add('hidden');
-                hideIcon.classList.remove('hidden');
+                showIcon?.classList.add('hidden');
+                hideIcon?.classList.remove('hidden');
             } else {
                 input.type = 'password';
-                showIcon.classList.remove('hidden');
-                hideIcon.classList.add('hidden');
+                showIcon?.classList.remove('hidden');
+                hideIcon?.classList.add('hidden');
             }
         }
     </script>

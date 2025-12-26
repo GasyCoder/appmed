@@ -62,11 +62,14 @@ class DocumentController extends Controller
         ]);
     }
 
+
     /**
      * Serve: UNIQUEMENT local (pour pdf.js et public signed)
      */
     public function serve(Document $document)
     {
+        Log::info("🔵 SERVE() APPELÉ", ['document_id' => $document->id]);
+        
         if ($document->isExternalLink()) {
             abort(404);
         }
@@ -78,6 +81,19 @@ class DocumentController extends Controller
             ]);
             abort(404, 'Fichier introuvable');
         }
+
+        Log::info("🟢 AVANT registerView()", [
+            'document_id' => $document->id,
+            'view_count_avant' => $document->view_count
+        ]);
+
+        // ✅ ENREGISTRER LA VUE
+        $document->registerView();
+
+        Log::info("🟣 APRÈS registerView()", [
+            'document_id' => $document->id,
+            'view_count_après' => $document->fresh()->view_count
+        ]);
 
         $disk = Storage::disk('public');
         $path = $document->file_path;

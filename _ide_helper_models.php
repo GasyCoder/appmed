@@ -404,6 +404,8 @@ namespace App\Models{
  * @property-read \App\Models\Parcour|null $parcour
  * @property-read \App\Models\Semestre|null $semestre
  * @property-read \App\Models\User $uploader
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ScheduleView> $views
+ * @property-read int|null $views_count
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule current()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule forNiveau($niveauId)
@@ -412,6 +414,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule unviewedBy(\App\Models\User $user)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereAcademicYear($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule whereDeletedAt($value)
@@ -435,6 +438,27 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Schedule withoutTrashed()
  */
 	class Schedule extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $schedule_id
+ * @property int $user_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Schedule $schedule
+ * @property-read \App\Models\User $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduleView newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduleView newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduleView query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduleView whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduleView whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduleView whereScheduleId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduleView whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScheduleView whereUserId($value)
+ */
+	class ScheduleView extends \Eloquent {}
 }
 
 namespace App\Models{

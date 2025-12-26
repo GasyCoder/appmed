@@ -62,13 +62,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             default => redirect()->route('login'),
         };
     })->name('dashboard');
-
-    Route::get('/view-pdf/{filename}', [PdfController::class, 'viewerPdf'])->name('pdf.viewer');
-    Route::get('/pdf-content/{filename}', [PdfController::class, 'show'])->name('pdf.content');
-    Route::get('/pdf/download/{filename}', [PdfController::class, 'download'])->name('pdf.download');
-    Route::get('/pdf/serve/{filename}', [PdfController::class, 'serve'])->name('pdf.serve');
-    Route::get('/pdf/viewer/{filename}', [PdfController::class, 'viewerPpt'])->name('pdf.viewerppt');
-
+    
     Route::get('/documents/{document}/viewer', [DocumentController::class, 'viewer'])
         ->name('document.viewer')
         ->middleware('document.access');
@@ -117,7 +111,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/documents/upload', DocumentUpload::class)->name('document.upload');
         Route::get('/documents/{document}/edit', DocumentEdit::class)->name('document.edit');
         Route::get('/emploi-du-temps', ScheduleViewer::class)->name('teacher.timetable');
-        Route::get('/scolarites', ComingSoon::class)->name('teacher.scolarites');
     });
 
     Route::prefix('student')->middleware('role:student')->group(function () {
@@ -128,7 +121,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         })->name('student.ue');
         Route::get('/mes-enseignants', EnseignantView::class)->name('student.myTeacher');
         Route::get('/emploi-du-temps', ScheduleViewer::class)->name('student.timetable');
-        Route::get('/scolarites', ComingSoon::class)->name('student.scolarites');
+
     });
 
     Route::get('/nos-programmes', ProgrammesIndex::class)->name('programs');

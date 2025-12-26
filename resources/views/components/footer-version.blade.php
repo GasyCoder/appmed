@@ -4,8 +4,12 @@
     {{-- ✅ VERSION APP --}}
     <div class="pt-1 text-center">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">
-            @if(config('app.build'))
-                Version {{ config('app.build') }}
+            @php
+            $build = trim(shell_exec('git describe --tags --always --dirty 2>/dev/null')) ?: config('app.build');
+            @endphp
+
+            @if($build)
+            Version {{ $build }}
             @endif
         </p>
     </div>

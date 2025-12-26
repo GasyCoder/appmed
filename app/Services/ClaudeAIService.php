@@ -28,7 +28,6 @@ class ClaudeAIService
     {
         $this->apiKey = (string) config('services.anthropic.api_key');
 
-        // Optionnel: permettre override via config/chatbot.php ou .env plus tard
         $this->mockMode = (bool) config('chatbot.mock', $this->mockMode);
         $this->faqDisk  = (string) config('chatbot.faq_disk', $this->faqDisk);
         $this->faqPath  = (string) config('chatbot.faq_path', $this->faqPath);
@@ -36,62 +35,97 @@ class ClaudeAIService
         $this->loadFaqData();
     }
 
+
     /**
      * Charger les données FAQ depuis storage (disk local)
      */
     protected function loadFaqData(): void
     {
-        try {
-            $root = config("filesystems.disks.{$this->faqDisk}.root");
+        $this->faqData = null;
 
-            if (!Storage::disk($this->faqDisk)->exists($this->faqPath)) {
+        // 1) Disk sûr (fallback sur "local")
+        $disk = (string) ($this->faqDisk ?? '');
+        $disk = $disk !== '' ? $disk : (string) config('filesystems.default', 'local');
+
+        // 2) Vérifier que le disk existe en config
+        $diskConfigKey = sprintf('filesystems.disks.%s', $disk);
+        $diskConfig = config($diskConfigKey);
+
+        if (!is_array($diskConfig)) {
+            Log::error('FAQ disk non configuré', [
+                'disk' => $disk,
+                'config_key' => $diskConfigKey,
+                'available_disks' => array_keys((array) config('filesystems.disks', [])),
+            ]);
+
+            // fallback sur local si possible
+            $disk = 'local';
+            $diskConfigKey = 'filesystems.disks.local';
+            $diskConfig = config($diskConfigKey);
+
+            if (!is_array($diskConfig)) {
+                Log::critical('FAQ: aucun disk utilisable (local manquant)', [
+                    'config_key' => $diskConfigKey,
+                ]);
+                return;
+            }
+        }
+
+        $root = $diskConfig['root'] ?? null;
+
+        // 3) Path
+        $path = (string) ($this->faqPath ?? '');
+        if ($path === '') {
+            Log::error('FAQ path vide/non défini', ['disk' => $disk, 'root' => $root]);
+            return;
+        }
+
+        try {
+            $fs = Storage::disk($disk);
+
+            if (!$fs->exists($path)) {
                 Log::warning('FAQ JSON introuvable', [
-                    'disk' => $this->faqDisk,
-                    'path' => $this->faqPath,
+                    'disk' => $disk,
+                    'path' => $path,
                     'root' => $root,
                 ]);
-                $this->faqData = null;
                 return;
             }
 
-            $jsonContent = Storage::disk($this->faqDisk)->get($this->faqPath);
+            $jsonContent = (string) $fs->get($path);
 
-            // JSON_THROW_ON_ERROR => on attrape les JSON invalides proprement
+            // Optionnel: supprime BOM si présent (évite JSON invalid)
+            $jsonContent = ltrim($jsonContent, "\xEF\xBB\xBF");
+
             $data = json_decode($jsonContent, true, 512, JSON_THROW_ON_ERROR);
 
             if (!is_array($data) || empty($data['responses']) || !is_array($data['responses'])) {
                 Log::error('FAQ JSON structure invalide', [
-                    'disk' => $this->faqDisk,
-                    'path' => $this->faqPath,
-                    'keys' => is_array($data) ? array_keys($data) : gettype($data),
+                    'disk' => $disk,
+                    'path' => $path,
+                    'root' => $root,
+                    'type' => gettype($data),
+                    'keys' => is_array($data) ? array_keys($data) : null,
                 ]);
-                $this->faqData = null;
                 return;
             }
 
             $this->faqData = $data;
 
-            Log::info('FAQ JSON chargé', [
-                'disk' => $this->faqDisk,
-                'path' => $this->faqPath,
-                'count' => count($this->faqData['responses']),
-            ]);
-
         } catch (JsonException $e) {
             Log::error('FAQ JSON invalide', [
-                'disk' => $this->faqDisk,
-                'path' => $this->faqPath,
+                'disk' => $disk,
+                'path' => $path,
+                'root' => $root,
                 'error' => $e->getMessage(),
             ]);
-            $this->faqData = null;
-
         } catch (\Throwable $e) {
             Log::error('Erreur chargement FAQ', [
-                'disk' => $this->faqDisk,
-                'path' => $this->faqPath,
+                'disk' => $disk,
+                'path' => $path,
+                'root' => $root,
                 'error' => $e->getMessage(),
             ]);
-            $this->faqData = null;
         }
     }
 

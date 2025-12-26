@@ -8,6 +8,7 @@ use App\Models\Niveau;
 use App\Models\Parcour;
 use App\Models\Semestre;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -18,15 +19,16 @@ class Documents extends Component
     use WithPagination, LivewireAlert;
 
     // Filtres
-    public $search = '';
-    public $filterNiveau = '';
-    public $filterParcour = '';
-    public $filterSemestre = '';
-    public $filterStatus = '';
+    public string $search = '';
+    public string $filterNiveau = '';
+    public string $filterParcour = '';
+    public string $filterSemestre = '';
+    public string $filterStatus = '';
+    public string $filterArchive = '0'; // 0 actifs, 1 archives, '' tous
 
     // Tri
-    public $sortField = 'created_at';
-    public $sortDirection = 'desc';
+    public string $sortField = 'created_at';
+    public string $sortDirection = 'desc';
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -34,11 +36,11 @@ class Documents extends Component
         'filterParcour' => ['except' => ''],
         'filterSemestre' => ['except' => ''],
         'filterStatus' => ['except' => ''],
+        'filterArchive' => ['except' => '0'],
         'sortField' => ['except' => 'created_at'],
         'sortDirection' => ['except' => 'desc'],
     ];
 
-    // Champs autorisés au tri (sécurité)
     protected array $sortable = [
         'title',
         'is_actif',
@@ -46,14 +48,16 @@ class Documents extends Component
         'view_count',
     ];
 
-    public function updated($propertyName)
+    public function updated($propertyName): void
     {
-        if (in_array($propertyName, ['search', 'filterNiveau', 'filterParcour', 'filterSemestre', 'filterStatus'])) {
+        if (in_array($propertyName, [
+            'search','filterNiveau','filterParcour','filterSemestre','filterStatus','filterArchive'
+        ], true)) {
             $this->resetPage();
         }
     }
 
-    public function sortBy($field)
+    public function sortBy(string $field): void
     {
         if (!in_array($field, $this->sortable, true)) {
             $field = 'created_at';
@@ -61,29 +65,58 @@ class Documents extends Component
 
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->sortField = $field;
+            return;
+        }
 
-            // Par défaut: desc pour dates & compteurs, asc pour le titre
-            $this->sortDirection = in_array($field, ['created_at', 'view_count'], true) ? 'desc' : 'asc';
+        $this->sortField = $field;
+        $this->sortDirection = in_array($field, ['created_at', 'view_count'], true) ? 'desc' : 'asc';
+    }
+
+    public function setArchiveFilter(string $value): void
+    {
+        $this->filterArchive = $value;
+        $this->resetPage();
+    }
+
+    public function toggleArchive(int $documentId): void
+    {
+        try {
+            $document = Document::query()
+                ->whereKey($documentId)
+                ->where('uploaded_by', Auth::id())
+                ->firstOrFail();
+
+            $new = ! (bool) $document->is_archive;
+
+            // robuste même si fillable/casts mal configurés
+            $document->forceFill(['is_archive' => $new])->save();
+
+            $this->alert('success', 'Mise à jour', [
+                'position' => 'top-end',
+                'timer' => 2000,
+                'toast' => true,
+                'text' => $new ? 'Document archivé' : 'Document restauré',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('toggleArchive failed', ['id' => $documentId, 'error' => $e->getMessage()]);
+            $this->alert('error', 'Erreur', [
+                'position' => 'top-end',
+                'timer' => 3000,
+                'toast' => true,
+                'text' => 'Action impossible.',
+            ]);
         }
     }
 
-    public function toggleStatus($documentId)
+    public function toggleStatus(int $documentId): void
     {
         try {
-            $document = Document::findOrFail($documentId);
+            $document = Document::query()
+                ->whereKey($documentId)
+                ->where('uploaded_by', Auth::id())
+                ->firstOrFail();
 
-            if ($document->uploaded_by !== Auth::id()) {
-                $this->alert('error', 'Accès refusé', [
-                    'position' => 'top-end',
-                    'timer' => 3000,
-                    'toast' => true,
-                ]);
-                return;
-            }
-
-            $document->update(['is_actif' => !$document->is_actif]);
+            $document->forceFill(['is_actif' => ! (bool) $document->is_actif])->save();
 
             $this->alert('success', 'Statut mis à jour', [
                 'position' => 'top-end',
@@ -91,7 +124,7 @@ class Documents extends Component
                 'toast' => true,
                 'text' => $document->is_actif ? 'Document partagé' : 'Document non partagé',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->alert('error', 'Erreur', [
                 'position' => 'top-end',
                 'timer' => 3000,
@@ -101,26 +134,17 @@ class Documents extends Component
         }
     }
 
-    public function deleteDocument($documentId)
+    public function deleteDocument(int $documentId): void
     {
         try {
-            $document = Document::findOrFail($documentId);
-
-            if ($document->uploaded_by !== Auth::id()) {
-                $this->alert('error', 'Accès refusé', [
-                    'position' => 'top-end',
-                    'timer' => 3000,
-                    'toast' => true,
-                ]);
-                return;
-            }
+            $document = Document::query()
+                ->whereKey($documentId)
+                ->where('uploaded_by', Auth::id())
+                ->firstOrFail();
 
             $filePath = $document->file_path;
-
-            // Supprimer l'enregistrement
             $document->delete();
 
-            // Supprimer le fichier physique s'il n'est plus utilisé
             if ($filePath && !Document::where('file_path', $filePath)->exists()) {
                 Storage::disk('public')->delete($filePath);
             }
@@ -130,7 +154,7 @@ class Documents extends Component
                 'timer' => 3000,
                 'toast' => true,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->alert('error', 'Erreur', [
                 'position' => 'top-end',
                 'timer' => 3000,
@@ -145,15 +169,15 @@ class Documents extends Component
         $baseQuery = Document::query()
             ->where('uploaded_by', Auth::id());
 
-        // Liste paginée (avec vues uniques par doc)
         $query = (clone $baseQuery)
-            ->when($this->search, fn ($q) => $q->where('title', 'like', "%{$this->search}%"))
-            ->when($this->filterNiveau, fn ($q) => $q->where('niveau_id', $this->filterNiveau))
-            ->when($this->filterParcour, fn ($q) => $q->where('parcour_id', $this->filterParcour))
-            ->when($this->filterSemestre, fn ($q) => $q->where('semestre_id', $this->filterSemestre))
-            ->when($this->filterStatus !== '', fn ($q) => $q->where('is_actif', $this->filterStatus))
+            ->when($this->search !== '', fn ($q) => $q->where('title', 'like', "%{$this->search}%"))
+            ->when($this->filterNiveau !== '', fn ($q) => $q->where('niveau_id', $this->filterNiveau))
+            ->when($this->filterParcour !== '', fn ($q) => $q->where('parcour_id', $this->filterParcour))
+            ->when($this->filterSemestre !== '', fn ($q) => $q->where('semestre_id', $this->filterSemestre))
+            ->when($this->filterStatus !== '', fn ($q) => $q->where('is_actif', (int) $this->filterStatus))
+            ->when($this->filterArchive !== '', fn ($q) => $q->where('is_archive', (int) $this->filterArchive))
             ->with(['niveau', 'parcour', 'semestre'])
-            ->withCount('views') // IMPORTANT => $document->views_count
+            ->withCount('views')
             ->orderBy(
                 in_array($this->sortField, $this->sortable, true) ? $this->sortField : 'created_at',
                 $this->sortDirection === 'asc' ? 'asc' : 'desc'
@@ -161,17 +185,13 @@ class Documents extends Component
 
         $documents = $query->paginate(10);
 
-        // Stats (dont VUES)
         $stats = [
             'total'     => (clone $baseQuery)->count(),
             'shared'    => (clone $baseQuery)->where('is_actif', true)->count(),
             'notShared' => (clone $baseQuery)->where('is_actif', false)->count(),
             'recent'    => (clone $baseQuery)->where('created_at', '>=', now()->subDays(7))->count(),
-
-            // ✅ total des ouvertures (hits) par étudiants
             'views'     => (clone $baseQuery)->sum('view_count'),
-
-            // (optionnel) total des vues uniques (1 étudiant = 1 vue unique par document)
+            'archived'  => (clone $baseQuery)->where('is_archive', true)->count(),
             'uniqueViews' => DocumentView::query()
                 ->whereHas('document', fn ($q) => $q->where('uploaded_by', Auth::id()))
                 ->count(),
@@ -182,7 +202,7 @@ class Documents extends Component
             'stats' => $stats,
             'niveaux' => Niveau::where('status', true)->orderBy('name')->get(),
             'parcours' => Parcour::where('status', true)->orderBy('name')->get(),
-            'semestres' => $this->filterNiveau
+            'semestres' => $this->filterNiveau !== ''
                 ? Semestre::where('niveau_id', $this->filterNiveau)->where('status', true)->orderBy('name')->get()
                 : Semestre::where('status', true)->orderBy('name')->get(),
         ]);

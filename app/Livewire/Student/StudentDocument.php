@@ -23,22 +23,30 @@ class StudentDocument extends Component
    public $filterSemestre = '';
    public $semesterFilter = '';
    public $viewType = 'grid';
+   public string $scope = 'active'; // 'active' | 'archives'
    
    // ✅ NOUVEAU : Filtre vu/non vu
    public $viewedFilter = 'all'; // 'all', 'viewed', 'unviewed'
 
    public bool $isStudent = false;
 
-   protected $queryString = [
-       'search' => ['except' => ''],
-       'teacherFilter' => ['except' => ''],
-       'filterNiveau' => ['except' => ''],
-       'filterParcour' => ['except' => ''],
-       'filterSemestre' => ['except' => ''],
-       'semesterFilter' => ['except' => ''],
-       'viewType' => ['except' => 'grid'],
-       'viewedFilter' => ['except' => 'all'], // ✅ AJOUT
-   ];
+    protected $queryString = [
+    'search' => ['except' => ''],
+    'teacherFilter' => ['except' => ''],
+    'filterNiveau' => ['except' => ''],
+    'filterParcour' => ['except' => ''],
+    'filterSemestre' => ['except' => ''],
+    'semesterFilter' => ['except' => ''],
+    'viewType' => ['except' => 'grid'],
+    'viewedFilter' => ['except' => 'all'],
+    'scope' => ['except' => 'active'], // ✅ AJOUT
+    ];
+
+    public function setScope(string $scope): void
+    {
+        $this->scope = in_array($scope, ['active','archives'], true) ? $scope : 'active';
+        $this->resetPage();
+    }
 
    protected $listeners = [
        'refreshDocuments' => '$refresh',
@@ -68,6 +76,29 @@ class StudentDocument extends Component
        $this->filterNiveau = Auth::user()->niveau_id;
        $this->filterParcour = Auth::user()->parcour_id;
    }
+
+   private function documentsBaseQuery($user, ?bool $archived = null)
+    {
+        $q = Document::query()
+            ->where('is_actif', true)
+            ->where('niveau_id', $user->niveau_id);
+
+        if (!empty($user->parcour_id)) {
+            $q->where('parcour_id', $user->parcour_id);
+        }
+
+        // ✅ archive filter robuste (null = non archivé)
+        if ($archived === true) {
+            $q->where('is_archive', 1);
+        } elseif ($archived === false) {
+            $q->where(function ($qq) {
+                $qq->whereNull('is_archive')->orWhere('is_archive', 0);
+            });
+        }
+
+        return $q;
+    }
+
 
    public function updatedFilterNiveau($value)
    {
@@ -106,23 +137,26 @@ class StudentDocument extends Component
        $this->render();
    }
 
-   public function getTeachersProperty()
-   {
-       $studentNiveauId = Auth::user()->niveau_id;
+    public function getTeachersProperty()
+    {
+        $studentNiveauId = Auth::user()->niveau_id;
+        $isArchives = ($this->scope === 'archives');
 
-       return User::query()
-           ->role('teacher')
-           ->whereHas('teacherNiveaux', function($query) use ($studentNiveauId) {
-               $query->where('niveau_id', $studentNiveauId);
-           })
-           ->whereHas('documents', function($query) {
-               $query->where('is_actif', true);
-           })
-           ->with(['teacherNiveaux' => function($query) use ($studentNiveauId) {
-               $query->where('niveau_id', $studentNiveauId);
-           }])
-           ->get();
-   }
+        return User::query()
+            ->role('teacher')
+            ->whereHas('teacherNiveaux', fn($q) => $q->where('niveau_id', $studentNiveauId))
+            ->whereHas('documents', function ($q) use ($isArchives) {
+                $q->where('is_actif', true);
+
+                if ($isArchives) {
+                    $q->where('is_archive', 1);
+                } else {
+                    $q->where(fn($qq) => $qq->whereNull('is_archive')->orWhere('is_archive', 0));
+                }
+            })
+            ->get();
+    }
+
 
    public function getNiveauxProperty()
    {
@@ -161,75 +195,54 @@ class StudentDocument extends Component
        return response()->download(storage_path('app/public/' . $document->file_path));
    }
 
-   public function render()
-   {
-       $user = Auth::user();
+    public function render()
+    {
+        $user = Auth::user();
+        $isArchives = ($this->scope === 'archives');
 
-       $documents = Document::query()
-           ->where('is_actif', true)
-           ->when($this->filterNiveau, function($query) {
-               $query->where('niveau_id', $this->filterNiveau);
-           })
-           ->when($this->filterParcour, function($query) {
-               $query->where('parcour_id', $this->filterParcour);
-           })
-           ->when($this->semesterFilter, function($query) {
-               $query->where('semestre_id', $this->semesterFilter);
-           })
-           ->when($this->teacherFilter, function($query) {
-               $query->where('uploaded_by', $this->teacherFilter);
-           })
-           ->when($this->search, function($query) {
-               $query->where('title', 'like', "%{$this->search}%");
-           })
-           // ✅ NOUVEAU : Filtre vu/non vu
-           ->when($this->viewedFilter === 'viewed', function($query) use ($user) {
-               $query->whereHas('views', function($q) use ($user) {
-                   $q->where('user_id', $user->id);
-               });
-           })
-           ->when($this->viewedFilter === 'unviewed', function($query) use ($user) {
-               $query->whereDoesntHave('views', function($q) use ($user) {
-                   $q->where('user_id', $user->id);
-               });
-           })
-           ->with([
-               'uploader.teacherNiveaux',
-               'niveau',
-               'parcour',
-               'semestre'
-           ])
-           ->latest()
-           ->paginate(12);
+        // Base scope (active ou archives)
+        $scopedBase = $this->documentsBaseQuery($user, $isArchives);
 
-       // ✅ NOUVEAU : Compteurs pour les badges
-       $viewedCount = Document::where('is_actif', true)
-           ->where('niveau_id', $user->niveau_id)
-           ->where('parcour_id', $user->parcour_id)
-           ->whereHas('views', fn($q) => $q->where('user_id', $user->id))
-           ->count();
+        // Liste documents (avec tes filtres)
+        $documentsQuery = (clone $scopedBase)
+            ->when($this->semesterFilter, fn($q) => $q->where('semestre_id', $this->semesterFilter))
+            ->when($this->teacherFilter, fn($q) => $q->where('uploaded_by', $this->teacherFilter))
+            ->when($this->search, fn($q) => $q->where('title', 'like', "%{$this->search}%"))
+            ->when($this->viewedFilter === 'viewed', function ($q) use ($user) {
+                $q->whereHas('views', fn($vv) => $vv->where('user_id', $user->id));
+            })
+            ->when($this->viewedFilter === 'unviewed', function ($q) use ($user) {
+                $q->whereDoesntHave('views', fn($vv) => $vv->where('user_id', $user->id));
+            })
+            ->with(['uploader.teacherNiveaux', 'niveau', 'parcour', 'semestre'])
+            ->latest();
 
-       $unviewedCount = Document::where('is_actif', true)
-           ->where('niveau_id', $user->niveau_id)
-           ->where('parcour_id', $user->parcour_id)
-           ->whereDoesntHave('views', fn($q) => $q->where('user_id', $user->id))
-           ->count();
+        $documents = $documentsQuery->paginate(12);
 
-       return view('livewire.student.student-document', [
-           'documents' => $documents,
-           'teachers' => $this->teachers,
-           'niveaux' => $this->niveaux,
-           'parcours' => $this->parcours,
-           'semestres' => $this->semestres,
-           'viewedCount' => $viewedCount,
-           'unviewedCount' => $unviewedCount,
-           'recentDocuments' => Document::query()
-               ->where('is_actif', true)
-               ->where('niveau_id', $user->niveau_id)
-               ->where('parcour_id', $user->parcour_id)
-               ->latest()
-               ->take(5)
-               ->get()
-       ]);
-   }
+        // ✅ Compteurs badges (doivent respecter le scope)
+        $viewedCount = (clone $scopedBase)
+            ->whereHas('views', fn($q) => $q->where('user_id', $user->id))
+            ->count();
+
+        $unviewedCount = (clone $scopedBase)
+            ->whereDoesntHave('views', fn($q) => $q->where('user_id', $user->id))
+            ->count();
+
+        // ✅ Totaux pour switch Actifs/Archives
+        $activeTotal = $this->documentsBaseQuery($user, false)->count();
+        $archivedTotal = $this->documentsBaseQuery($user, true)->count();
+
+        return view('livewire.student.student-document', [
+            'documents' => $documents,
+            'teachers' => $this->teachers, // voir point 2 ci-dessous
+            'niveaux' => $this->niveaux,
+            'parcours' => $this->parcours,
+            'semestres' => $this->semestres,
+            'viewedCount' => $viewedCount,
+            'unviewedCount' => $unviewedCount,
+            'activeTotal' => $activeTotal,
+            'archivedTotal' => $archivedTotal,
+        ]);
+    }
+
 }

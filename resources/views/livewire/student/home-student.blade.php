@@ -187,10 +187,11 @@
 
                     <div class="p-4 space-y-3">
                         {{-- Archives des cours --}}
-                        <a href="{{ $courseArchiveUrl }}"
-                           class="group flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800
-                                  bg-gray-50 dark:bg-gray-900/30 p-4
-                                  hover:bg-gray-100 dark:hover:bg-gray-900/50 transition">
+                        <a href="{{ route('student.document', ['scope' => 'archives']) }}" wire:navigate
+                        class="group flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800
+                                bg-gray-50 dark:bg-gray-900/30 p-4
+                                hover:bg-gray-100 dark:hover:bg-gray-900/50 transition">
+
                             <div class="h-12 w-12 rounded-2xl {{ $iconTone('doc') }} flex items-center justify-center shrink-0">
                                 {!! $iconSvg('doc') !!}
                             </div>

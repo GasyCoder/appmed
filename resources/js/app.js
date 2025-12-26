@@ -1,91 +1,51 @@
-import './bootstrap';
-import Alpine from 'alpinejs';
-import focus from '@alpinejs/focus';
-import collapse from '@alpinejs/collapse';
-import './chatbot.js';
+import './bootstrap'
+import focus from '@alpinejs/focus'
+import collapse from '@alpinejs/collapse'
+import './chatbot.js'
 
-window.Alpine = Alpine;
+// ✅ Livewire v3 ESM: une seule instance Alpine (celle de Livewire)
+import { Livewire, Alpine } from '../../vendor/livewire/livewire/dist/livewire.esm'
 
-Alpine.plugin(focus);
-Alpine.plugin(collapse);
+window.Alpine = Alpine
 
-/**
- * ✅ Source unique de vérité pour le thème
- */
-window.__applyTheme = function () {
-    const stored = localStorage.getItem('darkMode');
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+function applyTheme() {
+  const stored = localStorage.getItem('darkMode')
+  const prefersDark =
+    window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
 
-    const isDark = stored !== null ? (stored === 'true') : prefersDark;
+  const isDark = stored === null ? prefersDark : stored === 'true'
+  document.documentElement.classList.toggle('dark', isDark)
+  return isDark
+}
 
-    if (isDark) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+// ✅ Tout déclarer au bon moment
+document.addEventListener('alpine:init', () => {
+  Alpine.plugin(focus)
+  Alpine.plugin(collapse)
 
-    return isDark;
-};
+  Alpine.store('theme', {
+    darkMode: applyTheme(),
 
-/**
- * ✅ Landing + pages publiques : même logique
- */
-window.landingTheme = function () {
-    return {
-        darkMode: false,
-
-        init() {
-            this.darkMode = window.__applyTheme();
-
-            // Mesure header fixed pour padding-top (ton code)
-            const applyHeaderOffset = () => {
-                const header = document.getElementById('landingHeader');
-                if (!header) return;
-                const h = Math.ceil(header.getBoundingClientRect().height || 64);
-                document.documentElement.style.setProperty('--landing-header-h', h + 'px');
-            };
-            applyHeaderOffset();
-            window.addEventListener('resize', applyHeaderOffset, { passive: true });
-            setTimeout(applyHeaderOffset, 60);
-            setTimeout(applyHeaderOffset, 250);
-
-            // Sync si localStorage change (multi-tabs)
-            window.addEventListener('storage', (e) => {
-                if (e.key !== 'darkMode') return;
-                this.darkMode = window.__applyTheme();
-            });
-        },
-
-        toggleDark() {
-            const next = !this.darkMode;
-            localStorage.setItem('darkMode', next ? 'true' : 'false');
-            this.darkMode = window.__applyTheme();
-        }
-    }
-};
-
-/**
- * ✅ Pour tes pages internes si tu utilises Alpine.data('theme')
- */
-Alpine.data('theme', () => ({
-    darkMode: false,
-
-    init() {
-        this.darkMode = window.__applyTheme();
-
-        this.$watch('darkMode', (value) => {
-            localStorage.setItem('darkMode', value ? 'true' : 'false');
-            window.__applyTheme();
-        });
-
-        document.addEventListener('livewire:navigated', () => {
-            this.darkMode = window.__applyTheme();
-        });
+    sync() {
+      this.darkMode = applyTheme()
     },
 
-    toggleDarkMode() {
-        this.darkMode = !this.darkMode;
+    set(value) {
+      this.darkMode = !!value
+      localStorage.setItem('darkMode', this.darkMode ? 'true' : 'false')
+      this.sync()
     },
-}));
 
-// ✅ Applique immédiatement avant Alpine start (évite flash blanc/noir)
-window.__applyTheme();
+    toggle() {
+      this.set(!this.darkMode)
+    },
+  })
+})
 
-Alpine.start();
+// ✅ Après navigation Livewire (wire:navigate)
+document.addEventListener('livewire:navigated', () => {
+  Alpine.store('theme')?.sync?.()
+})
+
+// ✅ Démarrage unique
+Livewire.start()

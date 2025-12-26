@@ -72,6 +72,15 @@
         @php
             $m = $fileMeta($document);
 
+            $isArchived = (bool) ($document->is_archive ?? false);
+
+            $archivePillClass = 'bg-amber-50 text-amber-700 ring-amber-200
+                                dark:bg-amber-900/20 dark:text-amber-200 dark:ring-amber-900/40';
+
+            $archiveCardTone = $isArchived
+                ? 'ring-2 ring-amber-400/30 dark:ring-amber-500/20'
+                : '';
+
             $grade = $document->teacher?->profil?->grade;
             $teacherName = $document->uploader?->name;
 
@@ -104,7 +113,10 @@
             }
         @endphp
 
-        <article class="group rounded-2xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-950 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition overflow-hidden">
+        <article class="group rounded-2xl border border-gray-200/70 dark:border-gray-800/70
+                bg-white dark:bg-gray-950 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition overflow-hidden
+                {{ $archiveCardTone }}">
+
             <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-800/70">
                 <div class="flex items-start gap-4">
                     <div class="shrink-0 h-12 w-12 rounded-2xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center text-gray-700 dark:text-gray-200">
@@ -113,9 +125,18 @@
 
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center justify-between gap-3">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ring-1 {{ $m['badgeClass'] }}">
-                                {{ $m['badge'] }}
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ring-1 {{ $m['badgeClass'] }}">
+                                    {{ $m['badge'] }}
+                                </span>
+
+                                @if($isArchived)
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ring-1 {{ $archivePillClass }}">
+                                        ARCHIVÉ
+                                    </span>
+                                @endif
+                            </div>
+
                             <span class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                 {{ $document->created_at?->format('d/m/Y') }}
                             </span>

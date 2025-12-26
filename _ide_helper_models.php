@@ -158,6 +158,7 @@ namespace App\Models{
  * @property string $file_type
  * @property int $file_size
  * @property bool $is_actif
+ * @property bool $is_archive
  * @property int $download_count
  * @property int $view_count
  * @property int $niveau_id
@@ -178,8 +179,10 @@ namespace App\Models{
  * @property-read \App\Models\User $uploader
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DocumentView> $views
  * @property-read int|null $views_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document archived()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document notArchived()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConvertedAt($value)
@@ -192,6 +195,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereFileType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereIsActif($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereIsArchive($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereNiveauId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereOriginalExtension($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereOriginalFilename($value)

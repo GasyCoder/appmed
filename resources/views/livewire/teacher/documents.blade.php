@@ -1,10 +1,9 @@
-<div
-    class="w-full px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5"
+<div class="w-full px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5"
     x-data="{
         view: (localStorage.getItem('teacherDocsView') || 'grid'),
         setView(v){ this.view = v; localStorage.setItem('teacherDocsView', v) }
-    }"
->
+    }">
+
     @php
         // ✅ Helpers (Blade-safe)
         $isHttp = fn ($u) => \Illuminate\Support\Str::startsWith((string)$u, ['http://', 'https://']);
@@ -124,6 +123,28 @@
                             Liste
                         </button>
                     </div>
+                    {{-- ✅ Switch Actifs / Archives --}}
+                    <div class="inline-flex w-full sm:w-auto rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-800">
+                        <button type="button"
+                                wire:click="setArchiveFilter('0')"
+                                class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition
+                                    {{ (string)$filterArchive === '0' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/40' }}">
+                            Actifs
+                        </button>
+
+                        <button type="button"
+                                wire:click="setArchiveFilter('1')"
+                                class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition
+                                    {{ (string)$filterArchive === '1' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/40' }}">
+                            Archives
+                            @if(($stats['archived'] ?? 0) > 0)
+                                <span class="ml-1 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[10px] font-bold
+                                            bg-white/20 text-white">
+                                    {{ $stats['archived'] > 99 ? '99+' : $stats['archived'] }}
+                                </span>
+                            @endif
+                        </button>
+                    </div>
 
                     <a href="{{ route('document.upload') }}"
                        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm
@@ -164,6 +185,12 @@
                              dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-200">
                     7 jours <span class="text-blue-900 dark:text-blue-100">{{ $stats['recent'] }}</span>
                 </span>
+
+                <span class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800
+                            dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-200">
+                    Archives <span class="text-slate-900 dark:text-white">{{ $stats['archived'] ?? 0 }}</span>
+                </span>
+
             </div>
         </div>
     </div>
@@ -304,8 +331,7 @@
         wire:loading.class="opacity-60 pointer-events-none"
         :class="view === 'grid'
             ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4'
-            : 'grid grid-cols-1 gap-3'"
-    >
+            : 'grid grid-cols-1 gap-3'">
         @forelse($documents as $document)
             @php
                 $filePath  = (string) ($document->file_path ?? '');
@@ -488,6 +514,12 @@
                                         dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-200">
                                 {{ $document->semestre->name ?? '-' }}
                             </span>
+                            @if($document->is_archive)
+                                <span class="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800
+                                            dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
+                                    ARCHIVÉ
+                                </span>
+                            @endif
                         </div>
 
                         {{-- Meta + actions --}}
@@ -566,6 +598,22 @@
                                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                     </svg>
                                 </a>
+                                {{-- ✅ Archiver / Restaurer --}}
+                                <button type="button"
+                                        wire:click="toggleArchive({{ $document->id }})"
+                                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl
+                                            {{ $document->is_archive
+                                                    ? 'bg-amber-50 ring-1 ring-amber-200 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/20 dark:ring-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/30'
+                                                    : 'bg-slate-50 ring-1 ring-slate-200 text-slate-800 hover:bg-slate-100 dark:bg-slate-900/30 dark:ring-slate-700 dark:text-slate-100 dark:hover:bg-gray-700/40'
+                                            }} transition"
+                                        title="{{ $document->is_archive ? 'Restaurer' : 'Archiver' }}">
+                                    {{-- ArchiveBoxIcon --}}
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 7.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v1.5" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 7.5h16V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7.5Z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 12h4" />
+                                    </svg>
+                                </button>
 
                                 {{-- Supprimer --}}
                                 <button type="button"

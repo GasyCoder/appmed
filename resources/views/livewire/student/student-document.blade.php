@@ -57,6 +57,31 @@
             </span>
         @endif
     </button>
+
+    <div class="inline-flex w-full sm:w-auto rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-800 dark:bg-gray-900">
+    <button type="button"
+            wire:click="setScope('active')"
+            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition
+            {{ $scope === 'active' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50' }}">
+        Actifs
+        <span class="min-w-[1.5rem] h-5 px-2 rounded-full text-[10px] font-bold
+                     {{ $scope === 'active' ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' }}">
+            {{ $activeTotal ?? 0 }}
+        </span>
+    </button>
+
+    <button type="button"
+            wire:click="setScope('archives')"
+            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition
+            {{ $scope === 'archives' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50' }}">
+        Archives
+        <span class="min-w-[1.5rem] h-5 px-2 rounded-full text-[10px] font-bold
+                     {{ $scope === 'archives' ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' }}">
+            {{ $archivedTotal ?? 0 }}
+        </span>
+    </button>
+</div>
+
 </div>
     {{-- Header + switch grid/list + infos --}}
     @include('livewire.student.sections.header-liste')

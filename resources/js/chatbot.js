@@ -262,7 +262,7 @@ class Chatbot {
             <!-- ✅ Bouton flottant -->
             <button id="chat-toggle-btn"
                     type="button"
-                    class="relative h-14 w-14 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600
+                    class="relative h-16 w-16 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600
                            text-white shadow-2xl hover:shadow-indigo-500/30 transition-all
                            hover:scale-110 active:scale-95 flex items-center justify-center">
 

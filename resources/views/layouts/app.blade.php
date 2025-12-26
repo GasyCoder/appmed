@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
-      x-data="theme()"
-      x-init="init()">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,19 +15,14 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <script>
-        (function () {
-            try {
-                const stored = localStorage.getItem('darkMode');
-                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                const isDark = stored !== null ? (stored === 'true') : prefersDark;
-
-                if (isDark) document.documentElement.classList.add('dark');
-                else document.documentElement.classList.remove('dark');
-            } catch (e) {
-                console.error('Error loading dark mode:', e);
-            }
-        })();
+    (() => {
+    const stored = localStorage.getItem('darkMode');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = stored === null ? prefersDark : stored === 'true';
+    document.documentElement.classList.toggle('dark', isDark);
+    })();
     </script>
+
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles

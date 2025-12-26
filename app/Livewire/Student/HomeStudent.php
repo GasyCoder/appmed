@@ -120,7 +120,10 @@ class HomeStudent extends Component
         $q = Document::query()
             ->with('uploader')
             ->where('is_actif', true)
-            ->where('niveau_id', $u->niveau_id);
+            ->where('niveau_id', $u->niveau_id)
+            ->where(function ($qq) {
+                $qq->whereNull('is_archive')->orWhere('is_archive', 0);
+            });
 
         if (!empty($u->parcour_id) && Schema::hasColumn('documents', 'parcour_id')) {
             $q->where('parcour_id', $u->parcour_id);

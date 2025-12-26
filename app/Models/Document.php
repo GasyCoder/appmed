@@ -19,7 +19,7 @@ class Document extends Model
         'uploaded_by', 'niveau_id', 'parcour_id', 'semestre_id', 'programme_id',
         'title', 'file_path', 'protected_path', 'original_filename', 'original_extension',
         'converted_from', 'converted_at', 'file_type', 'file_size', 'is_actif',
-        'download_count', 'view_count',
+        'download_count', 'view_count','is_archive',
     ];
 
     protected $dates = ['deleted_at', 'converted_at'];
@@ -29,6 +29,7 @@ class Document extends Model
         'download_count' => 'integer',
         'view_count' => 'integer',
         'converted_at' => 'datetime',
+        'is_archive' => 'boolean',
     ];
 
     // Relations
@@ -243,5 +244,15 @@ class Document extends Model
         // compat: si ancien code l’utilise
         $ext = $this->extensionFromPath();
         return $ext !== '' ? $ext : ($this->isExternalLink() ? 'link' : '');
+    }
+
+    public function scopeArchived($query)
+    {
+        return $query->where('is_archive', true);
+    }
+
+    public function scopeNotArchived($query)
+    {
+        return $query->where('is_archive', false);
     }
 }

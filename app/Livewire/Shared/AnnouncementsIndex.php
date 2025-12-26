@@ -19,6 +19,11 @@ class AnnouncementsIndex extends Component
             ->forUser($u)
             ->latest('created_at')
             ->get();
+
+        // ✅ ENREGISTRER LA VUE pour TOUTES les annonces visibles
+        foreach ($this->items as $announcement) {
+            $announcement->registerView($u);
+        }
     }
 
     public function render()

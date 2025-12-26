@@ -1,70 +1,86 @@
-<x-app-layout>
-    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
+@extends('layouts.landing')
+
+@section('title', 'FAQ — EpiRC')
+
+@section('content')
+    <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 pb-16"
          x-data="faqPage()"
          x-init="init()">
 
         {{-- Header --}}
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">FAQ</h1>
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                Réponses rapides aux questions les plus fréquentes (connexion, emplois du temps, documents, scolarité…)
-            </p>
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">FAQ</h1>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    Réponses rapides aux questions fréquentes (connexion, documents, plannings…)
+                </p>
+            </div>
+
+            <a href="{{ route('home') }}"
+               class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium
+                      border border-gray-200 dark:border-gray-800
+                      bg-white dark:bg-gray-950
+                      text-gray-700 dark:text-gray-300
+                      hover:bg-gray-50 dark:hover:bg-gray-900
+                      shadow-sm hover:shadow transition">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Retour
+            </a>
         </div>
 
         {{-- Search + actions --}}
-        <div class="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-            <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                <div class="flex-1">
-                    <label class="sr-only" for="faq-search">Rechercher</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </span>
+        <div class="mt-5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+            <div class="space-y-3">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </span>
 
-                        <input id="faq-search"
-                               type="text"
-                               x-model.trim="query"
-                               placeholder="Rechercher (ex : mot de passe, emploi du temps, document, téléchargement…)"
-                               class="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600
-                                      bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white
-                                      placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                    </div>
+                    <input id="faq-search"
+                           type="text"
+                           x-model.trim="query"
+                           placeholder="Rechercher (ex: mot de passe, téléchargement, emploi du temps...)"
+                           class="block w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700
+                                  bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white
+                                  placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="grid grid-cols-2 sm:flex sm:items-center gap-2">
                     <button type="button"
                             @click="expandAll()"
-                            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
-                                   border border-gray-200 dark:border-gray-700
-                                   bg-gray-50 dark:bg-gray-700/40
+                            class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium
+                                   border border-gray-200 dark:border-gray-800
+                                   bg-gray-50 dark:bg-gray-800/60
                                    text-gray-700 dark:text-gray-200
-                                   hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                   hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M12 4v16m8-8H4"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
-                        Tout ouvrir
+                        <span class="hidden sm:inline">Tout ouvrir</span>
+                        <span class="sm:hidden">Ouvrir</span>
                     </button>
 
                     <button type="button"
                             @click="collapseAll()"
-                            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
-                                   border border-gray-200 dark:border-gray-700
-                                   bg-white dark:bg-gray-800
+                            class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium
+                                   border border-gray-200 dark:border-gray-800
+                                   bg-white dark:bg-gray-900
                                    text-gray-700 dark:text-gray-200
-                                   hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                   hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M20 12H4"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
                         </svg>
-                        Tout fermer
+                        <span class="hidden sm:inline">Tout fermer</span>
+                        <span class="sm:hidden">Fermer</span>
                     </button>
 
                     <a href="{{ route('help') }}"
-                       class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+                       class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium
                               bg-indigo-600 text-white hover:bg-indigo-700 transition">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -81,58 +97,41 @@
                 [
                     'category' => 'Connexion & Compte',
                     'items' => [
-                        ['q' => 'Je n’arrive pas à me connecter. Que vérifier en premier ?', 'a' => 'Vérifie l’adresse email, le mot de passe, puis l’état du clavier (Caps Lock). Si le problème persiste, essaye un autre navigateur ou vide le cache.'],
-                        ['q' => '“Identifiants invalides” alors que je suis sûr du mot de passe.', 'a' => 'Assure-toi que l’email est exactement celui enregistré (sans espaces). Si tu as récemment changé de mot de passe, déconnecte/reconnecte.'],
-                        ['q' => 'Mot de passe oublié : comment réinitialiser ?', 'a' => 'Utilise “Mot de passe oublié ?” sur l’écran de connexion. Tu recevras un lien de réinitialisation par email.'],
-                        ['q' => 'Je ne reçois pas l’email de réinitialisation.', 'a' => 'Vérifie les spams. Attends 2–3 minutes. Si rien, retente la demande. Sinon, contacte le support via la page Aide/Contact.'],
-                        ['q' => 'Je veux changer mon mot de passe.', 'a' => 'Va dans Profil > Sécurité (ou Paramètres du compte) si disponible. Sinon, utilise la procédure “mot de passe oublié”.'],
-                        ['q' => 'Déconnexion automatique ou session expirée.', 'a' => 'Cela arrive si la session est expirée ou si tu as ouvert l’application sur plusieurs appareils. Reconnecte-toi et évite de multiplier les sessions.'],
+                        ['q' => "Je n'arrive pas à me connecter. Que vérifier en premier ?", 'a' => "Vérifie l'adresse email, le mot de passe et l’état du clavier (Caps Lock). Si besoin, teste un autre navigateur ou vide le cache."],
+                        ['q' => "« Identifiants invalides » alors que je suis sûr du mot de passe.", 'a' => "Assure-toi que l’email est exact (sans espaces). Si tu as changé le mot de passe, déconnecte/reconnecte."],
+                        ['q' => "Mot de passe oublié : comment réinitialiser ?", 'a' => "Clique « Mot de passe oublié ? » sur l’écran de connexion. Tu recevras un lien par email."],
+                        ['q' => "Je ne reçois pas l’email de réinitialisation.", 'a' => "Vérifie les spams, attends 2–3 minutes puis retente. Sinon, contacte le support via Aide/Contact."],
                     ],
                 ],
                 [
                     'category' => 'Emploi du temps & Plannings',
                     'items' => [
-                        ['q' => 'Je ne vois aucun emploi du temps.', 'a' => 'Vérifie les filtres (type) et la période (dates). Certains plannings sont publiés progressivement.'],
-                        ['q' => 'Un emploi du temps n’est pas celui de mon niveau/parcours.', 'a' => 'Assure-toi que ton compte a bien le bon niveau/parcours. Si c’est incorrect, contacte la scolarité pour mise à jour.'],
-                        ['q' => 'Le bouton “Voir” ouvre une page vide.', 'a' => 'Teste en navigation privée, puis vérifie si le fichier est bien accessible (problème de stockage / lien). Contacte le support si besoin.'],
-                        ['q' => 'Téléchargement impossible.', 'a' => 'Teste un autre navigateur et vérifie ta connexion. Si le fichier a été remplacé/supprimé côté serveur, le support doit le republier.'],
-                        ['q' => 'Le planning affiché est ancien.', 'a' => 'Le plus récent est généralement en haut (tri par date). Vérifie aussi le badge “année académique” et la période.'],
+                        ['q' => "Je ne vois aucun emploi du temps.", 'a' => "Vérifie la période. Certains plannings sont publiés progressivement."],
+                        ['q' => "Téléchargement impossible.", 'a' => "Teste un autre navigateur et vérifie la connexion. Si le fichier a été remplacé, il doit être republié."],
                     ],
                 ],
                 [
                     'category' => 'Documents & Cours',
                     'items' => [
-                        ['q' => 'Je ne trouve pas un document de cours.', 'a' => 'Utilise la recherche et vérifie le bon module/semestre. Certains documents sont visibles selon ton niveau/parcours.'],
-                        ['q' => 'Le PDF ne s’ouvre pas.', 'a' => 'Télécharge le fichier puis ouvre-le avec un lecteur PDF. Sur mobile, privilégie Chrome/Firefox.'],
-                        ['q' => 'Un document est incomplet ou illisible.', 'a' => 'Signale-le au support avec le titre exact du document et une capture.'],
-                        ['q' => 'Je vois “Accès refusé”.', 'a' => 'Tu n’as peut-être pas les droits (rôle, niveau, parcours). Contacte la scolarité pour vérifier ton profil.'],
+                        ['q' => "Je ne trouve pas un document.", 'a' => "Utilise la recherche et vérifie le bon module/semestre. Certains documents sont visibles selon le niveau/parcours."],
+                        ['q' => "Le PDF ne s’ouvre pas.", 'a' => "Télécharge le fichier puis ouvre-le dans un lecteur PDF. Sur mobile, privilégie Chrome/Firefox."],
                     ],
                 ],
                 [
-                    'category' => 'Programmes & Scolarité',
+                    'category' => 'Problèmes techniques (navigateur, dark mode)',
                     'items' => [
-                        ['q' => 'Mes informations de niveau/parcours sont incorrectes.', 'a' => 'Seule la scolarité peut corriger officiellement le niveau/parcours. Contacte-la via la page Aide/Contact.'],
-                        ['q' => 'Je ne vois pas mes enseignants.', 'a' => 'Cela dépend de l’affectation des enseignants dans le système. Si les affectations ne sont pas encore saisies, la liste peut être vide.'],
-                        ['q' => 'Je veux signaler une erreur dans un programme.', 'a' => 'Envoie le programme concerné (année/semestre) et la correction attendue à la scolarité.'],
-                    ],
-                ],
-                [
-                    'category' => 'Problèmes techniques (UI, navigateur, dark mode)',
-                    'items' => [
-                        ['q' => 'Le mode sombre/clair change tout seul.', 'a' => 'Vérifie que le navigateur n’efface pas le localStorage (mode privé, extensions). Essaie un autre navigateur pour comparer.'],
-                        ['q' => 'Une interface ne répond plus après une navigation.', 'a' => 'Fais un “hard refresh” (Ctrl+F5) et teste si le problème est lié à Livewire navigation (wire:navigate).'],
-                        ['q' => 'Des boutons disparaissent ou le texte ne s’affiche pas.', 'a' => 'C’est souvent lié à Alpine non initialisé ou à x-cloak/x-show. Recharge la page et vérifie la console du navigateur.'],
-                        ['q' => 'Quel navigateur est recommandé ?', 'a' => 'Chrome ou Firefox à jour. Évite les versions anciennes, surtout sur mobile.'],
+                        ['q' => "Le mode sombre/clair change tout seul.", 'a' => "Vérifie les extensions et le mode navigation privée. Certaines configurations effacent le localStorage."],
+                        ['q' => "Quel navigateur est recommandé ?", 'a' => "Chrome ou Firefox à jour. Évite les versions anciennes, surtout sur mobile."],
                     ],
                 ],
             ];
         @endphp
 
-        {{-- FAQ List --}}
-        <div class="space-y-4">
+        {{-- FAQ list --}}
+        <div class="mt-5 space-y-3">
             <template x-for="(block, i) in filteredFaqs()" :key="`cat-${i}`">
-                <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
-                    <div class="px-4 sm:px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+                <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
                         <div class="min-w-0">
                             <h2 class="text-sm font-semibold text-gray-900 dark:text-white truncate" x-text="block.category"></h2>
                             <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -141,37 +140,30 @@
                         </div>
 
                         <button type="button"
-                                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium
-                                       border border-gray-200 dark:border-gray-700
+                                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium
+                                       border border-gray-200 dark:border-gray-800
                                        text-gray-700 dark:text-gray-200
-                                       hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                                       hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                                 @click="toggleCategory(block.category)">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M12 4v16m8-8H4"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                             </svg>
                             Ouvrir/Fermer
                         </button>
                     </div>
 
-                    <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <div class="divide-y divide-gray-100 dark:divide-gray-800">
                         <template x-for="(item, j) in block.items" :key="`q-${i}-${j}`">
-                            <div class="p-4 sm:p-5">
+                            <div class="p-4">
                                 <button type="button"
-                                        class="w-full flex items-start justify-between gap-4 text-left"
+                                        class="w-full flex items-start justify-between gap-3 text-left"
                                         @click="toggle(block.category, j)">
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="item.q"></p>
-                                    </div>
-
-                                    <span class="flex-shrink-0 mt-0.5">
-                                        <svg class="h-5 w-5 text-gray-400 transition-transform"
-                                             :class="isOpen(block.category, j) ? 'rotate-180' : ''"
-                                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M19 9l-7 7-7-7"/>
-                                        </svg>
-                                    </span>
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="item.q"></p>
+                                    <svg class="h-5 w-5 text-gray-400 transition-transform"
+                                         :class="isOpen(block.category, j) ? 'rotate-180' : ''"
+                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
                                 </button>
 
                                 <div x-cloak
@@ -191,26 +183,15 @@
                 </div>
             </template>
 
-            {{-- Empty state --}}
             <div x-show="filteredFaqs().length === 0"
                  x-cloak
-                 class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-10 text-center">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h3 class="mt-3 text-sm font-semibold text-gray-900 dark:text-white">
-                    Aucun résultat
-                </h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Essaie un autre mot-clé, ou contacte le support.
-                </p>
-                <div class="mt-4">
-                    <a href="{{ route('help') }}"
-                       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition">
-                        Ouvrir Aide / Contact
-                    </a>
-                </div>
+                 class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-10 text-center">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Aucun résultat</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Essaie un autre mot-clé.</p>
+                <a href="{{ route('help') }}"
+                   class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                    Ouvrir Aide / Contact
+                </a>
             </div>
         </div>
 
@@ -218,11 +199,9 @@
             function faqPage() {
                 return {
                     query: '',
-                    openMap: {}, // { "Categorie": Set(indices) }
+                    openMap: {},
 
-                    init() {
-                        // Rien à casser : init minimal
-                    },
+                    init() {},
 
                     normalize(s) {
                         return (s || '')
@@ -235,7 +214,6 @@
                     filteredFaqs() {
                         const q = this.normalize(this.query);
                         const blocks = @json($faqs);
-
                         if (!q) return blocks;
 
                         return blocks
@@ -272,11 +250,8 @@
                         this.ensureCategory(cat);
 
                         const allOpen = block.items.every((_, idx) => this.openMap[cat].has(idx));
-                        if (allOpen) {
-                            this.openMap[cat].clear();
-                        } else {
-                            block.items.forEach((_, idx) => this.openMap[cat].add(idx));
-                        }
+                        if (allOpen) this.openMap[cat].clear();
+                        else block.items.forEach((_, idx) => this.openMap[cat].add(idx));
                     },
 
                     expandAll() {
@@ -293,5 +268,7 @@
                 }
             }
         </script>
+
     </div>
-</x-app-layout>
+
+@endsection

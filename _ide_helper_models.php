@@ -26,11 +26,14 @@ namespace App\Models{
  * @property int|null $created_by
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\AnnouncementView> $views
+ * @property-read int|null $views_count
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement forUser($user)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement unviewedBy($user)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereActionLabel($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereActionUrl($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereAudienceRoles($value)
@@ -46,6 +49,27 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement whereUpdatedAt($value)
  */
 	class Announcement extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $announcement_id
+ * @property int $user_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Announcement $announcement
+ * @property-read \App\Models\User $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementView newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementView newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementView query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementView whereAnnouncementId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementView whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementView whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementView whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementView whereUserId($value)
+ */
+	class AnnouncementView extends \Eloquent {}
 }
 
 namespace App\Models{
@@ -69,6 +93,56 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AuthorizedEmail whereVerificationToken($value)
  */
 	class AuthorizedEmail extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property string $session_id
+ * @property string $role
+ * @property string $message
+ * @property array<array-key, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\User|null $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage forSession(string $sessionId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newestFirst()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage oldestFirst()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage whereMessage($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage whereMetadata($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage whereRole($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage whereSessionId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage whereUserId($value)
+ */
+	class ChatMessage extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property string $question
+ * @property int $answered
+ * @property int $count
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatbotAnalytic newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatbotAnalytic newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatbotAnalytic query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatbotAnalytic whereAnswered($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatbotAnalytic whereCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatbotAnalytic whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatbotAnalytic whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatbotAnalytic whereQuestion($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatbotAnalytic whereUpdatedAt($value)
+ */
+	class ChatbotAnalytic extends \Eloquent {}
 }
 
 namespace App\Models{

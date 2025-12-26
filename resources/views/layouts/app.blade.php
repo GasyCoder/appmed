@@ -78,7 +78,7 @@
 
     @RegisterServiceWorkerScript
 
-    <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-4">
+    <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-4">   
         <div class="text-center text-sm text-gray-500 dark:text-gray-400">
             &copy; {{ date('Y') }} Faculté de Médecine - Université de Mahajanga
             <span class="mx-2 dark:text-gray-500">•</span>
@@ -96,5 +96,6 @@
 
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <x-livewire-alert::scripts />
+
 </body>
 </html>

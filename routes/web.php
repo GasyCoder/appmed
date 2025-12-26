@@ -34,8 +34,9 @@ use App\Livewire\Shared\AnnouncementsIndex;
 use App\Livewire\Programmes\ProgrammesIndex;
 use App\Livewire\Pages\ComingSoon;
 
-Route::redirect('/', '/login');
-Route::redirect('/register', '/login');
+Route::get('/', function () {
+    return view('welcome');
+})->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('/inscription', [EmailVerificationController::class, 'index'])->name('inscription');
@@ -51,6 +52,9 @@ Route::get('/set-password/{token}', function ($token) {
 Route::get('/documents/public/{document}', [DocumentController::class, 'public'])
     ->name('document.public')
     ->middleware('signed');
+
+Route::view('/faq', 'support.faq')->name('faq');
+Route::view('/aide', 'support.help')->name('help');    
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
 
@@ -84,10 +88,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/documents/{document}/download-external', [DocumentController::class, 'downloadExternal'])
         ->name('document.downloadExternal')
         ->middleware('document.access');
-
-
-    Route::view('/faq', 'support.faq')->name('faq');
-    Route::view('/aide', 'support.help')->name('help');
 
     Route::get('/annonces', AnnouncementsIndex::class)
         ->name('announcements.index')

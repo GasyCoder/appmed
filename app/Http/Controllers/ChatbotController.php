@@ -34,7 +34,7 @@ class ChatbotController extends Controller
             ], 422);
         }
 
-        $userId = Auth::id(); // nullable => OK pour visiteurs
+        $userId = Auth::id();
 
         // 1) Sauvegarder le message utilisateur
         ChatMessage::create([
@@ -64,12 +64,11 @@ class ChatbotController extends Controller
             ])
             ->toArray();
 
-        // 3) Appel IA (mock JSON ou API réelle selon config)
-        $systemPrompt = $this->ai->getFaqContext();
+        // 3) Appel “IA” (en réalité: profil + programmes/documents + fallback FAQ/IA)
+        $systemPrompt = $this->ai->getFaqContext(Auth::user());
         $reply = $this->ai->chat($history, $systemPrompt);
 
         if (!is_string($reply) || trim($reply) === '') {
-            // En cas d'échec, on renvoie une erreur stable
             return response()->json([
                 'success' => false,
                 'message' => "Désolé, je rencontre un problème technique. Veuillez réessayer.",
@@ -87,7 +86,7 @@ class ChatbotController extends Controller
             'role' => 'assistant',
             'message' => $reply,
             'metadata' => [
-                'source' => (bool) config('chatbot.mock', true) ? 'faq_json' : 'anthropic',
+                'source' => (bool) config('chatbot.mock', true) ? 'faq_json+db' : 'anthropic+db',
             ],
         ]);
 

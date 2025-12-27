@@ -1,13 +1,16 @@
 <?php
 
 return [
-    // true = utilise faq.json (mock), false = appelle Anthropic
-    'mock' => env('CHATBOT_MOCK', true),
+    'mock' => (bool) env('CHATBOT_MOCK', true),
 
-    // disk storage (ex: local, public, s3, etc.)
     'faq_disk' => env('CHATBOT_FAQ_DISK', 'local'),
-
-    // chemin relatif dans le disk
-    // avec ton test tinker: storage/app/private/chatbot/faq.json => disk local + path chatbot/faq.json (car root = storage/app/private)
     'faq_path' => env('CHATBOT_FAQ_PATH', 'chatbot/faq.json'),
+
+    'assistant' => [
+        'name'         => env('CHATBOT_NAME', 'Assistant EPIRC'),
+        'product'      => env('CHATBOT_PRODUCT', 'EPIRC'),
+        'builder'      => env('CHATBOT_BUILDER', 'GasyCoder'),
+        'organization' => env('CHATBOT_ORG', 'Université de Mahajanga'),
+        'engine'       => env('CHATBOT_ENGINE', 'FAQ locale + Données (Programmes/Documents) + Option IA'),
+    ],
 ];

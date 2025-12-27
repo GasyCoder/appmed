@@ -1,6 +1,5 @@
 class Chatbot {
     constructor() {
-        
         const isAuth = document.querySelector('meta[name="chatbot-auth"]')?.content === '1';
         if (!isAuth) return;
 
@@ -30,7 +29,7 @@ class Chatbot {
 
         this.applySafeTop();
         this.applyDockBottom();
-        this.applyDockRight(); // ✅ FIX: plus collé à droite écran
+        this.applyDockRight();
 
         let raf = null;
         const schedule = () => {
@@ -111,11 +110,6 @@ class Chatbot {
         root.style.setProperty('--chat-dock-bottom', `${bottom}px`);
     }
 
-    /**
-     * ✅ FIX IMPORTANT:
-     * - On calcule le "right" à partir du container max-w-[88rem]
-     * - On SUPPRIME le clamp max=40px (c’est lui qui collait le bouton à droite écran)
-     */
     applyDockRight() {
         const root = document.documentElement;
         const isMobile = window.matchMedia('(max-width: 640px)').matches;
@@ -123,7 +117,6 @@ class Chatbot {
         const fallback = isMobile ? 16 : 24;
         let right = fallback;
 
-        // On cherche un container "88rem" (comme ton layout)
         const anchor =
             document.querySelector('main .max-w-\\[88rem\\]') ||
             document.querySelector('.max-w-\\[88rem\\]') ||
@@ -135,18 +128,12 @@ class Chatbot {
             const rect = anchor.getBoundingClientRect();
             const pr = parseFloat(getComputedStyle(anchor).paddingRight) || 0;
 
-            // On aligne sur la "ligne contenu" (intérieur du padding)
             const desiredX = rect.right - pr;
-
-            // Conversion en right offset (plus right est grand => plus ça va à gauche)
             right = Math.round(window.innerWidth - desiredX);
-
-            // Petit confort visuel (un poil plus à gauche)
             right += isMobile ? 0 : 6;
 
-            // Sécurité (jamais négatif / jamais hors écran)
             right = Math.max(12, right);
-            right = Math.min(right, Math.max(12, window.innerWidth - 72)); // 72 ~ taille bouton + marge
+            right = Math.min(right, Math.max(12, window.innerWidth - 72));
         }
 
         root.style.setProperty('--chat-dock-right', `${right}px`);
@@ -165,7 +152,6 @@ class Chatbot {
                z-index:9999;
              ">
 
-            <!-- Fenêtre (au-dessus du bouton) -->
             <div id="chat-window"
                  class="hidden"
                  style="
@@ -174,7 +160,6 @@ class Chatbot {
                    bottom:calc(var(--chat-dock-bottom, 96px) + 76px);
                    top:auto; left:auto;
 
-                   /* ✅ un peu plus grand */
                    width:min(30rem, calc(100vw - 2rem));
                    height:min(38rem, calc(100vh - var(--chat-safe-top, 76px) - 140px));
 
@@ -186,12 +171,10 @@ class Chatbot {
                  ">
 
                 <div class="flex flex-col h-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-                    <!-- Header -->
                     <div class="px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex items-center gap-3 min-w-0">
                                 <div class="h-10 w-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                                    <!-- Robot icon -->
                                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <circle cx="12" cy="3.5" r="1" />
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v2" />
@@ -203,7 +186,7 @@ class Chatbot {
                                 </div>
                                 <div class="min-w-0">
                                     <div class="font-semibold text-sm truncate">Assistant EPIRC</div>
-                                    <div class="text-xs text-white/85">Support FAQ & orientation</div>
+                                    <div class="text-xs text-white/85">Support, cours, documents</div>
                                 </div>
                             </div>
 
@@ -228,12 +211,10 @@ class Chatbot {
                         </div>
                     </div>
 
-                    <!-- Messages -->
                     <div id="chat-messages"
                          class="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50 dark:bg-gray-950">
                     </div>
 
-                    <!-- Input -->
                     <div class="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
                         <form id="chat-form" class="space-y-2">
                             <div class="flex items-end gap-2">
@@ -263,17 +244,12 @@ class Chatbot {
                 </div>
             </div>
 
-            <!-- ✅ Bouton flottant -->
             <button id="chat-toggle-btn"
                     type="button"
                     class="relative h-16 w-16 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600
                            text-white shadow-2xl hover:shadow-indigo-500/30 transition-all
                            hover:scale-110 active:scale-95 flex items-center justify-center">
-
-                <!-- ✅ Online (bien DANS le bouton) -->
                 <span class="absolute top-2 right-2 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-950 pointer-events-none"></span>
-
-                <!-- ✅ Robot icon plus grand -->
                 <svg class="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="12" cy="3.5" r="1.1" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5.2v1.9" />
@@ -347,12 +323,11 @@ class Chatbot {
         return {
             role: 'assistant',
             content:
-                "Bonjour ! Je suis l’assistant EPIRC.\n\n" +
-                "Je peux vous aider sur :\n" +
-                "• Connexion / mot de passe\n" +
-                "• Emploi du temps\n" +
-                "• Documents & cours\n" +
-                "• Support / contacts\n\n" +
+                "Bonjour. Je suis l’assistant EPIRC.\n\n" +
+                "Je peux aider sur :\n" +
+                "- UE/EC, crédits, semestre\n" +
+                "- Documents/cours\n" +
+                "- Connexion / support\n\n" +
                 "Posez votre question.",
             timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
         };
@@ -397,7 +372,7 @@ class Chatbot {
         } catch {
             this.messages.push({
                 role: 'assistant',
-                content: "Erreur de connexion. Vérifiez le serveur et les routes API.",
+                content: "Erreur de connexion. Vérifiez le serveur et les routes.",
                 timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
             });
             this.renderMessages();
@@ -494,20 +469,18 @@ class Chatbot {
     formatAssistantHtml(text) {
         const raw = String(text ?? '').replace(/\r\n/g, '\n');
 
-        // Escape
         let s = this.escapeHtml(raw);
 
-        // Linkify URL + email
         s = s.replace(
             /(https?:\/\/[^\s<]+)/g,
             '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 underline underline-offset-2 break-words">$1</a>'
         );
+
         s = s.replace(
             /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
             '<a href="mailto:$1" class="text-indigo-600 dark:text-indigo-400 underline underline-offset-2">$1</a>'
         );
 
-        // **bold**
         s = s.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>');
 
         const lines = s.split('\n');

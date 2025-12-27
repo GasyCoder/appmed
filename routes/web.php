@@ -1,38 +1,36 @@
 <?php
 
-use App\Models\Document;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\PdfController;
-use App\Http\Controllers\DocumentController;
-use App\Http\Controllers\ScheduleController;
-use App\Http\Controllers\Auth\RegisterFormController;
-use App\Http\Controllers\Auth\EmailVerificationController;
-
 use App\Livewire\Admin\Niveaux;
 use App\Livewire\Admin\Parcours;
+
 use App\Livewire\Admin\Semestres;
-use App\Livewire\Admin\AdminDashboard;
+use App\Livewire\Teacher\Documents;
 use App\Livewire\Admin\UsersStudent;
 use App\Livewire\Admin\UsersTeacher;
+
+use Illuminate\Support\Facades\Auth;
+use App\Livewire\Student\HomeStudent;
+use Illuminate\Support\Facades\Route;
+use App\Livewire\Admin\AdminDashboard;
 use App\Livewire\Admin\ScheduleUpload;
-use App\Livewire\Admin\ScheduleManagement;
+use App\Livewire\Teacher\DocumentEdit;
+use App\Livewire\Shared\ScheduleViewer;
 use App\Livewire\Admin\AuthorizedEmails;
 
-use App\Livewire\Teacher\Documents;
-use App\Livewire\Teacher\DocumentEdit;
-use App\Livewire\Teacher\DocumentUpload;
-use App\Livewire\Teacher\TeacherDashboard;
-
-use App\Livewire\Student\HomeStudent;
-use App\Livewire\Student\StudentDocument;
 use App\Livewire\Student\EnseignantView;
+use App\Livewire\Teacher\DocumentUpload;
+use App\Livewire\Student\StudentDocument;
+use App\Livewire\Admin\ScheduleManagement;
 
-use App\Livewire\Shared\ScheduleViewer;
+use App\Livewire\Teacher\TeacherDashboard;
 use App\Livewire\Shared\AnnouncementsIndex;
+use App\Http\Controllers\DocumentController;
+
+use App\Http\Controllers\ScheduleController;
+use App\Livewire\Admin\AnnouncementsManager;
 use App\Livewire\Programmes\ProgrammesIndex;
-use App\Livewire\Pages\ComingSoon;
+use App\Http\Controllers\Auth\RegisterFormController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -103,6 +101,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/emploi-du-temps', ScheduleManagement::class)->name('admin.timetable');
         Route::get('/emploi-du-temps/upload', ScheduleUpload::class)->name('admin.schedules.upload');
         Route::get('/authorized-emails', AuthorizedEmails::class)->name('admin.authorized-emails');
+
+        Route::get('/announcements-manager', AnnouncementsManager::class)->name('admin.announcements');
     });
 
     Route::prefix('teacher')->middleware('role:teacher')->group(function () {

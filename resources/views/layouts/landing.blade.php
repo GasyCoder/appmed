@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <meta name="chatbot-auth" content="{{ auth()->check() ? '1' : '0' }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>EpiRC — Plateforme Épidémiologie & Recherche Clinique</title>
@@ -141,7 +141,7 @@
             </div>
 
             <div class="mt-8 text-center text-xs text-gray-500 dark:text-gray-400">
-                © {{ date('Y') }} Faculté de Médecine — Université de Mahajanga. Tous droits réservés.
+                © {{ date('Y') }} Faculté de Médecine — Université de Mahajanga. Conçu par <a href="https://me.gasycoder.com" class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300" target="_blank">GasyCoder</a>. Tous droits réservés.
             </div>
         </div>
     </footer>

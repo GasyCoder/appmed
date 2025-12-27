@@ -195,6 +195,38 @@ class StudentDocument extends Component
        return response()->download(storage_path('app/public/' . $document->file_path));
    }
 
+   public function markDownload(int $id): void
+    {
+        $document = Document::findOrFail($id);
+
+        if (!$document->canAccess(Auth::user())) {
+            $this->dispatch('toast', type: 'error', message: 'Accès non autorisé');
+            return;
+        }
+
+        // ✅ Incrémente en DB (seulement étudiant via Document::registerDownload)
+        $document->registerDownload(Auth::user());
+
+        // ✅ refresh instant du composant => compteur visible immédiatement
+        $this->dispatch('$refresh');
+    }
+
+
+   public function markViewed(int $documentId): void
+    {
+        $user = Auth::user();
+
+        $document = Document::find($documentId);
+        if (!$document) return;
+
+        if (!$document->canAccess($user)) return;
+
+        $document->registerView($user);
+
+        // rafraîchir la liste pour voir view_count se mettre à jour
+        $this->dispatch('$refresh');
+    }
+    
     public function render()
     {
         $user = Auth::user();

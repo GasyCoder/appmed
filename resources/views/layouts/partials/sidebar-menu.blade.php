@@ -345,13 +345,9 @@
             </div>
 
         </div>
-        <div class="px-6 pb-3 text-[11px] text-gray-400 dark:text-gray-500">
-            <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                @if(config('app.build'))
-                    Version {{ config('app.build') }}
-                @endif
-            </p>
-        </div>
+        
+            <x-footer-version />
+
             <!-- Profile Section -->
             <div class="border-t border-gray-200 dark:border-gray-700 p-4">
                 <div class="flex items-center space-x-3">

@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="chatbot-auth" content="{{ auth()->check() ? '1' : '0' }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @PwaHead
 

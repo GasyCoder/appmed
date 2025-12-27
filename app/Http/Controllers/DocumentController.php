@@ -3,45 +3,35 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
-    /**
-     * Viewer: UNIQUEMENT pour fichiers LOCAUX pdf/pptx
-     */
     public function viewer(Document $document)
     {
-        if (!$document->isViewerLocalType()) {
-            abort(404);
-        }
+        if (!$document->isViewerLocalType()) abort(404);
 
-        Log::info("VIEWER APPELE (document {$document->id})");
-
-        // ✅ compteur vue
+        // ✅ Compter UNE fois ici
         $document->registerView();
         $document->refresh();
 
         $ext = $document->extensionFromPath();
         $isPdf = ($ext === 'pdf');
 
-        // ✅ download local => route (compteur)
+        // ✅ embedded=1 => serve() ne recompte pas
+        $fileUrl = route('document.serve', ['document' => $document->id, 'embedded' => 1]);
         $downloadRoute = route('document.download', $document);
 
-        // PDF local : pdf.js va lire via serve route (inline)
-        $fileUrl = route('document.serve', $document);
-
-        // PPTX local : on affiche un viewer Google (gview) en iframe
-        // => besoin d’une URL publique signée qui renvoie le fichier en inline
         $onlineViewerUrl = null;
         if (in_array($ext, ['ppt', 'pptx'], true)) {
             $publicUrl = URL::temporarySignedRoute(
                 'document.public',
                 now()->addMinutes(30),
-                ['document' => $document->id]
+                ['document' => $document->id, 'embedded' => 1]
             );
+
             $onlineViewerUrl = 'https://docs.google.com/gview?embedded=1&url=' . urlencode($publicUrl);
         }
 
@@ -51,134 +41,39 @@ class DocumentController extends Controller
             'grade' => $teacher->profil->grade ?? null,
         ] : null;
 
-        return view('documents.viewer', [
-            'document' => $document,
-            'ext' => $ext,
-            'isPdf' => $isPdf,
-            'fileUrl' => $fileUrl,                 // pdf.js
-            'onlineViewerUrl' => $onlineViewerUrl, // pptx local
-            'downloadRoute' => $downloadRoute,
-            'teacherInfo' => $teacherInfo,
-        ]);
+        return view('documents.viewer', compact(
+            'document', 'ext', 'isPdf', 'fileUrl', 'onlineViewerUrl', 'downloadRoute', 'teacherInfo'
+        ));
     }
 
-
-    /**
-     * Serve: UNIQUEMENT local (pour pdf.js et public signed)
-     */
-    public function serve(Document $document)
-    {
-        Log::info("🔵 SERVE() APPELÉ", ['document_id' => $document->id]);
-        
-        if ($document->isExternalLink()) {
-            abort(404);
-        }
-        
-        if (!$document->fileExists()) {
-            Log::error("FILE NOT FOUND", [
-                'document_id' => $document->id,
-                'file_path' => $document->file_path,
-            ]);
-            abort(404, 'Fichier introuvable');
-        }
-
-        Log::info("🟢 AVANT registerView()", [
-            'document_id' => $document->id,
-            'view_count_avant' => $document->view_count
-        ]);
-
-        // ✅ ENREGISTRER LA VUE
-        $document->registerView();
-
-        Log::info("🟣 APRÈS registerView()", [
-            'document_id' => $document->id,
-            'view_count_après' => $document->fresh()->view_count
-        ]);
-
-        $disk = Storage::disk('public');
-        $path = $document->file_path;
-        
-        // ✅ RÉCUPÉRER LE CONTENU DIRECTEMENT
-        $fullPath = storage_path('app/public/' . $path);
-        
-        if (!file_exists($fullPath)) {
-            Log::error("PHYSICAL FILE NOT FOUND", [
-                'document_id' => $document->id,
-                'full_path' => $fullPath,
-            ]);
-            abort(404, 'Fichier physique introuvable');
-        }
-
-        $size = filesize($fullPath);
-        $content = file_get_contents($fullPath);
-        
-        // ✅ VÉRIFIER QUE LE FICHIER N'EST PAS VIDE
-        if ($size === 0 || $size === false || !$content) {
-            Log::error("FILE IS EMPTY", [
-                'document_id' => $document->id,
-                'size' => $size,
-            ]);
-            abort(500, 'Le fichier est vide');
-        }
-
-        $filename = $document->getDisplayFilename();
-        $ext = $document->extensionFromPath();
-        
-        // ✅ DÉTECTER LE BON MIME TYPE
-        $mimeTypes = [
-            'pdf' => 'application/pdf',
-            'doc' => 'application/msword',
-            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'ppt' => 'application/vnd.ms-powerpoint',
-            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'xls' => 'application/vnd.ms-excel',
-            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-        ];
-        
-        $mime = $mimeTypes[$ext] ?? 'application/octet-stream';
-
-        Log::info("SERVING FILE", [
-            'document_id' => $document->id,
-            'path' => $path,
-            'filename' => $filename,
-            'size' => $size,
-            'mime' => $mime,
-            'ext' => $ext,
-        ]);
-
-        // ✅ RENVOYER LE CONTENU AVEC LES BONS HEADERS
-        return response($content, 200, [
-            'Content-Type' => $mime,
-            'Content-Length' => $size,
-            'Content-Disposition' => 'inline; filename="' . $filename . '"',
-            'Accept-Ranges' => 'bytes',
-            'Cache-Control' => 'public, max-age=3600',
-        ]);
-    }
-
-    /**
-     * Public signed: doit renvoyer le fichier local en inline (pour gview pptx)
-     */
-    public function public(Document $document)
-    {
-        // route est déjà "signed" dans web.php
-        return $this->serve($document);
-    }
-
-    /**
-     * Download: UNIQUEMENT local
-     * - docx/xls/csv local => direct download
-     * - pdf/pptx local => download possible aussi
-     */
-    public function download(Document $document)
+    public function serve(Request $request, Document $document)
     {
         if ($document->isExternalLink()) abort(404);
         if (!$document->fileExists()) abort(404, 'Fichier introuvable');
 
-        Log::info("DOWNLOAD LOCAL (document {$document->id})");
+        // ✅ Ne pas recompter si vient du viewer (iframe/gview)
+        if (!$request->boolean('embedded')) {
+            $document->registerView();
+            $document->refresh();
+        }
+
+        $filename = $document->getDisplayFilename();
+
+        return Storage::disk('public')->response($document->file_path, $filename, [
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            'Cache-Control' => 'public, max-age=3600',
+        ]);
+    }
+
+    public function public(Request $request, Document $document)
+    {
+        return $this->serve($request, $document);
+    }
+
+    public function download(Document $document)
+    {
+        if ($document->isExternalLink()) abort(404);
+        if (!$document->fileExists()) abort(404, 'Fichier introuvable');
 
         $document->registerDownload();
         $document->refresh();
@@ -189,15 +84,9 @@ class DocumentController extends Controller
         );
     }
 
-    /**
-     * EXTERNE: ouverture lecture (nouvel onglet)
-     * - incrémente view_count
-     */
     public function openExternal(Document $document)
     {
         if (!$document->isExternalLink()) abort(404);
-
-        Log::info("OPEN EXTERNAL (document {$document->id})");
 
         $document->registerView();
         $document->refresh();
@@ -205,21 +94,19 @@ class DocumentController extends Controller
         return redirect()->away($document->externalReadUrl());
     }
 
-    /**
-     * EXTERNE: téléchargement direct (docx/xls/csv)
-     * - incrémente download_count
-     */
     public function downloadExternal(Document $document)
     {
         if (!$document->isExternalLink()) abort(404);
 
-        // Règle: docx/xls/csv => download obligatoire
-        if (!$document->isDirectDownloadType()) {
-            // si appelé par erreur, on renvoie vers lecture
+        // ✅ si pas convertible, on ouvre en lecture
+        if (method_exists($document, 'canExternalDownload') && !$document->canExternalDownload()) {
             return redirect()->route('document.openExternal', $document);
         }
 
-        Log::info("DOWNLOAD EXTERNAL (document {$document->id})");
+        // fallback ancien comportement
+        if (!method_exists($document, 'canExternalDownload') && !$document->isDirectDownloadType()) {
+            return redirect()->route('document.openExternal', $document);
+        }
 
         $document->registerDownload();
         $document->refresh();

@@ -114,8 +114,7 @@
                             class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold
                                    bg-gray-900 text-white hover:bg-gray-800
                                    dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100
-                                   transition disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
+                                   transition disabled:opacity-60 disabled:cursor-not-allowed">
                             <span class="normal-state">Continuer</span>
 
                             <span class="loading-state hidden items-center gap-2" aria-hidden="true">

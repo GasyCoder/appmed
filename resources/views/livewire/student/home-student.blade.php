@@ -18,7 +18,7 @@
         // ✅ Menus (définis ici => plus de Undefined variable $primaryMenus)
         $primaryMenus = [
             [
-                'label' => 'Mes cours',
+                'label' => 'Mes documents',
                 'desc'  => 'Documents, PDF, supports',
                 'href'  => Route::has('student.document') ? route('student.document') : '#',
                 'icon'  => 'doc',
@@ -197,7 +197,7 @@
                             </div>
                             <div class="min-w-0 flex-1">
                                 <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                                    Archives des cours
+                                    Archives des documents
                                 </div>
                                 <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
                                     Anciens PDF, supports, documents par année / semestre.

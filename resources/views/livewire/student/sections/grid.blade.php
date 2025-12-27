@@ -1,117 +1,39 @@
 @php
-    $getProvider = function(string $url) {
-        $host = strtolower(parse_url($url, PHP_URL_HOST) ?? '');
-        return match(true) {
-            str_contains($host, 'drive.google') => 'Google Drive',
-            str_contains($host, 'docs.google')  => 'Google Docs',
-            str_contains($host, 'dropbox')      => 'Dropbox',
-            str_contains($host, 'onedrive')     => 'OneDrive',
-            str_contains($host, 'sharepoint')   => 'SharePoint',
-            default => 'Lien externe',
-        };
-    };
+    $helpers = require resource_path('views/livewire/student/sections/helpers.php');
+    $fileMeta = $helpers['fileMeta'];
+    $iconSvg  = $helpers['iconSvg'];
 
-    $fileMeta = function($document) use ($getProvider) {
-        $path = (string) ($document->file_path ?? '');
-        $isExternal = \Illuminate\Support\Str::startsWith($path, ['http://','https://']);
-
-        $ext = $document->extensionFromPath() ?? '';
-        if ($ext === '') $ext = $isExternal ? 'link' : 'doc';
-
-        $isPdf = $ext === 'pdf';
-        $isPpt = in_array($ext, ['ppt','pptx'], true);
-        $isDoc = in_array($ext, ['doc','docx'], true);
-        $isXls = in_array($ext, ['xls','xlsx','csv'], true);
-
-        $badge = match(true) {
-            $isExternal => 'LIEN',
-            $isPdf      => 'PDF',
-            $isPpt      => 'PPT',
-            $isDoc      => 'DOC',
-            $isXls      => 'XLS',
-            default     => strtoupper($ext),
-        };
-
-        $badgeClass = match(true) {
-            $isExternal => 'bg-indigo-50 text-indigo-700 ring-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 dark:ring-indigo-800/40',
-            $isPdf      => 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-900/20 dark:text-red-300 dark:ring-red-800/40',
-            $isPpt      => 'bg-orange-50 text-orange-700 ring-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:ring-orange-800/40',
-            $isDoc      => 'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:ring-sky-800/40',
-            $isXls      => 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:ring-emerald-800/40',
-            default     => 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:ring-blue-800/40',
-        };
-
-        $icon = match(true) {
-            $isExternal => 'link',
-            $isPdf      => 'pdf',
-            $isPpt      => 'ppt',
-            $isDoc      => 'doc',
-            $isXls      => 'xls',
-            default     => 'file',
-        };
-
-        $provider = $isExternal ? $getProvider($path) : null;
-
-        return compact('isExternal','ext','badge','badgeClass','icon','provider','isPdf','isPpt','isDoc','isXls');
-    };
-
-    $iconSvg = function(string $name) {
-        return match($name) {
-            'pdf' => '<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l3 3v15a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 3v4h4"/><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 13h8M8 17h6"/></svg>',
-            'ppt' => '<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z"/><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 8h8M8 12h6M8 16h8"/></svg>',
-            'doc' => '<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l3 3v15a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 3v4h4"/></svg>',
-            'xls' => '<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l3 3v15a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 12h8M8 16h8M10 10v8"/></svg>',
-            'link' => '<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>',
-            default => '<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l3 3v15a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 3v4h4"/></svg>',
-        };
-    };
+    $buildCfg = require resource_path('views/livewire/student/sections/config-show.php');
 @endphp
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
     @foreach($documents as $document)
         @php
-            $m = $fileMeta($document);
+            $cfg = $buildCfg($document, $fileMeta);
 
-            $isArchived = (bool) ($document->is_archive ?? false);
+            $m = $cfg['m'];
+            $isArchived = $cfg['isArchived'];
+            $archivePillClass = $cfg['archivePillClass'];
+            $archiveCardTone = $cfg['archiveCardTone'];
 
-            $archivePillClass = 'bg-amber-50 text-amber-700 ring-amber-200
-                                dark:bg-amber-900/20 dark:text-amber-200 dark:ring-amber-900/40';
+            $teacherLabel = $cfg['teacherLabel'];
+            $grade = $cfg['grade'];
+            $teacherName = $cfg['teacherName'];
 
-            $archiveCardTone = $isArchived
-                ? 'ring-2 ring-amber-400/30 dark:ring-amber-500/20'
-                : '';
+            $views = $cfg['views'];
+            $downloads = $cfg['downloads'];
+            $sizeLabel = $cfg['sizeLabel'];
 
-            $grade = $document->teacher?->profil?->grade;
-            $teacherName = $document->uploader?->name;
+            $isExternal = $cfg['isExternal'];
 
-            $views = (int)($document->view_count ?? 0);
-            $downloads = (int)($document->download_count ?? 0);
+            $showViewsCounter = $cfg['showViewsCounter'];
+            $showDownloadCounter = $cfg['showDownloadCounter'];
 
-            $sizeLabel = $document->formatted_size ?? ($document->file_size ? number_format($document->file_size / 1024 / 1024, 1).' MB' : '-');
-
-            // ----------------------------
-            // LIENS SELON TES RÈGLES
-            // ----------------------------
-            $canConsult =
-                ($m['isExternal'] && !$document->isDirectDownloadType()) ||
-                (!$m['isExternal'] && $document->isViewerLocalType());
-
-            if ($m['isExternal']) {
-                $consultUrl = route('document.openExternal', $document);
-            } else {
-                $consultUrl = route('document.serve', $document); // ✅ Ouverture directe
-            }
-
-            // Download obligatoire pour doc/xls (local ou externe)
-            if ($document->isDirectDownloadType()) {
-                $downloadUrl = $m['isExternal']
-                    ? route('document.downloadExternal', $document)
-                    : route('document.download', $document);
-            } else {
-                // pour pdf/pptx local: téléchargement possible
-                $downloadUrl = $m['isExternal'] ? null : route('document.download', $document);
-            }
+            $consultUrl = $cfg['consultUrl'];
+            $canConsult = $cfg['canConsult'];
+            $downloadUrl = $cfg['downloadUrl'];
         @endphp
+
 
         <article class="group rounded-2xl border border-gray-200/70 dark:border-gray-800/70
                 bg-white dark:bg-gray-950 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition overflow-hidden
@@ -153,10 +75,12 @@
                                 </span>
                                 <span class="text-gray-300 dark:text-gray-600">•</span>
                             @endif
-                            @if($grade)
+
+                            @if(!empty($grade))
                                 <span class="font-medium text-gray-700 dark:text-gray-300">{{ $grade }}</span>
                             @endif
-                            @if($teacherName)
+
+                            @if(!empty($teacherName))
                                 <span class="text-gray-400 dark:text-gray-500">•</span>
                                 <span class="truncate">{{ $teacherName }}</span>
                             @endif
@@ -168,51 +92,63 @@
             <div class="p-4 sm:p-5">
                 <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                     <div class="flex items-center gap-4">
+                        @if(!$isExternal)
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                {{ $sizeLabel }}
+                            </span>
+                        @endif
                         <span class="inline-flex items-center gap-1.5">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            {{ $m['isExternal'] ? '-' : $sizeLabel }}
-                        </span>
-
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                             {{ $views }} vues
                         </span>
 
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            {{ $downloads }} dl
-                        </span>
+                        @if($showDownloadCounter)
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                                </svg>
+                                {{ $downloads }}
+                            </span>
+                        @endif
                     </div>
                 </div>
 
                 <div class="mt-4 flex items-center justify-end gap-2">
-                    {{-- Consulter/Ouvrir --}}
+                    {{-- Consulter / Ouvrir --}}
                     @if($canConsult)
                         <a href="{{ $consultUrl }}"
-                        onclick="event.preventDefault(); window.open(this.href, '_blank');"
-                        class="inline-flex h-9 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition cursor-pointer">
+                           target="_blank" rel="noopener noreferrer"
+                           wire:click="markViewed({{ $document->id }})"
+                           class="inline-flex h-9 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold
+                                  bg-gray-900 text-white hover:bg-gray-800
+                                  dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 transition">
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
-                            <span class="hidden sm:inline">{{ $m['isExternal'] ? 'Ouvrir' : 'Consulter' }}</span>
+                            <span class="hidden sm:inline">{{ $isExternal ? 'Ouvrir' : 'Consulter' }}</span>
                         </a>
                     @endif
 
                     {{-- Télécharger --}}
                     @if(!empty($downloadUrl))
                         <a href="{{ $downloadUrl }}"
-                           class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 transition"
+                           target="_blank" rel="noopener noreferrer"
+                           class="inline-flex h-10 w-10 items-center justify-center rounded-xl
+                                  bg-gray-50 ring-1 ring-gray-200 text-gray-800 hover:bg-gray-100
+                                  dark:bg-gray-900/30 dark:ring-gray-700 dark:text-gray-100 dark:hover:bg-gray-700/40 transition"
                            title="Télécharger">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
                             </svg>
                         </a>
                     @endif

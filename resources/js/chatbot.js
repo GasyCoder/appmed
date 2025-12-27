@@ -1,5 +1,9 @@
 class Chatbot {
     constructor() {
+        
+        const isAuth = document.querySelector('meta[name="chatbot-auth"]')?.content === '1';
+        if (!isAuth) return;
+
         if (window.__epircChatbotInitialized) return;
         window.__epircChatbotInitialized = true;
 

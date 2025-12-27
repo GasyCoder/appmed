@@ -26,7 +26,7 @@
 
                 <div class="min-w-0">
                     <div class="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                        Mes cours
+                        Mes documents
                     </div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">
                         {{ $total }} document(s) disponibles

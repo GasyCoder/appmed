@@ -52,7 +52,6 @@
 
         $toDownloadUrl = function (string $url) use ($googleMeta): ?string {
             $meta = $googleMeta($url);
-
             return match ($meta['provider']) {
                 'drive'   => $meta['id'] ? "https://drive.google.com/uc?export=download&id={$meta['id']}" : null,
                 'gdoc'    => $meta['id'] ? "https://docs.google.com/document/d/{$meta['id']}/export?format=pdf" : null,
@@ -336,6 +335,8 @@
             @php
                 $filePath  = (string) ($document->file_path ?? '');
                 $sourceUrl = (string) data_get($document, 'source_url', '');
+                $dlCount = (int) ($document->download_count ?? 0);
+                $dlLabel = $dlCount > 99 ? '99+' : (string) $dlCount;
 
                 $rawUrl = $sourceUrl ?: $filePath;
                 $isExternal = $isHttp($rawUrl);
@@ -351,13 +352,17 @@
 
                 // ✅ URL d'ouverture
                 $openUrl = $isExternal
-                    ? $toPreviewUrl($rawUrl)
-                    : route('document.serve', $document);
+                    ? route('document.openExternal', $document)
+                    : ($document->isViewerLocalType()
+                        ? route('document.viewer', $document)
+                        : route('document.serve', $document));
+
 
                 // ✅ URL de téléchargement
                 $downloadUrl = $isExternal
-                    ? $toDownloadUrl($rawUrl)
+                    ? ($document->externalDownloadUrl() ? route('document.downloadExternal', $document) : null)
                     : route('document.download', $document);
+
 
                 // ✅ Type pour l'icône (basé sur l'extension ACTUELLE)
                 $kind = $fileKindFromExt($currentExt);
@@ -515,10 +520,10 @@
                                 {{ $document->semestre->name ?? '-' }}
                             </span>
                             @if($document->is_archive)
-                                <span class="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800
-                                            dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
-                                    ARCHIVÉ
-                                </span>
+                            <span class="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800
+                                        dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
+                                Archivé
+                            </span>
                             @endif
                         </div>
 
@@ -551,7 +556,7 @@
                                     <span class="font-semibold">{{ optional($document->created_at)->format('d/m/Y') }}</span>
                                 </span>
                             </div>
-
+                            {{-- Actions --}}
                             <div class="flex items-center justify-end gap-2">
                                 {{-- Ouvrir --}}
                                 <a href="{{ $openUrl }}"
@@ -571,18 +576,30 @@
                                 {{-- Télécharger (local toujours, externe seulement si convertible Google) --}}
                                 @if($downloadUrl)
                                     <a href="{{ $downloadUrl }}"
-                                       @if(!$isExternal) download @endif
-                                       class="inline-flex h-10 w-10 items-center justify-center rounded-xl
-                                              bg-gray-50 ring-1 ring-gray-200 text-gray-800 hover:bg-gray-100
-                                              dark:bg-gray-900/30 dark:ring-gray-700 dark:text-gray-100 dark:hover:bg-gray-700/40 transition"
-                                       title="Télécharger">
+                                    @if(!$isExternal) download @endif
+                                    class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl
+                                            bg-gray-50 ring-1 ring-gray-200 text-gray-800 hover:bg-gray-100
+                                            dark:bg-gray-900/30 dark:ring-gray-700 dark:text-gray-100 dark:hover:bg-gray-700/40 transition"
+                                    title="Télécharger">
+                                        
                                         {{-- ArrowDownTrayIcon --}}
-                                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M12 17V3" />
                                             <path d="m6 11 6 6 6-6" />
                                             <path d="M19 21H5a2 2 0 0 1-2-2v-2" />
                                             <path d="M21 17v2a2 2 0 0 1-2 2" />
                                         </svg>
+
+                                        {{-- ✅ Badge compteur (sup) --}}
+                                        @if($dlCount > 0)
+                                            <sup class="absolute -top-1 -right-1 inline-flex items-center justify-center
+                                                        h-5 min-w-[1.25rem] px-1.5 rounded-full text-[10px] font-bold
+                                                        bg-indigo-600 text-white ring-2 ring-white
+                                                        dark:ring-gray-800">
+                                                {{ $dlLabel }}
+                                            </sup>
+                                        @endif
                                     </a>
                                 @endif
 
@@ -602,16 +619,12 @@
                                 <button type="button"
                                         wire:click="toggleArchive({{ $document->id }})"
                                         class="inline-flex h-10 w-10 items-center justify-center rounded-xl
-                                            {{ $document->is_archive
-                                                    ? 'bg-amber-50 ring-1 ring-amber-200 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/20 dark:ring-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/30'
-                                                    : 'bg-slate-50 ring-1 ring-slate-200 text-slate-800 hover:bg-slate-100 dark:bg-slate-900/30 dark:ring-slate-700 dark:text-slate-100 dark:hover:bg-gray-700/40'
-                                            }} transition"
+                                            bg-amber-50 ring-1 ring-amber-200 text-amber-900 hover:bg-amber-100
+                                            dark:bg-amber-900/20 dark:ring-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/30 transition"
                                         title="{{ $document->is_archive ? 'Restaurer' : 'Archiver' }}">
-                                    {{-- ArchiveBoxIcon --}}
                                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 7.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v1.5" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 7.5h16V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7.5Z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 12h4" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 7H4m16 0-1 14H5L4 7m16 0-2-3H6L4 7"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 11h4"/>
                                     </svg>
                                 </button>
 
@@ -635,7 +648,7 @@
                     </div>
                 </div>
             </article>
-        @empty
+            @empty
             <div class="col-span-full">
                 <div class="w-full rounded-2xl border border-gray-200 bg-white p-8 sm:p-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     <div class="w-full flex flex-col items-center gap-3">

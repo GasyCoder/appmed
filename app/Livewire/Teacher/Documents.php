@@ -77,36 +77,30 @@ class Documents extends Component
         $this->filterArchive = $value;
         $this->resetPage();
     }
+    
 
     public function toggleArchive(int $documentId): void
     {
         try {
-            $document = Document::query()
-                ->whereKey($documentId)
-                ->where('uploaded_by', Auth::id())
-                ->firstOrFail();
+            $document = Document::where('uploaded_by', Auth::id())->findOrFail($documentId);
 
-            $new = ! (bool) $document->is_archive;
+            $document->update(['is_archive' => !$document->is_archive]);
 
-            // robuste même si fillable/casts mal configurés
-            $document->forceFill(['is_archive' => $new])->save();
-
-            $this->alert('success', 'Mise à jour', [
+            $this->alert('success', $document->is_archive ? 'Document archivé' : 'Document restauré', [
                 'position' => 'top-end',
                 'timer' => 2000,
                 'toast' => true,
-                'text' => $new ? 'Document archivé' : 'Document restauré',
             ]);
         } catch (\Throwable $e) {
-            Log::error('toggleArchive failed', ['id' => $documentId, 'error' => $e->getMessage()]);
             $this->alert('error', 'Erreur', [
                 'position' => 'top-end',
                 'timer' => 3000,
                 'toast' => true,
-                'text' => 'Action impossible.',
+                'text' => "Impossible de modifier l'archive",
             ]);
         }
     }
+
 
     public function toggleStatus(int $documentId): void
     {

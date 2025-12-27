@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Model;
@@ -19,31 +19,35 @@ class Document extends Model
         'uploaded_by', 'niveau_id', 'parcour_id', 'semestre_id', 'programme_id',
         'title', 'file_path', 'protected_path', 'original_filename', 'original_extension',
         'converted_from', 'converted_at', 'file_type', 'file_size', 'is_actif',
-        'download_count', 'view_count','is_archive',
+        'download_count', 'view_count', 'is_archive',
     ];
 
-    protected $dates = ['deleted_at', 'converted_at'];
-
     protected $casts = [
-        'is_actif' => 'boolean',
-        'download_count' => 'integer',
-        'view_count' => 'integer',
-        'converted_at' => 'datetime',
-        'is_archive' => 'boolean',
+        'is_actif'        => 'boolean',
+        'download_count'  => 'integer',
+        'view_count'      => 'integer',
+        'converted_at'    => 'datetime',
+        'is_archive'      => 'boolean',
+        'deleted_at'      => 'datetime',
     ];
 
     // Relations
     public function programme() { return $this->belongsTo(Programme::class); }
-    public function teacher() { return $this->belongsTo(User::class, 'uploaded_by'); }
-    public function uploader() { return $this->belongsTo(User::class, 'uploaded_by'); }
-    public function niveau() { return $this->belongsTo(Niveau::class); }
-    public function parcour() { return $this->belongsTo(Parcour::class); }
-    public function semestre() { return $this->belongsTo(Semestre::class); }
+    public function teacher()   { return $this->belongsTo(User::class, 'uploaded_by'); }
+    public function uploader()  { return $this->belongsTo(User::class, 'uploaded_by'); }
+    public function niveau()    { return $this->belongsTo(Niveau::class); }
+    public function parcour()   { return $this->belongsTo(Parcour::class); }
+    public function semestre()  { return $this->belongsTo(Semestre::class); }
     public function views(): HasMany { return $this->hasMany(DocumentView::class); }
 
     // ----------------------------
     // Règles / Helpers
     // ----------------------------
+
+    public function downloads(): HasMany
+    {
+        return $this->hasMany(DocumentDownload::class);
+    }
 
     public function isExternalLink(): bool
     {
@@ -64,14 +68,12 @@ class Document extends Model
 
     public function isDirectDownloadType(): bool
     {
-        // DOC/Office => téléchargement direct obligatoire
         $ext = $this->extensionFromPath();
         return in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'csv'], true);
     }
 
     public function isViewerLocalType(): bool
     {
-        // viewer obligatoire UNIQUEMENT pour local PDF/PPTX
         if ($this->isExternalLink()) return false;
 
         $ext = $this->extensionFromPath();
@@ -87,22 +89,71 @@ class Document extends Model
     // Google Drive / Docs helpers
     // ----------------------------
 
-    public static function extractGoogleId(string $url): ?string
+    public function isGoogleLink(): bool
     {
-        if (preg_match('~drive\.google\.com/file/d/([^/]+)~', $url, $m)) return $m[1];
-        if (preg_match('~drive\.google\.com/open\?id=([^&]+)~', $url, $m)) return $m[1];
-        if (preg_match('~drive\.google\.com/uc\?id=([^&]+)~', $url, $m)) return $m[1];
-        if (preg_match('~docs\.google\.com/(document|spreadsheets|presentation)/d/([^/]+)~', $url, $m)) return $m[2];
-        return null;
+        $url = (string) ($this->file_path ?? '');
+        $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
+        return str_contains($host, 'drive.google.com') || str_contains($host, 'docs.google.com');
+    }
+
+    public function googleId(): ?string
+    {
+        $url = (string) ($this->file_path ?? '');
+        if ($url === '') return null;
+        return self::extractGoogleId($url);
     }
 
     /**
-     * URL de lecture EXTERNE (nouvel onglet)
-     * - Drive => preview
-     * - Docs/Sheets/Slides => preview
-     * - Autres pdf/ppt => gview
-     * - Sinon => lien brut
+     * ✅ “Convertible” = lien Google avec ID exploitable
      */
+    public function canExternalDownload(): bool
+    {
+        return $this->isExternalLink() && $this->isGoogleLink() && self::extractGoogleId((string)$this->file_path) !== null;
+    }
+
+
+    public static function extractGoogleId(string $url): ?string
+    {
+        $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
+        if ($host === '') return null;
+
+        $path = (string) (parse_url($url, PHP_URL_PATH) ?? '');
+
+        // /d/<ID>
+        if (preg_match('~/(?:file/d|document/d|spreadsheets/d|presentation/d)/([^/]+)~', $path, $m)) {
+            return $m[1];
+        }
+
+        // ?id=<ID> ou uc?export=download&id=<ID>
+        $query = (string) (parse_url($url, PHP_URL_QUERY) ?? '');
+        if ($query !== '') {
+            parse_str($query, $qs);
+            if (!empty($qs['id'])) return (string) $qs['id'];
+        }
+
+        return null;
+    }
+
+
+    public function isExternalFileUrl(): bool
+    {
+        if (!$this->isExternalLink()) return false;
+
+        $url = (string) ($this->file_path ?? '');
+        $path = (string) (parse_url($url, PHP_URL_PATH) ?? '');
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION) ?: '');
+
+        // Si extension connue => très probablement un fichier
+        return in_array($ext, ['pdf','ppt','pptx','doc','docx','xls','xlsx','csv','zip','rar'], true);
+    }
+
+    public function isExternalWebPage(): bool
+    {
+        return $this->isExternalLink() && !$this->isExternalFileUrl();
+    }
+
+
+
     public function externalReadUrl(): string
     {
         $url = (string) ($this->file_path ?? '');
@@ -111,88 +162,112 @@ class Document extends Model
         $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
         $id = self::extractGoogleId($url);
 
+        // ✅ Google Drive => preview (lecture)
         if ($id && str_contains($host, 'drive.google.com')) {
             return "https://drive.google.com/file/d/{$id}/preview";
         }
 
+        // ✅ Google Docs => preview
         if ($id && str_contains($host, 'docs.google.com')) {
             if (str_contains($url, '/presentation/')) return "https://docs.google.com/presentation/d/{$id}/preview";
             if (str_contains($url, '/spreadsheets/')) return "https://docs.google.com/spreadsheets/d/{$id}/preview";
             if (str_contains($url, '/document/')) return "https://docs.google.com/document/d/{$id}/preview";
         }
 
-        $ext = $this->extensionFromPath();
-        if (in_array($ext, ['pdf', 'ppt', 'pptx'], true)) {
-            return 'https://docs.google.com/gview?embedded=1&url=' . urlencode($url);
+        // ✅ Si c’est un fichier PDF externe direct, on tente ouverture directe (souvent lisible)
+        // Exemple: .../rapport.pdf
+        if ($this->isExternalFileUrl()) {
+            $path = (string) (parse_url($url, PHP_URL_PATH) ?? '');
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION) ?: '');
+            if ($ext === 'pdf') {
+                return $url; // le navigateur affichera généralement le PDF
+            }
+
+            // PPT/PPTX externes => gview tente lecture
+            if (in_array($ext, ['ppt','pptx'], true)) {
+                return 'https://docs.google.com/gview?embedded=1&url=' . urlencode($url);
+            }
+
+            // Pour doc/xls externes => souvent téléchargement, on garde l'url
+            return $url;
         }
 
+        // ✅ Sinon c’est une page web (article) => ouvrir tel quel
         return $url;
     }
 
-    /**
-     * URL de téléchargement EXTERNE
-     * - Drive/Docs => uc?export=download&id=
-     * - Sinon => lien brut
-     */
+
+
     public function externalDownloadUrl(): string
     {
         $url = (string) ($this->file_path ?? '');
         if ($url === '') return $url;
 
         $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
-        $id = self::extractGoogleId($url);
+        $id = $this->googleId();
 
-        if ($id && (str_contains($host, 'drive.google.com') || str_contains($host, 'docs.google.com'))) {
+        if (!$id) return $url;
+
+        // ✅ Exports “propres” selon type Docs
+        if (str_contains($host, 'docs.google.com')) {
+            if (str_contains($url, '/document/')) {
+                return "https://docs.google.com/document/d/{$id}/export?format=docx";
+            }
+            if (str_contains($url, '/spreadsheets/')) {
+                return "https://docs.google.com/spreadsheets/d/{$id}/export?format=xlsx";
+            }
+            if (str_contains($url, '/presentation/')) {
+                return "https://docs.google.com/presentation/d/{$id}/export/pptx";
+            }
+        }
+
+        // ✅ Drive “classique”
+        if (str_contains($host, 'drive.google.com')) {
             return "https://drive.google.com/uc?export=download&id={$id}";
         }
 
         return $url;
     }
 
+
     // ----------------------------
-    // Compteurs
+    // Compteurs (✅ seuls les étudiants comptent)
     // ----------------------------
 
+    protected function shouldCountFor(?User $user): bool
+    {
+        return $user && $user->hasRole('student');
+    }
+
     /**
-     * Vue unique par user (1 fois par document)
+     * Vue unique par user (1 fois par document) - ✅ seulement étudiant
      */
     public function registerView(?User $user = null): void
     {
         $user = $user ?? Auth::user();
-        if (!$user) return;
+        if (!$this->shouldCountFor($user)) return;
 
-        try {
-            DB::beginTransaction();
+        DB::transaction(function () use ($user) {
+            $view = $this->views()->firstOrCreate(['user_id' => $user->id]);
 
-            $exists = $this->views()->where('user_id', $user->id)->exists();
-            if (!$exists) {
-                $this->views()->create(['user_id' => $user->id]);
+            if ($view->wasRecentlyCreated) {
                 $this->increment('view_count');
-                $this->refresh();
-                Log::info("Document {$this->id}: Vue enregistrée pour user {$user->id}. Total: {$this->view_count}");
             }
-
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Document {$this->id}: Erreur registerView - " . $e->getMessage());
-        }
+        });
     }
 
+
+    /**
+     * Download - ✅ seulement étudiant
+     * (Si vous voulez "unique par étudiant", on peut faire une table downloads aussi.)
+     */
     public function registerDownload(?User $user = null): void
     {
-        try {
-            DB::beginTransaction();
-            $this->increment('download_count');
-            $this->refresh();
-            DB::commit();
+        $user = $user ?? Auth::user();
+        if (!$this->shouldCountFor($user)) return;
 
-            $userId = $user?->id ?? (Auth::id() ?? 'guest');
-            Log::info("Document {$this->id}: Téléchargement enregistré pour user {$userId}. Total: {$this->download_count}");
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Document {$this->id}: Erreur registerDownload - " . $e->getMessage());
-        }
+        // Atomic increment
+        $this->increment('download_count');
     }
 
     // ----------------------------
@@ -216,7 +291,6 @@ class Document extends Model
     public function fileExists(): bool
     {
         if (empty($this->file_path)) return false;
-
         if ($this->isExternalLink()) return true;
 
         return Storage::disk('public')->exists($this->file_path);
@@ -227,7 +301,7 @@ class Document extends Model
         return $this->original_filename ?: basename((string) $this->file_path);
     }
 
-    public function getFormattedSizeAttribute()
+    public function getFormattedSizeAttribute(): string
     {
         $bytes = (int) ($this->file_size ?? 0);
         if ($bytes <= 0) return '0 Bytes';
@@ -239,9 +313,8 @@ class Document extends Model
         return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
     }
 
-    public function getExtensionAttribute()
+    public function getExtensionAttribute(): string
     {
-        // compat: si ancien code l’utilise
         $ext = $this->extensionFromPath();
         return $ext !== '' ? $ext : ($this->isExternalLink() ? 'link' : '');
     }

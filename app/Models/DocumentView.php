@@ -12,6 +12,9 @@ class DocumentView extends Model
         'user_id',
     ];
 
+    // ✅ Mets false si la table n'a pas created_at/updated_at
+    public $timestamps = false;
+
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);

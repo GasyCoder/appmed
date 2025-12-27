@@ -113,4 +113,11 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    'markdown' => [
+    'theme' => 'epirc',
+    'paths' => [
+        resource_path('views/vendor/mail'),
+        ],
+    ],
+
 ];

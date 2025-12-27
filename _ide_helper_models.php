@@ -169,8 +169,6 @@ namespace App\Models{
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DocumentDownload> $downloads
- * @property-read int|null $downloads_count
  * @property-read string $extension
  * @property-read string $formatted_size
  * @property-read \App\Models\Niveau $niveau
@@ -213,27 +211,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document withoutTrashed()
  */
 	class Document extends \Eloquent {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property int $document_id
- * @property int $user_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Document $document
- * @property-read \App\Models\User $user
- * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentDownload newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentDownload newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentDownload query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentDownload whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentDownload whereDocumentId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentDownload whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentDownload whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentDownload whereUserId($value)
- */
-	class DocumentDownload extends \Eloquent {}
 }
 
 namespace App\Models{

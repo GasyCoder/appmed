@@ -376,30 +376,10 @@
                                                         <span class="uppercase font-mono">{{ $ext }}</span>
                                                         <span class="mx-1">•</span>
                                                         <span>{{ $sizeKb }} KB</span>
-                                                        @php
-                                                            $status = $document->conversion_status ?? 'none';
-                                                        @endphp
-
                                                         @if($willConvert)
-                                                            <div class="mt-1 text-[11px]">
-                                                                @if($status === 'pending')
-                                                                    <span class="font-bold text-amber-600 dark:text-amber-400">Conversion en cours…</span>
-                                                                @elseif($status === 'done')
-                                                                    <span class="font-bold text-emerald-600 dark:text-emerald-400">Converti en PDF</span>
-                                                                @elseif($status === 'skipped')
-                                                                    <span class="font-bold text-gray-500">Conversion indisponible (serveur)</span>
-                                                                @elseif($status === 'failed')
-                                                                    <span class="font-bold text-red-600">Conversion échouée</span>
-                                                                @else
-                                                                    <span class="font-bold text-gray-500">Conversion non démarrée</span>
-                                                                @endif
-
-                                                                @if(!empty($document->conversion_error))
-                                                                    <div class="text-[11px] text-gray-500 mt-1">{{ $document->conversion_error }}</div>
-                                                                @endif
-                                                            </div>
+                                                            <span class="mx-1">•</span>
+                                                            <span class="font-bold text-amber-600 dark:text-amber-400">→ PDF</span>
                                                         @endif
-
                                                     </p>
                                                 </div>
 

@@ -43,7 +43,6 @@ class Document extends Model
     // ----------------------------
     // Règles / Helpers
     // ----------------------------
-
     public function isExternalLink(): bool
     {
         return Str::startsWith((string) $this->file_path, ['http://', 'https://']);

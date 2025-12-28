@@ -2,132 +2,168 @@
 
 namespace App\Livewire\Admin;
 
-use App\Models\User;
-use App\Models\Niveau;
-use App\Models\Profil;
-use App\Models\Parcour;
-use Livewire\Component;
-use Illuminate\Support\Str;
-use Livewire\WithPagination;
-use App\Models\AuthorizedEmail;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Mail\UserAccountCreatedMail;
+use App\Models\AuthorizedEmail;
+use App\Models\Niveau;
+use App\Models\Parcour;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Notifications\UserAccountCreated;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 class UsersStudent extends Component
 {
-    use WithPagination;
-    use LivewireAlert;
+    use WithPagination, LivewireAlert;
 
-    public $search = '';
-    public $perPage = 10;
+    // Listing / Filters
+    public string $search = '';
+    public int $perPage = 10;
+    public string $niveau_filter = '';
 
-    public $showUserModal = false;
+    // Modal
+    public bool $showUserModal = false;
+    public bool $isLoading = false;
 
-    // User fields
-    public $userId;
-    public $name = '';
-    public $email = '';
-    public $status = true;
+    // Form fields (simplifié)
+    public ?int $userId = null;
+    public string $name = '';
+    public string $email = '';
+    public string $niveau_id = '';
+    public bool $status = true;
 
-    public $niveau_id;
+    // Parcours auto
+    public ?int $defaultParcourId = null;
 
-    // Parcours auto (si unique)
-    public $parcour_id = null;
-    public $defaultParcourId = null;
-
-    // Profil
-    public $sexe;
-    public $telephone;
-    public $departement;
-    public $ville;
-    public $adresse;
-
-    // Filters
-    public $niveau_filter = '';
-
-    public $isLoading = false;
+    // Delete confirm
+    public ?int $pendingDeleteUserId = null;
 
     protected $listeners = [
         'refresh' => '$refresh',
         'deleteConfirmed' => 'deleteUser',
     ];
 
-    public function mount()
+    public function mount(): void
     {
-        abort_if(!Auth::user()->hasRole('admin'), 403, 'Non autorisé.');
+        abort_if(!Auth::user()?->hasRole('admin'), 403, 'Non autorisé.');
 
-        // Parcours auto si unique (le premier actif)
-        $this->defaultParcourId = Parcour::where('status', true)->value('id');
-        $this->parcour_id = $this->defaultParcourId;
+        // Parcours unique => premier actif
+        $this->defaultParcourId = Parcour::query()
+            ->where('status', true)
+            ->orderBy('id')
+            ->value('id');
     }
 
-    protected function rules()
+    protected function rules(): array
     {
         return [
-            'name' => 'required|string|min:3|max:255',
-            'email' => ['required', 'email', Rule::unique('users')->ignore($this->userId)],
-            'status' => 'boolean',
-
-            'niveau_id' => 'required|exists:niveaux,id',
-            'parcour_id' => 'nullable|exists:parcours,id',
-
-            'sexe' => 'nullable|in:homme,femme',
-            'telephone' => 'nullable|string|max:20',
-            'departement' => 'nullable|string|max:255',
-            'ville' => 'nullable|string|max:255',
-            'adresse' => 'nullable|string|max:255',
+            'name' => ['required', 'string', 'min:3', 'max:255'],
+            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($this->userId)],
+            'niveau_id' => ['required', 'integer', 'exists:niveaux,id'],
+            'status' => ['boolean'],
         ];
     }
 
-    protected $messages = [
-        'name.required' => 'Le nom est requis',
-        'email.required' => "L'email est requis",
-        'email.email' => "L'email doit être valide",
-        'email.unique' => 'Cet email est déjà utilisé',
-        'niveau_id.required' => 'Le niveau est requis',
+    protected array $messages = [
+        'name.required' => 'Le nom est requis.',
+        'email.required' => "L'email est requis.",
+        'email.email' => "L'email doit être valide.",
+        'email.unique' => 'Cet email est déjà utilisé.',
+        'niveau_id.required' => 'Le niveau est requis.',
+        'niveau_id.exists' => 'Niveau invalide.',
     ];
 
-    public function createStudent()
+    public function updatedSearch(): void { $this->resetPage(); }
+    public function updatedPerPage(): void { $this->resetPage(); }
+    public function updatedNiveauFilter(): void { $this->resetPage(); }
+
+    public function openCreateModal(): void
     {
-        $this->validate();
+        $this->resetForm(keepModalOpen: true);
+    }
+
+    public function resetForm(bool $keepModalOpen = false): void
+    {
+        $this->reset([
+            'userId',
+            'name',
+            'email',
+            'niveau_id',
+            'status',
+            'isLoading',
+            'pendingDeleteUserId',
+        ]);
+
+        $this->status = true;
+        $this->resetValidation();
+        $this->showUserModal = $keepModalOpen;
+    }
+
+    /**
+     * Create OR Update (simplifié)
+     * - Admin ne gère plus Profil ici.
+     * - Parcour assigné automatiquement via defaultParcourId.
+     */
+    public function createStudent(): void
+    {
         $this->isLoading = true;
 
-        $isUpdate = !empty($this->userId);
-
         try {
-            DB::beginTransaction();
+            $this->validate();
 
-            $parcourId = $this->parcour_id ?: $this->defaultParcourId;
+            if (!$this->defaultParcourId) {
+                $this->alert('error', 'Erreur', [
+                    'toast' => true,
+                    'position' => 'center',
+                    'timer' => 2600,
+                    'showConfirmButton' => true,
+                    'confirmButtonText' => 'OK',
+                    'text' => 'Aucun parcours actif trouvé (table parcours vide).',
+                ]);
+                return;
+            }
 
-            // Token + mdp temporaire uniquement à la création
-            $token = Str::random(64);
-            $temporaryPassword = Str::random(8);
+            $isUpdate = (bool) $this->userId;
 
-            $userData = [
-                'name' => $this->name,
-                'email' => $this->email,
-                'status' => (bool) $this->status,
-                'niveau_id' => $this->niveau_id,
-                'parcour_id' => $parcourId,
-            ];
+            DB::transaction(function () use ($isUpdate) {
 
-            if ($isUpdate) {
-                $user = User::role('student')->findOrFail($this->userId);
-                $user->update($userData);
-            } else {
-                $userData['password'] = Hash::make($temporaryPassword);
-                $userData['email_verified_at'] = now();
+                if ($isUpdate) {
+                    $user = User::role('student')->findOrFail($this->userId);
 
-                $user = User::create($userData);
+                    $user->update([
+                        'name' => $this->name,
+                        'email' => $this->email,
+                        'status' => (bool) $this->status,
+                        'niveau_id' => (int) $this->niveau_id,
+                        'parcour_id' => (int) $this->defaultParcourId,
+                    ]);
+
+                    return;
+                }
+
+                // CREATE
+                $token = Str::random(64);
+                $temporaryPassword = Str::random(10);
+
+                $user = User::create([
+                    'name' => $this->name,
+                    'email' => $this->email,
+                    'status' => (bool) $this->status,
+                    'niveau_id' => (int) $this->niveau_id,
+                    'parcour_id' => (int) $this->defaultParcourId,
+                    'password' => Hash::make($temporaryPassword),
+                    'email_verified_at' => now(),
+                ]);
+
                 $user->assignRole('student');
 
+                // AuthorizedEmail (si tu utilises cette table)
                 AuthorizedEmail::updateOrCreate(
                     ['email' => $user->email],
                     [
@@ -137,205 +173,207 @@ class UsersStudent extends Component
                     ]
                 );
 
+                // Reset password token (48h côté mail)
                 DB::table('password_reset_tokens')->updateOrInsert(
                     ['email' => $user->email],
                     ['token' => Hash::make($token), 'created_at' => now()]
                 );
 
-                Mail::to($user->email)->send(
-                    new UserAccountCreatedMail(
-                        name: $user->name,
-                        email: $user->email,
-                        token: $token,
-                        temporaryPassword: $temporaryPassword,
-                        sexe: $this->sexe,
-                        appName: 'EPIRC',
-                        orgName: 'Faculté de Médecine — Université de Mahajanga',
-                    )
-                );
+                Mail::to($user->email)->send(new UserAccountCreatedMail(
+                    name: $user->name,
+                    email: $user->email,
+                    token: $token,
+                    temporaryPassword: $temporaryPassword,
+                    sexe: null,
+                    appName: 'EPIRC',
+                    orgName: 'Faculté de Médecine — Université de Mahajanga',
+                ));
+            });
 
-            }
-
-            $profileData = [
-                'sexe' => $this->sexe,
-                'telephone' => $this->telephone,
-                'departement' => $this->departement,
-                'ville' => $this->ville,
-                'adresse' => $this->adresse,
-            ];
-
-            if ($user->profil) {
-                $user->profil->update($profileData);
-            } else {
-                $user->profil()->create($profileData);
-            }
-
-            DB::commit();
+            $msg = $isUpdate
+                ? 'Étudiant mis à jour.'
+                : 'Compte étudiant créé. Email envoyé.';
 
             $this->resetForm();
 
             $this->alert('success', 'Succès', [
                 'toast' => true,
-                'position' => 'top-end',
-                'timer' => 2500,
+                'position' => 'center',
+                'timer' => 2200,
                 'timerProgressBar' => true,
-                'text' => $isUpdate
-                    ? 'Étudiant mis à jour avec succès.'
-                    : 'Compte étudiant créé. Un email a été envoyé.',
                 'showConfirmButton' => false,
+                'text' => $msg,
             ]);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            Log::error('Erreur création étudiant:', [
-                'error' => $e->getMessage(),
-            ]);
+        } catch (\Throwable $e) {
+            Log::error('UsersStudent createStudent error', ['error' => $e->getMessage()]);
 
             $this->alert('error', 'Erreur', [
                 'toast' => true,
-                'position' => 'top-end',
-                'timer' => 3000,
+                'position' => 'center',
+                'timer' => 2800,
                 'timerProgressBar' => true,
-                'text' => 'Une erreur est survenue lors de l’enregistrement.',
+                'showConfirmButton' => true,
+                'confirmButtonText' => 'OK',
+                'text' => $e->getMessage(),
             ]);
         } finally {
             $this->isLoading = false;
         }
     }
 
-    public function editStudent($userId)
+    public function editStudent(int $userId): void
     {
         try {
-            $user = User::with(['niveau', 'parcour', 'profil'])
+            $user = User::query()
                 ->role('student')
+                ->with(['niveau'])
                 ->findOrFail($userId);
 
             $this->userId = $user->id;
-            $this->name = $user->name;
-            $this->email = $user->email;
+            $this->name = (string) $user->name;
+            $this->email = (string) $user->email;
             $this->status = (bool) $user->status;
-            $this->niveau_id = $user->niveau_id;
-            $this->parcour_id = $user->parcour_id ?: $this->defaultParcourId;
+            $this->niveau_id = (string) $user->niveau_id;
 
-            if ($user->profil) {
-                $this->sexe = $user->profil->sexe;
-                $this->telephone = $user->profil->telephone;
-                $this->departement = $user->profil->departement;
-                $this->ville = $user->profil->ville;
-                $this->adresse = $user->profil->adresse;
-            }
-
+            $this->resetValidation();
             $this->showUserModal = true;
 
-        } catch (\Exception $e) {
-            Log::error("Erreur editStudent", ['error' => $e->getMessage(), 'userId' => $userId]);
+        } catch (\Throwable $e) {
+            Log::error('UsersStudent editStudent error', ['error' => $e->getMessage(), 'user_id' => $userId]);
 
             $this->alert('error', 'Erreur', [
                 'toast' => true,
-                'position' => 'top-end',
-                'timer' => 2500,
+                'position' => 'center',
+                'timer' => 2200,
+                'showConfirmButton' => false,
                 'text' => 'Impossible de charger les données de cet étudiant.',
             ]);
         }
     }
 
-    public function confirmDelete($userId)
+    /**
+     * Confirmation UI avant suppression
+     */
+    public function confirmDelete(int $userId): void
     {
-        $this->alert('warning', 'Confirmation', [
-            'text' => 'Êtes-vous sûr de vouloir supprimer cet étudiant ?',
-            'showConfirmButton' => true,
-            'confirmButtonText' => 'Oui, supprimer',
+        $this->pendingDeleteUserId = $userId;
+
+        $this->alert('warning', 'Confirmer la suppression', [
+            'text' => 'Voulez-vous vraiment supprimer cet étudiant ? Cette action est irréversible.',
+            'toast' => false,
+            'position' => 'center',
             'showCancelButton' => true,
             'cancelButtonText' => 'Annuler',
+            'showConfirmButton' => true,
+            'confirmButtonText' => 'Oui, supprimer',
+            'allowOutsideClick' => false,
+            'timer' => null,
             'onConfirmed' => 'deleteConfirmed',
-            'data' => ['userId' => $userId],
+            'data' => ['id' => $userId],
         ]);
     }
 
-    public function deleteUser($data = null)
+    /**
+     * Listener après confirmation
+     */
+    public function deleteUser($payload = null): void
     {
-        $userId = is_array($data) ? ($data['userId'] ?? null) : $data;
+        $id = 0;
 
-        if (!$userId) return;
+        if (is_numeric($payload)) $id = (int) $payload;
+
+        if (is_array($payload)) {
+            $id = (int) (
+                $payload['id']
+                ?? $payload['userId']
+                ?? ($payload['data']['id'] ?? 0)
+            );
+        }
+
+        if ($id <= 0) $id = (int) ($this->pendingDeleteUserId ?? 0);
+
+        if ($id <= 0) {
+            $this->alert('error', 'Erreur', [
+                'toast' => true, 'position' => 'center',
+                'timer' => 2200, 'showConfirmButton' => false,
+                'text' => 'ID utilisateur introuvable pour suppression.',
+            ]);
+            return;
+        }
 
         try {
-            $user = User::role('student')->findOrFail($userId);
+            $user = User::role('student')->findOrFail($id);
             $user->delete();
+
+            $this->pendingDeleteUserId = null;
 
             $this->alert('success', 'Supprimé', [
                 'toast' => true,
-                'position' => 'top-end',
+                'position' => 'center',
                 'timer' => 2000,
-                'text' => 'Étudiant supprimé avec succès.',
+                'showConfirmButton' => false,
+                'text' => 'Étudiant supprimé.',
             ]);
 
-        } catch (\Exception $e) {
-            Log::error("Erreur deleteUser", ['error' => $e->getMessage(), 'userId' => $userId]);
+        } catch (\Throwable $e) {
+            Log::error('UsersStudent deleteUser error', ['error' => $e->getMessage(), 'user_id' => $id]);
 
             $this->alert('error', 'Erreur', [
                 'toast' => true,
-                'position' => 'top-end',
-                'timer' => 2500,
-                'text' => 'Erreur lors de la suppression.',
+                'position' => 'center',
+                'timer' => 2400,
+                'showConfirmButton' => true,
+                'confirmButtonText' => 'OK',
+                'text' => 'Suppression impossible.',
             ]);
         }
     }
 
-    public function toggleUserStatus($userId)
+    public function toggleUserStatus(int $userId): void
     {
         try {
             $user = User::role('student')->findOrFail($userId);
             $user->update(['status' => !$user->status]);
 
-        } catch (\Exception $e) {
+            $this->alert('success', 'OK', [
+                'toast' => true,
+                'position' => 'center',
+                'timer' => 1600,
+                'showConfirmButton' => false,
+                'text' => 'Statut mis à jour.',
+            ]);
+        } catch (\Throwable $e) {
             $this->alert('error', 'Erreur', [
                 'toast' => true,
-                'position' => 'top-end',
+                'position' => 'center',
                 'timer' => 2000,
+                'showConfirmButton' => false,
                 'text' => 'Erreur lors de la mise à jour du statut.',
             ]);
         }
     }
 
-    public function resetForm()
-    {
-        $this->reset([
-            'userId', 'name', 'email', 'status',
-            'niveau_id',
-            'sexe', 'telephone', 'departement', 'ville', 'adresse',
-            'showUserModal',
-        ]);
-
-        // réapplique le parcours auto
-        $this->parcour_id = $this->defaultParcourId;
-
-        $this->resetValidation();
-    }
-
     public function render()
     {
         $students = User::query()
-            ->with(['niveau', 'parcour', 'profil'])
+            ->with(['niveau'])
             ->role('student')
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', "%{$this->search}%")
-                        ->orWhere('email', 'like', "%{$this->search}%")
-                        ->orWhereHas('profil', function ($p) {
-                            $p->where('departement', 'like', "%{$this->search}%");
-                        });
+                      ->orWhere('email', 'like', "%{$this->search}%");
                 });
             })
             ->when($this->niveau_filter, function ($query) {
-                $query->where('niveau_id', $this->niveau_filter);
+                $query->where('niveau_id', (int) $this->niveau_filter);
             })
             ->orderByDesc('created_at')
             ->paginate($this->perPage);
 
         return view('livewire.admin.users-student', [
             'students' => $students,
-            'niveaux' => Niveau::where('status', true)->get(),
+            'niveaux' => Niveau::query()->where('status', true)->orderBy('name')->get(),
             'type' => 'student',
         ]);
     }

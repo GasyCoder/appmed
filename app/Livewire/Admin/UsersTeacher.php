@@ -6,6 +6,7 @@ use App\Mail\UserAccountCreatedMail;
 use App\Models\Niveau;
 use App\Models\Parcour;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -29,28 +30,18 @@ class UsersTeacher extends Component
     public bool $showUserModal = false;
     public bool $isLoading = false;
 
-    // Tabs (modal)
-    public string $activeTab = 'personal';
-
-    // Form fields
+    // Form fields (simplifié)
     public ?int $userId = null;
-
-    // Information personnel
     public string $name = '';
     public string $email = '';
-    public ?string $telephone = null;
-    public ?string $sexe = null; // homme|femme|null
-
-    // Pédagogique
-    public ?string $grade = null;
     public array $selectedTeacherNiveaux = [];
-    public ?string $departement = null; // spécialité (optionnel)
-
-    // Account
     public bool $status = true;
 
     // Parcours unique par défaut
     public ?int $defaultParcourId = null;
+
+    // Delete confirm
+    public ?int $pendingDeleteUserId = null;
 
     protected $listeners = [
         'deleteConfirmed' => 'deleteUser',
@@ -59,7 +50,7 @@ class UsersTeacher extends Component
 
     public function mount(): void
     {
-        abort_if(!auth()->user()?->hasRole('admin'), 403, 'Non autorisé.');
+        abort_if(!Auth::user()?->hasRole('admin'), 403, 'Non autorisé.');
 
         // Parcours unique => premier actif
         $this->defaultParcourId = Parcour::query()
@@ -71,19 +62,11 @@ class UsersTeacher extends Component
     protected function rules(): array
     {
         return [
-            // Personal
-            'name' => 'required|string|min:3|max:255',
+            'name' => ['required', 'string', 'min:3', 'max:255'],
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($this->userId)],
-            'telephone' => 'nullable|string|max:20',
-            'sexe' => 'nullable|in:homme,femme',
-
-            // Pedago
-            'grade' => 'nullable|string|max:255',
-            'departement' => 'nullable|string|max:255',
-            'selectedTeacherNiveaux' => 'required|array|min:1',
-
-            // Account
-            'status' => 'boolean',
+            'selectedTeacherNiveaux' => ['required', 'array', 'min:1'],
+            'selectedTeacherNiveaux.*' => ['integer', 'exists:niveaux,id'],
+            'status' => ['boolean'],
         ];
     }
 
@@ -93,38 +76,58 @@ class UsersTeacher extends Component
         'email.email' => 'L\'email doit être valide.',
         'email.unique' => 'Cet email est déjà utilisé.',
         'selectedTeacherNiveaux.required' => 'Sélectionnez au moins un niveau.',
+        'selectedTeacherNiveaux.min' => 'Sélectionnez au moins un niveau.',
     ];
 
     public function updatedSearch(): void { $this->resetPage(); }
     public function updatedPerPage(): void { $this->resetPage(); }
     public function updatedNiveauFilter(): void { $this->resetPage(); }
 
+    public function openCreateModal(): void
+    {
+        $this->resetForm();
+        $this->showUserModal = true;
+    }
+
     public function resetForm(): void
     {
         $this->reset([
-            'userId','name','email','telephone','sexe',
-            'grade','selectedTeacherNiveaux','departement',
-            'status','showUserModal','isLoading'
+            'userId',
+            'name',
+            'email',
+            'selectedTeacherNiveaux',
+            'status',
+            'isLoading',
+            'pendingDeleteUserId',
         ]);
 
         $this->status = true;
-        $this->activeTab = 'personal';
         $this->resetValidation();
+        $this->showUserModal = false;
     }
 
-    protected function formattedTeacherName(User $user): string
-    {
-        $grade = $user->profil?->grade;
-        return $grade ? "{$grade}. {$user->name}" : $user->name;
-    }
-
+    /**
+     * Create OR Update (simplifié)
+     */
     public function createTeacher(): void
     {
         $this->isLoading = true;
-        $this->validate();
-        $isUpdate = (bool) $this->userId;
 
         try {
+            $this->validate();
+
+            $isUpdate = (bool) $this->userId;
+
+            if (!$this->defaultParcourId) {
+                $this->alert('error', 'Erreur', [
+                    'toast' => true, 'position' => 'center',
+                    'timer' => 2600, 'showConfirmButton' => true,
+                    'confirmButtonText' => 'OK',
+                    'text' => 'Aucun parcours actif trouvé (table parcours vide).',
+                ]);
+                return;
+            }
+
             DB::transaction(function () use ($isUpdate) {
 
                 if ($isUpdate) {
@@ -138,26 +141,15 @@ class UsersTeacher extends Component
 
                     $user->teacherNiveaux()->sync($this->selectedTeacherNiveaux);
 
-                    if ($this->defaultParcourId) {
-                        $user->teacherParcours()->sync([$this->defaultParcourId]);
-                    }
-
-                    $user->profil()->updateOrCreate(
-                        ['user_id' => $user->id],
-                        [
-                            'telephone' => $this->telephone,
-                            'sexe' => $this->sexe,
-                            'grade' => $this->grade,
-                            'departement' => $this->departement,
-                        ]
-                    );
+                    // Parcours unique
+                    $user->teacherParcours()->sync([$this->defaultParcourId]);
 
                     return;
                 }
 
                 // CREATE
                 $token = Str::random(64);
-                $temporaryPassword = Str::random(8);
+                $temporaryPassword = Str::random(10);
 
                 $user = User::create([
                     'name' => $this->name,
@@ -171,41 +163,33 @@ class UsersTeacher extends Component
 
                 $user->teacherNiveaux()->sync($this->selectedTeacherNiveaux);
 
-                if ($this->defaultParcourId) {
-                    $user->teacherParcours()->sync([$this->defaultParcourId]);
-                }
+                // Parcours unique
+                $user->teacherParcours()->sync([$this->defaultParcourId]);
 
+                // Lien reset password (48h)
                 DB::table('password_reset_tokens')->updateOrInsert(
                     ['email' => $user->email],
                     ['token' => Hash::make($token), 'created_at' => now()]
                 );
 
-                $user->profil()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'telephone' => $this->telephone,
-                        'sexe' => $this->sexe,
-                        'grade' => $this->grade,
-                        'departement' => $this->departement,
-                    ]
-                );
-
+                // Email
                 Mail::to($user->email)->send(new UserAccountCreatedMail(
-                    name: $this->formattedTeacherName($user),
+                    name: $user->name,
                     email: $user->email,
                     token: $token,
                     temporaryPassword: $temporaryPassword,
                     validityHours: 48,
-                    sexe: $this->sexe,
+                    sexe: null,
                     appName: 'EPIRC',
                     orgName: 'Faculté de Médecine — Université de Mahajanga'
                 ));
             });
 
-            $msg = $isUpdate ? 'Enseignant mis à jour.' : 'Compte enseignant créé. Email envoyé.';
+            $msg = $isUpdate
+                ? 'Enseignant mis à jour.'
+                : 'Compte enseignant créé. Email envoyé.';
 
             $this->resetForm();
-            $this->showUserModal = false;
 
             $this->alert('success', 'Succès', [
                 'toast' => true, 'position' => 'center',
@@ -219,38 +203,34 @@ class UsersTeacher extends Component
 
             $this->alert('error', 'Erreur', [
                 'toast' => true, 'position' => 'center',
-                'timer' => 2600, 'timerProgressBar' => true,
+                'timer' => 2800, 'timerProgressBar' => true,
                 'showConfirmButton' => true,
                 'confirmButtonText' => 'OK',
-                'text' => 'Une erreur est survenue.',
+                'text' => $e->getMessage(),
             ]);
         } finally {
             $this->isLoading = false;
         }
     }
 
+    /**
+     * Edit (remplit uniquement les champs simplifiés)
+     */
     public function editTeacher(int $userId): void
     {
         try {
-            $user = User::with(['teacherNiveaux', 'profil'])
+            $user = User::with(['teacherNiveaux'])
                 ->role('teacher')
                 ->findOrFail($userId);
 
             $this->userId = $user->id;
-
-            $this->name = $user->name;
-            $this->email = $user->email;
+            $this->name = (string) $user->name;
+            $this->email = (string) $user->email;
             $this->status = (bool) $user->status;
 
-            $this->telephone = $user->profil?->telephone;
-            $this->sexe = $user->profil?->sexe;
+            $this->selectedTeacherNiveaux = $user->teacherNiveaux->pluck('id')->map(fn($v) => (int)$v)->toArray();
 
-            $this->grade = $user->profil?->grade;
-            $this->departement = $user->profil?->departement;
-
-            $this->selectedTeacherNiveaux = $user->teacherNiveaux->pluck('id')->toArray();
-
-            $this->activeTab = 'personal';
+            $this->resetValidation();
             $this->showUserModal = true;
 
         } catch (\Throwable $e) {
@@ -266,19 +246,64 @@ class UsersTeacher extends Component
         }
     }
 
-    public function deleteUser(int $userId): void
+    public function confirmDelete(int $userId): void
     {
+        $this->pendingDeleteUserId = $userId;
+
+        $this->alert('warning', 'Confirmer la suppression', [
+            'text' => 'Voulez-vous vraiment supprimer cet enseignant ? Cette action est irréversible.',
+            'toast' => false,
+            'position' => 'center',
+            'showCancelButton' => true,
+            'cancelButtonText' => 'Annuler',
+            'showConfirmButton' => true,
+            'confirmButtonText' => 'Oui, supprimer',
+            'allowOutsideClick' => false,
+            'timer' => null,
+            'onConfirmed' => 'deleteConfirmed',
+            'data' => ['id' => $userId],
+        ]);
+    }
+
+    public function deleteUser($payload = null): void
+    {
+        $id = 0;
+
+        if (is_numeric($payload)) $id = (int) $payload;
+
+        if (is_array($payload)) {
+            $id = (int) (
+                $payload['id'] ??
+                $payload['userId'] ??
+                ($payload['data']['id'] ?? 0)
+            );
+        }
+
+        if ($id <= 0) $id = (int) ($this->pendingDeleteUserId ?? 0);
+
+        if ($id <= 0) {
+            $this->alert('error', 'Erreur', [
+                'toast' => true, 'position' => 'center',
+                'timer' => 2200, 'showConfirmButton' => false,
+                'text' => 'ID utilisateur introuvable pour suppression.',
+            ]);
+            return;
+        }
+
         try {
-            $user = User::role('teacher')->findOrFail($userId);
+            $user = User::role('teacher')->findOrFail($id);
             $user->delete();
+
+            $this->pendingDeleteUserId = null;
 
             $this->alert('success', 'Supprimé', [
                 'toast' => true, 'position' => 'center',
                 'timer' => 2000, 'showConfirmButton' => false,
                 'text' => 'Enseignant supprimé.',
             ]);
+
         } catch (\Throwable $e) {
-            Log::error('UsersTeacher deleteUser error', ['error' => $e->getMessage(), 'user_id' => $userId]);
+            Log::error('UsersTeacher deleteUser error', ['error' => $e->getMessage(), 'user_id' => $id]);
 
             $this->alert('error', 'Erreur', [
                 'toast' => true, 'position' => 'center',
@@ -312,17 +337,12 @@ class UsersTeacher extends Component
     public function render()
     {
         $teachers = User::query()
-            ->with(['teacherNiveaux', 'profil'])
+            ->with(['teacherNiveaux'])
             ->role('teacher')
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', "%{$this->search}%")
-                      ->orWhere('email', 'like', "%{$this->search}%")
-                      ->orWhereHas('profil', function ($p) {
-                          $p->where('grade', 'like', "%{$this->search}%")
-                            ->orWhere('departement', 'like', "%{$this->search}%")
-                            ->orWhere('telephone', 'like', "%{$this->search}%");
-                      });
+                      ->orWhere('email', 'like', "%{$this->search}%");
                 });
             })
             ->when($this->niveau_filter, function ($query) {
@@ -333,7 +353,7 @@ class UsersTeacher extends Component
 
         return view('livewire.admin.users-teacher', [
             'teachers' => $teachers,
-            'niveaux' => Niveau::query()->where('status', true)->get(),
+            'niveaux' => Niveau::query()->where('status', true)->orderBy('name')->get(),
             'type' => 'teacher',
         ]);
     }

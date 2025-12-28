@@ -37,8 +37,7 @@
                 class="w-full rounded-md border-gray-300 dark:border-gray-600
                        bg-white dark:bg-gray-700
                        text-gray-900 dark:text-white h-10
-                       shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
+                       shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 <option value="10">10</option>
                 <option value="25">25</option>
                 <option value="50">50</option>
@@ -47,12 +46,11 @@
 
         {{-- Nouveau --}}
         <button
-            wire:click="$set('showUserModal', true)"
+            wire:click="$set('showUserModal', true)" wire:key="showUserModal"
             class="inline-flex items-center justify-center px-4 h-10
                    rounded-md shadow-sm text-sm font-medium text-white
                    bg-indigo-600 hover:bg-indigo-700
-                   focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
+                   focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>

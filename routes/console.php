@@ -45,13 +45,16 @@ Artisan::command('app:sync-version', function () {
     return self::SUCCESS;
 })->purpose('Sync APP_VERSION (git tag) + APP_BUILD (git describe) into .env');
 
-function upsertEnvLine(string $content, string $key, string $value): string
-{
-    $line = $key . '=' . $value;
+// ✅ FIX: Évite "Cannot redeclare" lors du cache
+if (!function_exists('upsertEnvLine')) {
+    function upsertEnvLine(string $content, string $key, string $value): string
+    {
+        $line = $key . '=' . $value;
 
-    if (preg_match('/^' . preg_quote($key, '/') . '=/m', $content)) {
-        return preg_replace('/^' . preg_quote($key, '/') . '=.*/m', $line, $content, 1);
+        if (preg_match('/^' . preg_quote($key, '/') . '=/m', $content)) {
+            return preg_replace('/^' . preg_quote($key, '/') . '=.*/m', $line, $content, 1);
+        }
+
+        return rtrim($content) . PHP_EOL . $line . PHP_EOL;
     }
-
-    return rtrim($content) . PHP_EOL . $line . PHP_EOL;
 }

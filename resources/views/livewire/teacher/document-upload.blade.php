@@ -1,24 +1,141 @@
+{{-- resources/views/livewire/teacher/document-upload.blade.php --}}
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-    {{-- Fullscreen Loading Overlay --}}
+    <script>
+        function lwUploadOverlay() {
+            return {
+                open: false,
+                progress: 5,
+                title: 'Upload en cours…',
+                subtitle: 'Veuillez patienter',
+                hint: 'Préparation…',
+                _closeTimer: null,
+
+                init() {
+                    const on = (name, fn) => window.addEventListener(name, fn);
+
+                    on('livewire-upload-start', (e) => {
+                        if (!this._isFilesUploadEvent(e)) return;
+
+                        this._clearClose();
+                        this.open = true;
+                        this.progress = 5;
+                        this.title = 'Upload en cours…';
+                        this.subtitle = 'Veuillez patienter';
+                        this.hint = 'Démarrage du transfert…';
+                    });
+
+                    on('livewire-upload-progress', (e) => {
+                        if (!this._isFilesUploadEvent(e)) return;
+
+                        const p = Number(e?.detail?.progress ?? 0);
+                        this.progress = Math.min(99, Math.max(5, p));
+
+                        if (this.progress < 20) this.hint = 'Préparation…';
+                        else if (this.progress < 60) this.hint = 'Transfert du fichier…';
+                        else if (this.progress < 90) this.hint = 'Traitement…';
+                        else this.hint = 'Finalisation…';
+                    });
+
+                    on('livewire-upload-finish', (e) => {
+                        if (!this._isFilesUploadEvent(e)) return;
+                        this._finishAndClose();
+                    });
+
+                    on('livewire-upload-error', (e) => {
+                        if (!this._isFilesUploadEvent(e)) return;
+
+                        this.title = 'Erreur d’upload';
+                        this.subtitle = 'Vérifiez le fichier et réessayez';
+                        this.hint = 'Upload interrompu.';
+                        this.progress = 100;
+
+                        this._clearClose();
+                        this._closeTimer = setTimeout(() => {
+                            this.open = false;
+                            this.progress = 5;
+                        }, 900);
+                    });
+                },
+
+                _finishAndClose() {
+                    this.title = 'Upload terminé';
+                    this.subtitle = 'Veuillez patienter';
+                    this.hint = 'Terminé.';
+                    this.progress = 100;
+
+                    this._clearClose();
+                    this._closeTimer = setTimeout(() => {
+                        this.open = false;
+                        this.progress = 5;
+                        this.title = 'Upload en cours…';
+                        this.subtitle = 'Veuillez patienter';
+                        this.hint = 'Préparation…';
+                    }, 350);
+                },
+
+                _clearClose() {
+                    if (this._closeTimer) {
+                        clearTimeout(this._closeTimer);
+                        this._closeTimer = null;
+                    }
+                },
+
+                _isFilesUploadEvent(e) {
+                    // Livewire v3: selon versions, le nom peut être dans plusieurs clés.
+                    // Si absent -> on ne bloque pas (robuste).
+                    const d = e?.detail ?? {};
+                    const prop =
+                        d.propertyName ??
+                        d.name ??
+                        d.property ??
+                        d.uploadName ??
+                        d?.file?.propertyName ??
+                        null;
+
+                    if (!prop) return true; // fallback
+                    return prop === 'files';
+                },
+            }
+        }
+    </script>
+
+    {{-- Fullscreen Loading Overlay (Progress réel) --}}
     <div
-        wire:loading.flex
-        wire:target="uploadDocuments,files,addLink"
-        class="fixed inset-0 z-[9999] items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-xl dark:border-gray-700 dark:bg-gray-800">
-            <div class="flex items-center gap-3">
-                <svg class="h-5 w-5 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+        x-data="lwUploadOverlay()"
+        x-init="init()"
+        x-show="open"
+        x-cloak
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="w-full max-w-sm rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-xl dark:border-gray-700 dark:bg-gray-800">
+            <div class="flex items-start gap-3">
+                <svg class="mt-0.5 h-5 w-5 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor"
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <div class="min-w-0">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">Upload en cours…</p>
-                    <p class="text-xs text-gray-600 dark:text-gray-300">Veuillez patienter</p>
+
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-bold text-gray-900 dark:text-white" x-text="title"></p>
+                        <p class="text-sm font-extrabold tabular-nums text-indigo-600 dark:text-indigo-400">
+                            <span x-text="progress"></span>%
+                        </p>
+                    </div>
+
+                    <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-300" x-text="subtitle"></p>
+
+                    <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                        <div class="h-full rounded-full bg-indigo-600 transition-[width] duration-200"
+                             :style="`width: ${progress}%`"></div>
+                    </div>
+
+                    <p class="mt-2 text-[11px] text-gray-500 dark:text-gray-400" x-text="hint"></p>
                 </div>
             </div>
         </div>
     </div>
+
 
     {{-- Header --}}
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -151,7 +268,7 @@
                             Fichiers
                         </h2>
                         <p class="text-xs text-gray-500 dark:text-gray-400">
-                            Max {{ \App\Livewire\Teacher\DocumentUpload::MAX_FILES }} fichiers · 
+                            Max {{ \App\Livewire\Teacher\DocumentUpload::MAX_FILES }} fichiers ·
                             <strong class="font-semibold">{{ $maxUploadSize }}</strong> par fichier
                         </p>
                     </div>
@@ -181,11 +298,12 @@
                                 Depuis un lien (Drive, etc.)
                             </button>
                         </div>
+
                         @php
                             $limitMo = (float) str_replace(' Mo', '', $maxUploadSize);
                         @endphp
 
-                        @if($limitMo < 5) 
+                        @if($limitMo < 5)
                             <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/40 dark:bg-amber-900/20">
                                 <div class="flex gap-2.5">
                                     <svg class="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,13 +314,14 @@
                                             Limite serveur réduite
                                         </p>
                                         <p class="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
-                                            Le serveur limite les uploads à <strong>{{ $maxUploadSize }}</strong>. 
+                                            Le serveur limite les uploads à <strong>{{ $maxUploadSize }}</strong>.
                                             Pour augmenter cette limite, contactez l'administrateur système.
                                         </p>
                                     </div>
                                 </div>
                             </div>
                         @endif
+
                         <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                             Google Drive : le fichier doit être partagé “Toute personne ayant le lien”.
                         </p>
@@ -533,7 +652,7 @@
                                 <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
                                 Upload…
                             </span>

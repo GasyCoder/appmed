@@ -68,7 +68,7 @@ return [
         'rules' => [
             'file',
             'mimes:pdf,docx,doc,dotx,dot,ppt,pptx,xls,xlsx,jpg,png,gif,jpeg',  // Example: ['file', 'mimes:png,jpg']  | Default: ['required', 'file', 'max:12288'] (12MB)
-            'max:20480'    // 20MB max
+            'max:512000'    // 20MB max
         ],
         'directory' =>'documents-tmp',   // Example: 'tmp'                      | Default: 'livewire-tmp'
         'middleware' => 'auth',  // Example: 'throttle:5,1'             | Default: 'throttle:60,1'

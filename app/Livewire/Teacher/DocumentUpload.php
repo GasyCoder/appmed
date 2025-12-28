@@ -3,31 +3,35 @@
 namespace App\Livewire\Teacher;
 
 use App\Models\Niveau;
-use Livewire\Component;
 use App\Models\Programme;
-use Illuminate\Support\Str;
+use Livewire\Component;
 use Livewire\WithFileUploads;
-use Illuminate\Http\UploadedFile;
-use App\Data\UploadDocumentRequest;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-use Symfony\Component\Process\Process;
-use App\Services\DocumentUploadService;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\Process\Process;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+
+use App\Data\UploadDocumentRequest;
+use App\Services\DocumentUploadService;
 
 class DocumentUpload extends Component
 {
     use WithFileUploads, LivewireAlert;
 
-    public string $source_url = '';
     public const MAX_FILES = 10;
-    private const MAX_BYTES = 536870912;
 
-    // ✅ AJOUTER CES 2 LIGNES
-    public string $maxUploadSize = '';
-    public int $maxUploadBytes = 0;
+    // Limite max externe (si tu télécharges depuis un lien)
+    private const MAX_BYTES = 536870912; // 512MB
+
+    public string $source_url = '';
+    public string $source = 'local'; // local | link
+    public string $linkInput = '';
+    public array $links = [];
 
     public $niveaux;
     public $ues;
@@ -40,12 +44,12 @@ class DocumentUpload extends Component
     /** @var array<int, \Livewire\Features\SupportFileUploads\TemporaryUploadedFile> */
     public array $files = [];
 
-    public string $source = 'local'; // local | link
-    public string $linkInput = '';
-    public array $links = [];
-
     public array $titles = [];
     public array $statuses = [];
+
+    // Infos UI sur limites
+    public string $maxUploadSize = '';
+    public int $maxUploadBytes = 0;
 
     /** Extensions autorisées (liens + local) */
     private array $allowedExtensions = [
@@ -69,65 +73,70 @@ class DocumentUpload extends Component
         'image/png' => 'png',
     ];
 
-public function mount(): void
-{
-    $this->niveaux = Niveau::query()->where('status', true)->orderBy('name')->get();
-    $this->ues = collect();
-    $this->ecs = collect();
-
-    $this->maxUploadBytes = $this->getMaxUploadBytes();
-    $this->maxUploadSize = $this->formatBytes($this->maxUploadBytes);
-    
-    // ✅ DEBUG TEMPORAIRE
-    \Log::info('Upload limits', [
-        'upload_max_filesize' => ini_get('upload_max_filesize'),
-        'post_max_size' => ini_get('post_max_size'),
-        'maxUploadBytes' => $this->maxUploadBytes,
-        'maxUploadSize' => $this->maxUploadSize,
-    ]);
-}
-
-    // MÉTHODE - Récupérer taille max PHP
-    private function getMaxUploadBytes(): int
+    public function mount(): void
     {
-        $upload = ini_get('upload_max_filesize');
-        $post = ini_get('post_max_size');
-        
-        $uploadBytes = $this->parseSize($upload);
-        $postBytes = $this->parseSize($post);
-        
-        return min($uploadBytes, $postBytes);
+        $this->niveaux = Niveau::query()->where('status', true)->orderBy('name')->get();
+        $this->ues = collect();
+        $this->ecs = collect();
+
+        // Limite serveur PHP
+        $this->maxUploadBytes = $this->getMaxUploadBytes();
+        $this->maxUploadSize = $this->formatBytes($this->maxUploadBytes);
+
+        Log::info('Upload limits', [
+            'upload_max_filesize' => ini_get('upload_max_filesize'),
+            'post_max_size'       => ini_get('post_max_size'),
+            'maxUploadBytes'      => $this->maxUploadBytes,
+            'maxUploadSize'       => $this->maxUploadSize,
+            'livewire_disk'       => config('livewire.temporary_file_upload.disk'),
+            'livewire_directory'  => config('livewire.temporary_file_upload.directory'),
+        ]);
     }
 
-    // MÉTHODE - Convertir taille PHP en bytes
+    // ---------------------------
+    // Helpers: server limits
+    // ---------------------------
+    private function getMaxUploadBytes(): int
+    {
+        $upload = (string) ini_get('upload_max_filesize');
+        $post   = (string) ini_get('post_max_size');
+
+        $uploadBytes = $this->parseSize($upload);
+        $postBytes   = $this->parseSize($post);
+
+        $min = min($uploadBytes, $postBytes);
+
+        // fallback sécurité
+        return $min > 0 ? $min : 10 * 1024 * 1024;
+    }
+
     private function parseSize(string $size): int
     {
-        $value = (int) $size;
+        $size = trim($size);
+        if ($size === '') return 0;
+
         $unit = strtolower(substr($size, -1));
-        
+        $value = (int) $size;
+
         return match($unit) {
             'g' => $value * 1024 * 1024 * 1024,
             'm' => $value * 1024 * 1024,
             'k' => $value * 1024,
-            default => $value,
+            default => (int) $size,
         };
     }
 
-    // MÉTHODE - Formater bytes en texte
     private function formatBytes(int $bytes): string
     {
-        if ($bytes >= 1073741824) {
-            return number_format($bytes / 1073741824, 1) . ' Go';
-        }
-        if ($bytes >= 1048576) {
-            return number_format($bytes / 1048576, 1) . ' Mo';
-        }
-        if ($bytes >= 1024) {
-            return number_format($bytes / 1024, 1) . ' Ko';
-        }
+        if ($bytes >= 1073741824) return number_format($bytes / 1073741824, 1) . ' Go';
+        if ($bytes >= 1048576)    return number_format($bytes / 1048576, 1) . ' Mo';
+        if ($bytes >= 1024)       return number_format($bytes / 1024, 1) . ' Ko';
         return $bytes . ' octets';
     }
 
+    // ---------------------------
+    // Selects
+    // ---------------------------
     public function updatedNiveauId($value): void
     {
         $this->ue_id = null;
@@ -165,7 +174,6 @@ public function mount(): void
     public function updatedSource($value): void
     {
         $this->resetValidation();
-
         $this->titles = [];
         $this->statuses = [];
 
@@ -178,70 +186,66 @@ public function mount(): void
         }
     }
 
+    // ---------------------------
+    // ✅ FIX IMPORTANT : updatedFiles SAFE
+    // ---------------------------
     public function updatedFiles(): void
     {
         if (!is_array($this->files)) return;
 
-        // ✅ VÉRIFIER LES ERREURS D'UPLOAD
         foreach ($this->files as $index => $file) {
             if (!is_object($file)) continue;
-            
-            // Vérifier erreur PHP upload
+
+            // 1) Vérifier les erreurs upload PHP si disponibles
             if (method_exists($file, 'getError')) {
                 $error = $file->getError();
-                
+
                 if ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
-                    $fileName = $file->getClientOriginalName();
-                    $fileSize = $this->formatBytes($file->getSize());
-                    
-                    $this->alert('error', 'Fichier trop volumineux', [
-                        'position' => 'center',
-                        'timer' => 0,
-                        'toast' => false,
-                        'showConfirmButton' => true,
-                        'text' => "Le fichier « {$fileName} » ({$fileSize}) dépasse la limite du serveur ({$this->maxUploadSize}). Réduisez la taille ou contactez l'administrateur.",
-                    ]);
-                    
-                    unset($this->files[$index]);
-                    $this->files = array_values($this->files);
+                    $this->rejectFile($index, "Le fichier dépasse la limite du serveur ({$this->maxUploadSize}).");
                     return;
                 }
-                
+
                 if ($error === UPLOAD_ERR_PARTIAL) {
-                    $this->alert('error', 'Upload incomplet', [
-                        'position' => 'center',
-                        'timer' => 0,
-                        'toast' => false,
-                        'showConfirmButton' => true,
-                        'text' => 'Le fichier n\'a été que partiellement téléversé. Vérifiez votre connexion et réessayez.',
-                    ]);
-                    
-                    unset($this->files[$index]);
-                    $this->files = array_values($this->files);
+                    $this->rejectFile($index, "Upload incomplet. Vérifiez la connexion et réessayez.");
+                    return;
+                }
+
+                if ($error !== UPLOAD_ERR_OK && $error !== 0) {
+                    $this->rejectFile($index, "Erreur upload (code {$error}). Réessayez.");
                     return;
                 }
             }
-            
-            // Vérifier taille
-            if ($file->getSize() > $this->maxUploadBytes) {
-                $fileName = $file->getClientOriginalName();
-                $fileSize = $this->formatBytes($file->getSize());
-                
-                $this->alert('error', 'Fichier trop volumineux', [
-                    'position' => 'center',
-                    'timer' => 0,
-                    'toast' => false,
-                    'showConfirmButton' => true,
-                    'text' => "Le fichier « {$fileName} » ({$fileSize}) dépasse la limite autorisée ({$this->maxUploadSize}).",
+
+            // 2) ✅ Lire la taille (SAFE) => ne jamais crasher
+            $size = null;
+            try {
+                $size = (int) $file->getSize();
+            } catch (\Throwable $e) {
+                Log::warning('Unable to retrieve tmp file size (Livewire)', [
+                    'user_id' => Auth::id(),
+                    'index' => $index,
+                    'tmp_disk' => config('livewire.temporary_file_upload.disk'),
+                    'tmp_dir'  => config('livewire.temporary_file_upload.directory'),
+                    'file_class' => get_class($file),
+                    'msg' => $e->getMessage(),
                 ]);
-                
-                unset($this->files[$index]);
-                $this->files = array_values($this->files);
+
+                $this->rejectFile(
+                    $index,
+                    "Le serveur n'arrive pas à lire le fichier temporaire (permissions ou upload interrompu). Réessayez."
+                );
+                return;
+            }
+
+            // 3) Vérifier taille max serveur
+            if ($size > $this->maxUploadBytes) {
+                $human = $this->formatBytes($size);
+                $this->rejectFile($index, "Fichier trop volumineux ({$human}). Limite : {$this->maxUploadSize}.");
                 return;
             }
         }
 
-        // Limiter nombre de fichiers
+        // 4) Limiter nombre fichiers
         if (count($this->files) > self::MAX_FILES) {
             $this->alert('warning', 'Trop de fichiers', [
                 'position' => 'top-end',
@@ -249,11 +253,11 @@ public function mount(): void
                 'toast' => true,
                 'text' => 'Maximum ' . self::MAX_FILES . ' fichiers. Les fichiers excédentaires ont été retirés.',
             ]);
-            
+
             $this->files = array_slice($this->files, 0, self::MAX_FILES);
         }
 
-        // Pré-remplir titres et statuts
+        // 5) Pré-remplir titres/statuts
         foreach ($this->files as $i => $file) {
             if (!isset($this->titles[$i])) {
                 $this->titles[$i] = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -262,6 +266,29 @@ public function mount(): void
                 $this->statuses[$i] = true;
             }
         }
+    }
+
+    private function rejectFile(int $index, string $message): void
+    {
+        $name = '';
+        try {
+            $name = $this->files[$index]?->getClientOriginalName() ?? '';
+        } catch (\Throwable $e) {
+            $name = '';
+        }
+
+        $text = $name ? "« {$name} » : {$message}" : $message;
+
+        $this->alert('error', 'Erreur upload', [
+            'position' => 'center',
+            'timer' => 0,
+            'toast' => false,
+            'showConfirmButton' => true,
+            'text' => $text,
+        ]);
+
+        unset($this->files[$index]);
+        $this->files = array_values($this->files);
     }
 
     public function removeFile(int $index): void
@@ -302,8 +329,6 @@ public function mount(): void
         }
 
         $url = trim($this->linkInput);
-
-        // Normalisation (Drive / Docs / Slides / Sheets)
         $url = $this->normalizeDownloadUrl($url);
 
         $this->links[] = $url;
@@ -327,14 +352,13 @@ public function mount(): void
 
     public function uploadDocuments(DocumentUploadService $service)
     {
-        // 1) Règles communes
+        // Règles communes
         $rules = [
             'niveau_id' => 'required|integer|exists:niveaux,id',
             'ue_id'     => 'required|integer|exists:programmes,id',
             'ec_id'     => 'nullable|integer|exists:programmes,id',
         ];
 
-        // 2) Règles selon la source
         if ($this->source === 'local') {
             $rules['files']   = 'required|array|min:1|max:' . self::MAX_FILES;
             $maxKb = floor($this->maxUploadBytes / 1024);
@@ -351,14 +375,13 @@ public function mount(): void
             'files.required' => 'Veuillez ajouter au moins un fichier.',
             'files.*.max' => 'Un fichier dépasse la taille maximale (' . $this->maxUploadSize . ').',
             'files.*.mimes' => 'Format non autorisé. Acceptés: PDF, Word, PowerPoint, Excel, Images.',
-            
-            // ✅ AJOUTER CES LIGNES
             'files.*.uploaded' => 'Le fichier n\'a pas pu être téléversé. Taille maximale : ' . $this->maxUploadSize . '.',
             'files.*.file' => 'Le fichier sélectionné n\'est pas valide.',
         ];
+
         $this->validate($rules, $messages);
 
-        // 3) Charger UE + contrôler type / niveau
+        // Vérifs UE/EC
         $ue = Programme::query()
             ->select('id','type','niveau_id','semestre_id','parcour_id')
             ->findOrFail((int) $this->ue_id);
@@ -367,13 +390,11 @@ public function mount(): void
             $this->addError('ue_id', "Le programme choisi doit être une UE.");
             return;
         }
-
         if ((int) $ue->niveau_id !== (int) $this->niveau_id) {
             $this->addError('ue_id', "Cette UE n'appartient pas au niveau sélectionné.");
             return;
         }
 
-        // 4) Si EC renseigné, vérifier qu'il appartient à l'UE
         if ($this->ec_id) {
             $ec = Programme::query()
                 ->select('id','type','parent_id','niveau_id')
@@ -393,19 +414,17 @@ public function mount(): void
             }
         }
 
-        // 5) Déduire parcour/semestre depuis l'UE
         $parcourId  = (int) ($ue->parcour_id ?? 0);
         $semestreId = (int) ($ue->semestre_id ?? 0);
 
         if ($parcourId <= 0 || $semestreId <= 0) {
-            $this->addError('ue_id', "Impossible de déduire Parcours/Semestre depuis l'UE. Vérifie programmes.parcour_id et programmes.semestre_id.");
+            $this->addError('ue_id', "Impossible de déduire Parcours/Semestre depuis l'UE.");
             return;
         }
 
-        // 6) programme_id à stocker dans documents : EC si choisi, sinon UE
         $programmeId = (int) ($this->ec_id ?: $this->ue_id);
 
-        // 7) Construire les URLs finales (links[] + textarea source_url)
+        // URLs depuis textarea + links[]
         $urlsFromTextarea = array_values(array_filter(array_map('trim', preg_split("/\r\n|\n|\r/", (string) $this->source_url) ?: [])));
         $urls = array_values(array_unique(array_filter(array_merge($this->links ?? [], $urlsFromTextarea))));
 
@@ -414,21 +433,15 @@ public function mount(): void
             return;
         }
 
-        if ($this->source === 'local' && (!is_array($this->files) || count($this->files) === 0)) {
-            $this->addError('files', 'Veuillez ajouter au moins un fichier.');
-            return;
-        }
-
-        // 8) Appeler le service
         try {
             $req = new UploadDocumentRequest(
                 uploadedBy: Auth::id(),
                 niveauId: (int) $this->niveau_id,
                 ueId: (int) $this->ue_id,
                 ecId: $this->ec_id ? (int) $this->ec_id : null,
+                programmeId: $programmeId,
                 parcourId: $parcourId,
                 semestreId: $semestreId,
-                programmeId: $programmeId,
                 files: $this->source === 'local' ? ($this->files ?? []) : [],
                 titles: $this->titles ?? [],
                 statuses: $this->statuses ?? [],
@@ -441,8 +454,8 @@ public function mount(): void
             logger()->error('uploadDocuments failed', [
                 'user_id' => Auth::id(),
                 'source'  => $this->source,
-                'files'   => is_array($this->files) ? count($this->files) : 0,
-                'links'   => is_array($urls) ? count($urls) : 0,
+                'files_count' => is_array($this->files) ? count($this->files) : 0,
+                'links_count' => is_array($urls) ? count($urls) : 0,
                 'msg'     => $e->getMessage(),
             ]);
 
@@ -456,270 +469,24 @@ public function mount(): void
             return;
         }
 
-        // 9) Reset
+        // Reset
         $this->reset(['files', 'links', 'titles', 'statuses', 'linkInput', 'source_url']);
         $this->ue_id = null;
         $this->ec_id = null;
 
-        // 10) Alert SUCCESS (restauré)
-        $message = "{$created} document(s) enregistré(s).";
         $this->alert('success', 'Succès', [
             'position' => 'top-end',
             'timer' => 3500,
             'toast' => true,
-            'text' => $message,
+            'text' => "{$created} document(s) enregistré(s).",
         ]);
 
         return redirect()->route('document.teacher');
     }
 
-    /* ===========================
-       Helpers (vous les aviez déjà)
-       =========================== */
-
-    private function resolveFileType(?string $extension, ?string $mime = null): string
-    {
-        $ext = strtolower(trim((string) $extension));
-
-        if ($ext === '') {
-            if ($mime && str_starts_with($mime, 'image/')) return 'image';
-            if ($mime === 'application/pdf') return 'pdf';
-            return 'other';
-        }
-
-        return match ($ext) {
-            'pdf' => 'pdf',
-            'doc', 'docx' => 'word',
-            'ppt', 'pptx' => 'powerpoint',
-            'xls', 'xlsx' => 'excel',
-            'jpg', 'jpeg', 'png', 'webp', 'gif' => 'image',
-            default => 'other',
-        };
-    }
-
-    private function storeAndMaybeConvert(UploadedFile $file, string $title): array
-    {
-        $ext = strtolower($file->getClientOriginalExtension() ?: pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION));
-        $baseSlug = Str::slug($title) ?: 'document';
-        $rand = Str::random(6);
-        $timestamp = time();
-
-        $needsPdf = in_array($ext, ['doc', 'docx', 'ppt', 'pptx'], true);
-
-        if ($needsPdf) {
-            $tempDir = storage_path('app/private/temp');
-            if (!is_dir($tempDir)) @mkdir($tempDir, 0775, true);
-
-            $baseName = "{$timestamp}_{$baseSlug}_{$rand}";
-            $inputAbs = $tempDir . DIRECTORY_SEPARATOR . $baseName . '.' . $ext;
-
-            @copy($file->getRealPath(), $inputAbs);
-
-            $outDirAbs = storage_path('app/public/documents');
-            if (!is_dir($outDirAbs)) @mkdir($outDirAbs, 0775, true);
-
-            $this->convertToPdfLibreOffice($inputAbs, $outDirAbs);
-
-            $pdfAbs = $outDirAbs . DIRECTORY_SEPARATOR . $baseName . '.pdf';
-            if (!file_exists($pdfAbs)) {
-                @unlink($inputAbs);
-                throw new \RuntimeException("Conversion PDF échouée : fichier PDF non généré.");
-            }
-
-            $relative = 'documents/' . $baseName . '.pdf';
-            $size = filesize($pdfAbs) ?: 0;
-
-            @unlink($inputAbs);
-
-            return [
-                'file_path' => $relative,
-                'extension' => 'pdf',
-                'file_size' => $size,
-            ];
-        }
-
-        $filename = "{$timestamp}_{$baseSlug}_{$rand}.{$ext}";
-        $relative = Storage::disk('public')->putFileAs('documents', $file, $filename);
-        $size = $file->getSize() ?: 0;
-
-        return [
-            'file_path' => $relative,
-            'extension' => $ext ?: 'bin',
-            'file_size' => $size,
-        ];
-    }
-
-    private function convertToPdfLibreOffice(string $inputAbs, string $outputDirAbs): void
-    {
-        $profileBase = storage_path('app/lo-profile');
-        if (!is_dir($profileBase)) @mkdir($profileBase, 0775, true);
-
-        $profileDir = $profileBase . DIRECTORY_SEPARATOR . 'lo_' . Str::uuid()->toString();
-        @mkdir($profileDir, 0775, true);
-
-        $profileUri = 'file://' . $profileDir;
-
-        $cmd = [
-            'libreoffice',
-            '--headless',
-            '--nologo',
-            '--nolockcheck',
-            '--nodefault',
-            '--norestore',
-            '-env:UserInstallation=' . $profileUri,
-            '--convert-to', 'pdf',
-            '--outdir', $outputDirAbs,
-            $inputAbs,
-        ];
-
-        $process = new Process($cmd, base_path(), null, null, 120);
-        $process->mustRun();
-
-        $this->deleteDirectory($profileDir);
-    }
-
-    private function deleteDirectory(string $dir): void
-    {
-        if (!is_dir($dir)) return;
-
-        $items = scandir($dir);
-        if ($items === false) return;
-
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') continue;
-            $path = $dir . DIRECTORY_SEPARATOR . $item;
-            if (is_dir($path)) $this->deleteDirectory($path);
-            else @unlink($path);
-        }
-        @rmdir($dir);
-    }
-
-    private function buildUploadedFilesFromLinks(): array
-    {
-        $uploaded = [];
-
-        foreach ($this->links as $url) {
-            $download = $this->downloadToTemp($url, self::MAX_BYTES);
-
-            $ext = strtolower(pathinfo($download['name'], PATHINFO_EXTENSION));
-
-            if (!$ext) {
-                throw new \RuntimeException("Extension non autorisée : . (impossible de détecter le type du fichier)");
-            }
-
-            if (!in_array($ext, $this->allowedExtensions, true)) {
-                @unlink($download['path']);
-                throw new \RuntimeException("Extension non autorisée : .$ext");
-            }
-
-            $uploaded[] = $this->makeUploadedFileFromPath($download['path'], $download['name']);
-        }
-
-        return $uploaded;
-    }
-
-    private function downloadToTemp(string $url, int $maxBytes): array
-    {
-        $this->guardExternalUrl($url);
-
-        $tmpDir = storage_path('app/private/temp');
-        if (!is_dir($tmpDir)) @mkdir($tmpDir, 0775, true);
-
-        $tmpName = Str::random(28);
-        $tmpPath = $tmpDir . DIRECTORY_SEPARATOR . $tmpName;
-
-        try {
-            $head = Http::timeout(10)->head($url);
-            $len = (int) ($head->header('Content-Length') ?? 0);
-            if ($len > 0 && $len > $maxBytes) {
-                throw new \RuntimeException("Fichier trop volumineux (max 10MB).");
-            }
-        } catch (\Throwable $e) {
-            // ignore
-        }
-
-        $response = Http::timeout(90)
-            ->withHeaders(['User-Agent' => 'Mozilla/5.0'])
-            ->sink($tmpPath)
-            ->get($url);
-
-        if (!$response->successful()) {
-            @unlink($tmpPath);
-            throw new \RuntimeException("Téléchargement impossible (HTTP " . $response->status() . ").");
-        }
-
-        $size = @filesize($tmpPath) ?: 0;
-        if ($size <= 0) {
-            @unlink($tmpPath);
-            throw new \RuntimeException("Téléchargement impossible (fichier vide).");
-        }
-        if ($size > $maxBytes) {
-            @unlink($tmpPath);
-            throw new \RuntimeException("Fichier trop volumineux (max 10MB).");
-        }
-
-        $contentType = strtolower((string) $response->header('Content-Type'));
-
-        if (str_contains($contentType, 'text/html')) {
-            @unlink($tmpPath);
-            throw new \RuntimeException(
-                "Le lien ne pointe pas vers un fichier téléchargeable (HTML). " .
-                "Pour Google Docs/Slides/Sheets, utilise un lien partage public ou un lien export."
-            );
-        }
-
-        $name = $this->filenameFromContentDisposition((string) $response->header('Content-Disposition'))
-            ?? $this->guessFileNameFromUrl($url)
-            ?? ("document_" . Str::random(8));
-
-        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-        if (!$ext) {
-            $extFromMime = $this->extFromMime($contentType);
-            if ($extFromMime) {
-                $name .= '.' . $extFromMime;
-                $ext = $extFromMime;
-            }
-        }
-
-        if (!$ext) {
-            @unlink($tmpPath);
-            throw new \RuntimeException("Impossible de détecter l’extension du fichier (URL + headers).");
-        }
-
-        $name = preg_replace('~[^a-zA-Z0-9\.\-\_ ]~', '_', $name);
-
-        return ['path' => $tmpPath, 'name' => $name];
-    }
-
-    private function filenameFromContentDisposition(string $cd): ?string
-    {
-        if (!$cd) return null;
-
-        if (preg_match('~filename\*=(?:UTF-8\'\')?([^;]+)~i', $cd, $m)) {
-            $v = trim($m[1], " \t\n\r\0\x0B\"'");
-            return urldecode($v);
-        }
-
-        if (preg_match('~filename=([^;]+)~i', $cd, $m)) {
-            return trim($m[1], " \t\n\r\0\x0B\"'");
-        }
-
-        return null;
-    }
-
-    private function extFromMime(string $contentType): ?string
-    {
-        $mime = trim(explode(';', $contentType)[0] ?? '');
-        return $this->mimeToExt[$mime] ?? null;
-    }
-
-    private function makeUploadedFileFromPath(string $path, string $originalName): UploadedFile
-    {
-        $mime = @mime_content_type($path) ?: 'application/octet-stream';
-        $symfony = new SymfonyUploadedFile($path, $originalName, $mime, null, true);
-        return UploadedFile::createFromBase($symfony);
-    }
-
+    // ---------------------------
+    // Link helpers (inchangés)
+    // ---------------------------
     private function normalizeDownloadUrl(string $url): string
     {
         if (str_contains($url, 'drive.google.com')) {
@@ -762,25 +529,6 @@ public function mount(): void
         return $url;
     }
 
-    private function guardExternalUrl(string $url): void
-    {
-        $parts = parse_url($url);
-        $scheme = $parts['scheme'] ?? '';
-        $host = $parts['host'] ?? '';
-
-        if (!in_array($scheme, ['https', 'http'], true)) {
-            throw new \RuntimeException("Lien invalide (http/https uniquement).");
-        }
-        if (!$host) {
-            throw new \RuntimeException("Lien invalide (hôte manquant).");
-        }
-
-        $blockedHosts = ['localhost', '127.0.0.1'];
-        if (in_array(strtolower($host), $blockedHosts, true)) {
-            throw new \RuntimeException("Hôte non autorisé.");
-        }
-    }
-
     private function guessFileNameFromUrl(string $url): ?string
     {
         $path = parse_url($url, PHP_URL_PATH);
@@ -803,8 +551,8 @@ public function mount(): void
     {
         return view('livewire.teacher.document-upload', [
             'niveaux' => $this->niveaux,
-            'ues' => $this->ues,
-            'ecs' => $this->ecs,
+            'ues'     => $this->ues,
+            'ecs'     => $this->ecs,
         ]);
     }
 }

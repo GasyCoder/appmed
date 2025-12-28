@@ -251,9 +251,21 @@ class DocumentUploadService
         $fileName = "{$timestamp}_{$slug}_{$random}.{$originalExt}";
         $path = Storage::disk('public')->putFileAs('documents', $file, $fileName);
 
+        // ✅ getSize SAFE
+        $size = 0;
+        try {
+            $size = (int) ($file->getSize() ?: 0);
+        } catch (\Throwable $e) {
+            Log::warning('Unable to read uploaded file size in DocumentUploadService', [
+                'path' => $path,
+                'file_class' => is_object($file) ? get_class($file) : gettype($file),
+                'msg' => $e->getMessage(),
+            ]);
+        }
+
         return [
             'file_path'          => $path,
-            'file_size'          => (int) ($file->getSize() ?: 0),
+            'file_size'          => $size,
             'file_type'          => $this->resolveFileType($originalExt, $file->getMimeType()),
             'original_filename'  => $originalName,
             'original_extension' => $originalExt,
@@ -261,6 +273,7 @@ class DocumentUploadService
             'converted_at'       => null,
         ];
     }
+
 
     private function resolveFileType(?string $extension, ?string $mime = null): string
     {

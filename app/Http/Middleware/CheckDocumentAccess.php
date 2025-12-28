@@ -32,8 +32,10 @@ class CheckDocumentAccess
         }
 
         // ✅ Vérifier que le document existe
-        if (!$document || !($document instanceof Document)) {
-            abort(404, 'Document introuvable');
+        if ($document instanceof Document) {
+            if (!$document->canRead($user)) {
+                abort(403, 'Accès non autorisé.');
+            }
         }
 
         // ✅ Vérifier les permissions

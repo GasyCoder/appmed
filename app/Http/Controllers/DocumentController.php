@@ -3,61 +3,39 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Services\DocumentPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
-    /**
-     * ✅ MÉTHODE PRINCIPALE : Affiche le viewer pour un document
-     * Appelée par la route /documents/{document}/viewer
-     */
+    public function __construct(private readonly DocumentPdfService $pdfService) {}
+
     public function viewer(Document $document)
     {
         $user = Auth::user();
 
-        // Note: La vérification d'accès est déjà faite par le middleware
-        // Mais on peut la garder pour sécurité supplémentaire
-        if (!$document->canAccess($user)) {
+        if (!$user || !$document->canAccess($user)) {
             abort(403, 'Accès non autorisé à ce document.');
         }
 
-        // Enregistrer la vue (si étudiant)
+        // 1) EXTERNE -> pas de viewer interne, ouvre lecteur externe
+        if ($document->isExternalLink()) {
+            $document->registerView($user); // optionnel, et chez vous ça ne compte que student
+            return redirect()->away($document->externalReadUrl() ?? $document->externalUrl());
+        }
+
+        // 2) LOCAL -> viewer (PDF natif ou PDF converti)
         $document->registerView($user);
 
-        $ext = $document->extensionFromPath();
+        $pdfRel = $this->pdfService->getPdfRelativePath($document);
 
-        // ✅ CAS 1 : FICHIERS OFFICE (doc, docx, ppt, pptx, xls, xlsx) → TÉLÉCHARGEMENT DIRECT
-        if ($document->isDirectDownloadType()) {
+        // si non convertible -> fallback download
+        if (!$pdfRel) {
             return $this->download($document);
         }
 
-        // ✅ CAS 2 : PDF LOCAL → VIEWER
-        if ($document->isPdfLocal()) {
-            return $this->showPdfViewer($document);
-        }
-
-        // ✅ CAS 3 : LIEN GOOGLE (Drive/Docs) → REDIRECTION
-        if ($document->isExternalLink() && $document->isGoogleLink()) {
-            $readUrl = $document->externalReadUrl();
-            return redirect()->away($readUrl);
-        }
-
-        // ✅ CAS 4 : AUTRE LIEN EXTERNE → REDIRECTION
-        if ($document->isExternalLink()) {
-            return redirect()->away($document->file_path);
-        }
-
-        // ✅ CAS 5 : AUTRE FICHIER LOCAL → TÉLÉCHARGEMENT
-        return $this->download($document);
-    }
-
-    /**
-     * Affiche la vue du viewer PDF
-     */
-    private function showPdfViewer(Document $document)
-    {
         $teacherInfo = null;
         if ($document->teacher) {
             $teacherInfo = [
@@ -66,112 +44,73 @@ class DocumentController extends Controller
             ];
         }
 
-        return view('documents.viewer', [
+        return view('livewire.documents.viewer', [
             'document' => $document,
             'teacherInfo' => $teacherInfo,
             'ext' => 'pdf',
             'isPdf' => true,
-            
-            // URL pour l'iframe (embedded=1)
-            'fileUrl' => route('document.serve', [
-                'document' => $document->id,
-                'embedded' => 1
-            ]),
-            
-            // URL plein écran (ouvre le PDF natif du navigateur)
-            'pdfFullUrl' => route('document.serve', [
-                'document' => $document->id
-            ]),
-            
+            'fileUrl' => route('document.serve', ['document' => $document->id, 'embedded' => 1]),
+            'pdfFullUrl' => route('document.serve', ['document' => $document->id]),
             'downloadRoute' => route('document.download', $document),
         ]);
     }
 
-    /**
-     * ✅ Sert le fichier PDF (pour iframe ou ouverture directe)
-     * Appelée par la route /documents/serve/{document}
-     */
     public function serve(Document $document, Request $request)
     {
         $user = Auth::user();
 
-        // Note: Vérification déjà faite par middleware, mais on garde par sécurité
-        if (!$document->canAccess($user)) {
+        if (!$user || !$document->canAccess($user)) {
             abort(403, 'Accès non autorisé.');
         }
 
-        if (!$document->fileExists()) {
-            abort(404, 'Fichier introuvable.');
+        // Pas de serve pour externe
+        if ($document->isExternalLink()) {
+            return redirect()->route('document.openExternal', $document);
         }
 
-        // Seulement pour PDF
-        if ($document->extensionFromPath() !== 'pdf') {
-            abort(400, 'Ce endpoint est réservé aux PDF.');
+        $pdfRel = $this->pdfService->getPdfRelativePath($document);
+        if (!$pdfRel || !Storage::disk('public')->exists($pdfRel)) {
+            return redirect()->route('document.viewer', $document);
         }
 
-        $path = Storage::disk('public')->path($document->file_path);
+        $abs = Storage::disk('public')->path($pdfRel);
 
-        if (!file_exists($path)) {
-            abort(404, 'Fichier physique introuvable.');
-        }
-
-        $embedded = (int) $request->get('embedded', 0);
-
-        return response()->file($path, [
+        // Toujours inline (viewer/plein écran). Le download passe par document.download
+        return response()->file($abs, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => $embedded === 1 
-                ? 'inline; filename="' . $document->getDisplayFilename() . '"'
-                : 'attachment; filename="' . $document->getDisplayFilename() . '"',
+            'Content-Disposition' => 'inline; filename="' . $document->getDisplayFilename('pdf') . '"',
         ]);
     }
 
-    /**
-     * ✅ Téléchargement direct (fichiers locaux ou liens externes)
-     * Appelée par la route /documents/download/{document}
-     */
     public function download(Document $document)
     {
         $user = Auth::user();
 
-        // Note: Vérification déjà faite par middleware
-        if (!$document->canAccess($user)) {
+        if (!$user || !$document->canAccess($user)) {
             abort(403, 'Accès non autorisé.');
         }
 
-        // Enregistrer le téléchargement (si étudiant)
+        // EXTERNE: pas de compteur download
+        if ($document->isExternalLink()) {
+            $url = $document->externalDownloadUrl() ?: $document->externalUrl();
+            return redirect()->away($url);
+        }
+
+        // LOCAL: compteur download
         $document->registerDownload($user);
 
-        // ✅ Lien externe Google
-        if ($document->isExternalLink() && $document->isGoogleLink()) {
-            $downloadUrl = $document->externalDownloadUrl();
-            return redirect()->away($downloadUrl);
-        }
-
-        // ✅ Autre lien externe
-        if ($document->isExternalLink()) {
-            return redirect()->away($document->file_path);
-        }
-
-        // ✅ Fichier local
         if (!$document->fileExists()) {
             abort(404, 'Fichier introuvable.');
         }
 
-        $path = Storage::disk('public')->path($document->file_path);
+        $abs = Storage::disk('public')->path($document->file_path);
 
-        if (!file_exists($path)) {
-            abort(404, 'Fichier physique introuvable.');
-        }
-
-        return response()->download($path, $document->getDisplayFilename());
+        return response()->download(
+            $abs,
+            $document->getDisplayFilename($document->extensionFromPath())
+        );
     }
 
-    /**
-     * ✅ NOUVELLE MÉTHODE : Ouvrir un document externe en lecture
-     * Appelée par la route /documents/{document}/open-external
-     * 
-     * Redirige vers l'URL de lecture externe (Google Docs/Drive preview)
-     */
     public function openExternal(Document $document)
     {
         $user = Auth::user();
@@ -180,96 +119,55 @@ class DocumentController extends Controller
             abort(403, 'Accès non autorisé.');
         }
 
-        // Enregistrer la vue
+        // On peut compter la vue (ok)
         $document->registerView($user);
 
-        // Vérifier que c'est bien un lien externe
         if (!$document->isExternalLink()) {
-            abort(400, 'Ce document n\'est pas un lien externe.');
+            abort(400, "Ce document n'est pas un lien externe.");
         }
 
-        // Récupérer l'URL de lecture
-        $readUrl = $document->externalReadUrl();
-
-        // Rediriger vers l'URL externe
-        return redirect()->away($readUrl);
+        // ✅ LECTURE (preview), pas download
+        return redirect()->away($document->externalReadUrl());
     }
 
-    /**
-     * ✅ NOUVELLE MÉTHODE : Télécharger un document externe
-     * Appelée par la route /documents/{document}/download-external
-     * 
-     * Redirige vers l'URL de téléchargement externe (Google Docs/Drive export)
-     */
+
     public function downloadExternal(Document $document)
     {
         $user = Auth::user();
 
-        if (!$document->canAccess($user)) {
+        if (!$user || !$document->canAccess($user)) {
             abort(403, 'Accès non autorisé.');
         }
 
-        // Enregistrer le téléchargement
-        $document->registerDownload($user);
-
-        // Vérifier que c'est bien un lien externe
         if (!$document->isExternalLink()) {
-            abort(400, 'Ce document n\'est pas un lien externe.');
+            return redirect()->route('document.download', $document);
         }
 
-        // Récupérer l'URL de téléchargement
-        $downloadUrl = $document->externalDownloadUrl();
-
-        // Rediriger vers l'URL de téléchargement
-        return redirect()->away($downloadUrl);
+        // SANS compteur
+        return redirect()->away($document->externalDownloadUrl() ?: $document->externalUrl());
     }
 
-    /**
-     * ✅ OPTIONNEL : Accès public à un document (avec signature)
-     * Appelée par la route /documents/public/{document}
-     * 
-     * Permet de partager un document via un lien signé temporaire
-     */
     public function public(Document $document)
     {
-        // Pas de vérification d'accès : le lien signé fait office d'autorisation
-
-        // Enregistrer la vue (anonyme)
+        // optionnel, selon votre logique : ici je laisse simple
         $document->increment('view_count');
 
-        // Si PDF → viewer
-        if ($document->isPdfLocal()) {
-            return view('documents.viewer', [
-                'document' => $document,
-                'teacherInfo' => null,
-                'ext' => 'pdf',
-                'isPdf' => true,
-                'fileUrl' => route('document.serve', [
-                    'document' => $document->id,
-                    'embedded' => 1
-                ]),
-                'pdfFullUrl' => route('document.serve', [
-                    'document' => $document->id
-                ]),
-                'downloadRoute' => route('document.download', $document),
+        if ($document->isExternalLink()) {
+            return redirect()->away($document->externalReadUrl() ?? $document->externalUrl());
+        }
+
+        $pdfRel = $this->pdfService->getPdfRelativePath($document);
+        if ($pdfRel && Storage::disk('public')->exists($pdfRel)) {
+            $abs = Storage::disk('public')->path($pdfRel);
+            return response()->file($abs, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $document->getDisplayFilename('pdf') . '"',
             ]);
         }
 
-        // Sinon téléchargement direct
-        if ($document->isExternalLink()) {
-            return redirect()->away($document->file_path);
-        }
+        if (!$document->fileExists()) abort(404);
 
-        if (!$document->fileExists()) {
-            abort(404, 'Fichier introuvable.');
-        }
-
-        $path = Storage::disk('public')->path($document->file_path);
-
-        if (!file_exists($path)) {
-            abort(404, 'Fichier physique introuvable.');
-        }
-
-        return response()->download($path, $document->getDisplayFilename());
+        $abs = Storage::disk('public')->path($document->file_path);
+        return response()->download($abs, $document->getDisplayFilename($document->extensionFromPath()));
     }
 }

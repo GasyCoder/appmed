@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Student;
+namespace App\Livewire\Documents;
 
 use App\Models\User;
 use App\Models\Niveau;

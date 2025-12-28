@@ -4,7 +4,6 @@ use App\Livewire\Admin\Niveaux;
 use App\Livewire\Admin\Parcours;
 
 use App\Livewire\Admin\Semestres;
-use App\Livewire\Teacher\Documents;
 use App\Livewire\Admin\UsersStudent;
 use App\Livewire\Admin\UsersTeacher;
 
@@ -13,19 +12,19 @@ use App\Livewire\Student\HomeStudent;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Admin\AdminDashboard;
 use App\Livewire\Admin\ScheduleUpload;
-use App\Livewire\Teacher\DocumentEdit;
 use App\Livewire\Shared\ScheduleViewer;
+
 use App\Livewire\Admin\AuthorizedEmails;
+use App\Livewire\Documents\DocumentEdit;
 
 use App\Livewire\Student\EnseignantView;
-use App\Livewire\Teacher\DocumentUpload;
-use App\Livewire\Student\StudentDocument;
-use App\Livewire\Admin\ScheduleManagement;
+use App\Livewire\Documents\DocumentIndex;
 
+use App\Livewire\Admin\ScheduleManagement;
+use App\Livewire\Documents\DocumentUpload;
 use App\Livewire\Teacher\TeacherDashboard;
 use App\Livewire\Shared\AnnouncementsIndex;
 use App\Http\Controllers\DocumentController;
-
 use App\Http\Controllers\ScheduleController;
 use App\Livewire\Admin\AnnouncementsManager;
 use App\Livewire\Programmes\ProgrammesIndex;
@@ -107,21 +106,24 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::prefix('teacher')->middleware('role:teacher')->group(function () {
         Route::get('/dashboard', TeacherDashboard::class)->name('teacherEspace');
-        Route::get('/documents', Documents::class)->name('document.teacher');
-        Route::get('/documents/upload', DocumentUpload::class)->name('document.upload');
-        Route::get('/documents/{document}/edit', DocumentEdit::class)->name('document.edit');
         Route::get('/emploi-du-temps', ScheduleViewer::class)->name('teacher.timetable');
     });
 
     Route::prefix('student')->middleware('role:student')->group(function () {
         Route::get('/dashboard', HomeStudent::class)->name('studentEspace');
-        Route::get('/mes-cours', StudentDocument::class)->name('student.document');
-        Route::get('/mes-ue', function () {
-            return redirect()->route('student.document', ['view' => 'ue']);
-        })->name('student.ue');
         Route::get('/mes-enseignants', EnseignantView::class)->name('student.myTeacher');
         Route::get('/emploi-du-temps', ScheduleViewer::class)->name('student.timetable');
 
+    });
+
+
+    Route::get('/documents', DocumentIndex::class)->name('documents.index');
+
+    Route::middleware(['role:teacher'])->group(function () {
+
+        Route::get('/documents/upload', DocumentUpload::class)->name('document.upload');
+        Route::get('/documents/{document}/edit', DocumentEdit::class)->name('document.edit');
+        
     });
 
     Route::get('/nos-programmes', ProgrammesIndex::class)->name('programs');

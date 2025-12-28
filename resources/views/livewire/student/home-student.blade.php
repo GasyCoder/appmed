@@ -20,9 +20,9 @@
             [
                 'label' => 'Mes documents',
                 'desc'  => 'Documents, PDF, supports',
-                'href'  => Route::has('student.document') ? route('student.document') : '#',
+                'href'  => Route::has('document.index') ? route('document.index') : '#',
                 'icon'  => 'doc',
-                'active'=> request()->routeIs('student.document'),
+                'active'=> request()->routeIs('document.index'),
                 'badge' => (int) ($menuStats['documents'] ?? 0),
                 'badgeColor' => 'bg-red-500',
             ],
@@ -187,7 +187,7 @@
 
                     <div class="p-4 space-y-3">
                         {{-- Archives des cours --}}
-                        <a href="{{ route('student.document', ['scope' => 'archives']) }}" wire:navigate
+                        <a href="{{ route('document.index', ['scope' => 'archives']) }}" wire:navigate
                         class="group flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800
                                 bg-gray-50 dark:bg-gray-900/30 p-4
                                 hover:bg-gray-100 dark:hover:bg-gray-900/50 transition">

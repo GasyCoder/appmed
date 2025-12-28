@@ -196,9 +196,9 @@ class HomeStudent extends Component
             [
                 'label' => 'Mes cours',
                 'desc'  => 'Documents, PDF, supports',
-                'href'  => route('student.document'),
+                'href'  => route('document.index'),
                 'icon'  => 'doc',
-                'active'=> request()->routeIs('student.document'),
+                'active'=> request()->routeIs('document.index'),
                 'badge' => $this->menuStats['documents'] ?? 0,
                 'badgeColor' => 'bg-red-500',
             ],
@@ -235,7 +235,7 @@ class HomeStudent extends Component
             [
                 'label' => 'Archives des cours',
                 'desc'  => 'Anciens documents',
-                'href'  => route('student.document', ['scope' => 'archives']),
+                'href'  => route('document.index', ['scope' => 'archives']),
                 'icon'  => 'doc',
                 'active'=> false,
                 'badge' => null,

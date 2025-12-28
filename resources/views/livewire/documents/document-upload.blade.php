@@ -1,7 +1,8 @@
-{{-- resources/views/livewire/teacher/document-upload.blade.php --}}
+<div>
+    {{-- resources/views/livewire/teacher/document-upload.blade.php --}}
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-    @include('livewire.teacher.overlay')
+    @include('livewire.documents.partials.overlay')
 
 
     {{-- Header --}}
@@ -15,7 +16,7 @@
             </p>
         </div>
 
-        <a href="{{ route('document.teacher') }}"
+        <a href="{{ route('documents.index') }}"
            class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -135,7 +136,7 @@
                             Fichiers
                         </h2>
                         <p class="text-xs text-gray-500 dark:text-gray-400">
-                            Max {{ \App\Livewire\Teacher\DocumentUpload::MAX_FILES }} fichiers ·
+                            Max {{ \App\Livewire\Documents\DocumentUpload::MAX_FILES }} fichiers ·
                             <strong class="font-semibold">{{ $maxUploadSize }}</strong> par fichier
                         </p>
                     </div>
@@ -350,79 +351,83 @@
                         @if($source === 'local')
                             @if(count($files) > 0)
                                 <div class="space-y-2.5 max-h-[calc(100vh-18rem)] overflow-y-auto pr-1">
-                                    @foreach($files as $index => $file)
-                                        @php
-                                            $ext = strtolower($file->getClientOriginalExtension());
-                                            $willConvert = in_array($ext, ['doc','docx','ppt','pptx'], true);
-                                            $sizeKb = round($file->getSize() / 1024, 1);
-                                        @endphp
+                                @foreach($files as $index => $file)
+                                @php
+                                    $meta = $fileMeta[$index] ?? [];
+                                    $name = (string) ($meta['name'] ?? 'document');
+                                    $ext = strtolower((string) ($meta['ext'] ?? '—'));
+                                    $willConvert = (bool) ($meta['will_convert'] ?? false);
+                                    $sizeLabel = (string) ($meta['size_human'] ?? '—');
+                                    $key = (string) ($meta['tmp'] ?? $index);
+                                @endphp
 
-                                        <div class="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30 p-3"
-                                             wire:key="sidebar-file-{{ $index }}">
+                                    <div class="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30 p-3"
+                                        wire:key="sidebar-file-{{ $key }}">
 
-                                            <div class="flex items-start gap-2">
-                                                <div class="h-8 w-8 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 flex items-center justify-center shrink-0">
-                                                    <svg class="h-4 w-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                                    </svg>
-                                                </div>
+                                        <div class="flex items-start gap-2">
+                                            <div class="h-8 w-8 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 flex items-center justify-center shrink-0">
+                                                <svg class="h-4 w-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                            </div>
 
-                                                <div class="min-w-0 flex-1">
-                                                    <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                                                        {{ $file->getClientOriginalName() }}
-                                                    </p>
-                                                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                                        <span class="uppercase font-mono">{{ $ext }}</span>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                                    {{ $name }}
+                                                </p>
+                                                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                    <span class="uppercase font-mono">{{ $ext }}</span>
+                                                    <span class="mx-1">•</span>
+                                                    <span>{{ $sizeLabel }}</span>
+                                                    @if($willConvert)
                                                         <span class="mx-1">•</span>
-                                                        <span>{{ $sizeKb }} KB</span>
-                                                        @if($willConvert)
-                                                            <span class="mx-1">•</span>
-                                                            <span class="font-bold text-amber-600 dark:text-amber-400">→ PDF</span>
-                                                        @endif
-                                                    </p>
-                                                </div>
-
-                                                <button type="button"
-                                                        wire:click="removeFile({{ $index }})"
-                                                        class="h-8 w-8 inline-flex items-center justify-center rounded-md
-                                                               border border-gray-200 dark:border-gray-800
-                                                               bg-white dark:bg-gray-800
-                                                               text-gray-500 dark:text-gray-300
-                                                               hover:text-red-600 dark:hover:text-red-400"
-                                                        title="Retirer">
-                                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd"
-                                                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                                              clip-rule="evenodd"/>
-                                                    </svg>
-                                                </button>
+                                                        <span class="font-bold text-amber-600 dark:text-amber-400">→ PDF</span>
+                                                    @endif
+                                                </p>
                                             </div>
 
-                                            <div class="mt-2 space-y-2">
-                                                <input type="text"
-                                                       wire:model.lazy="titles.{{ $index }}"
-                                                       placeholder="Titre du document"
-                                                       class="w-full h-9 rounded-md border-gray-300 dark:border-gray-700
-                                                              bg-white dark:bg-gray-800 text-sm
-                                                              text-gray-900 dark:text-gray-100
-                                                              focus:border-indigo-500 focus:ring-indigo-500">
-
-                                                @error("titles.$index")
-                                                    <p class="text-xs font-semibold text-red-600 dark:text-red-400">{{ $message }}</p>
-                                                @enderror
-
-                                                <label class="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 px-3 py-2">
-                                                    <span class="text-xs font-bold text-gray-700 dark:text-gray-300">Publier</span>
-                                                    <span class="relative inline-flex items-center">
-                                                        <input type="checkbox" wire:model="statuses.{{ $index }}" class="peer sr-only">
-                                                        <span class="h-5 w-9 rounded-full bg-gray-300 dark:bg-gray-700 peer-checked:bg-emerald-500 transition"></span>
-                                                        <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white dark:bg-gray-200 peer-checked:translate-x-4 transition shadow"></span>
-                                                    </span>
-                                                </label>
-                                            </div>
+                                            <button type="button"
+                                                    wire:click="removeFile({{ $index }})"
+                                                    class="h-8 w-8 inline-flex items-center justify-center rounded-md
+                                                        border border-gray-200 dark:border-gray-800
+                                                        bg-white dark:bg-gray-800
+                                                        text-gray-500 dark:text-gray-300
+                                                        hover:text-red-600 dark:hover:text-red-400"
+                                                    title="Retirer">
+                                                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                        clip-rule="evenodd"/>
+                                                </svg>
+                                            </button>
                                         </div>
-                                    @endforeach
+
+                                        <div class="mt-2 space-y-2">
+                                            <input type="text"
+                                                wire:model.lazy="titles.{{ $index }}"
+                                                placeholder="Titre du document"
+                                                class="w-full h-9 rounded-md border-gray-300 dark:border-gray-700
+                                                        bg-white dark:bg-gray-800 text-sm
+                                                        text-gray-900 dark:text-gray-100
+                                                        focus:border-indigo-500 focus:ring-indigo-500">
+
+                                            @error("titles.$index")
+                                                <p class="text-xs font-semibold text-red-600 dark:text-red-400">{{ $message }}</p>
+                                            @enderror
+
+                                            <label class="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 px-3 py-2">
+                                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300">Publier</span>
+                                                <span class="relative inline-flex items-center">
+                                                    <input type="checkbox" wire:model="statuses.{{ $index }}" class="peer sr-only">
+                                                    <span class="h-5 w-9 rounded-full bg-gray-300 dark:bg-gray-700 peer-checked:bg-emerald-500 transition"></span>
+                                                    <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white dark:bg-gray-200 peer-checked:translate-x-4 transition shadow"></span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                @endforeach
+
                                 </div>
                             @else
                                 <div class="rounded-lg border border-dashed border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30 p-4">
@@ -505,7 +510,7 @@
                     </div>
 
                     <div class="mt-3 flex gap-2">
-                        <a href="{{ route('document.teacher') }}"
+                        <a href="{{ route('documents.index') }}"
                            class="w-1/2 inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
                             Annuler
                         </a>
@@ -545,4 +550,6 @@
             </aside>
         </div>
     </form>
+</div>
+
 </div>

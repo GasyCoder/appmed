@@ -119,7 +119,7 @@
                         </a>
 
                         {{-- Primary --}}
-                        <a href="{{ route('document.teacher') ?? '#' }}"
+                        <a href="{{ route('documents.index') ?? '#' }}"
                         class="col-span-1 w-full inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold
                                 bg-gray-900 text-white shadow-sm
                                 hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30
@@ -238,7 +238,7 @@
             <div class="rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div class="px-4 sm:px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3">
                     <div class="font-semibold text-gray-900 dark:text-white">Documents récents</div>
-                    <a href="{{ route('document.teacher') ?? '#' }}"
+                    <a href="{{ route('documents.index') ?? '#' }}"
                        class="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition shrink-0">
                         Voir tout
                     </a>

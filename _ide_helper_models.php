@@ -150,16 +150,18 @@ namespace App\Models{
  * @property int $id
  * @property string $title
  * @property string $file_path
+ * @property string|null $source_url
  * @property string|null $original_filename
  * @property string|null $original_extension
  * @property string $conversion_status
  * @property string|null $conversion_error
  * @property string|null $converted_from
+ * @property int|null $file_size_bytes
  * @property \Illuminate\Support\Carbon|null $converted_at
  * @property int $conversion_failed
  * @property string|null $protected_path
  * @property string $file_type
- * @property int $file_size
+ * @property int|null $file_size
  * @property bool $is_actif
  * @property bool $is_archive
  * @property int $download_count
@@ -171,23 +173,19 @@ namespace App\Models{
  * @property int $uploaded_by
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read string $extension
- * @property-read string $formatted_size
+ * @property string|null $deleted_at
+ * @property-read string $file_size_formatted
  * @property-read \App\Models\Niveau $niveau
  * @property-read \App\Models\Parcour $parcour
- * @property-read \App\Models\Programme|null $programme
  * @property-read \App\Models\Semestre $semestre
  * @property-read \App\Models\User $teacher
  * @property-read \App\Models\User $uploader
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DocumentView> $views
  * @property-read int|null $views_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Document archived()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Document notArchived()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Document onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document visibleTo(\App\Models\User $user)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConversionError($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConversionFailed($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConversionStatus($value)
@@ -198,6 +196,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereDownloadCount($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereFilePath($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereFileSize($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereFileSizeBytes($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereFileType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereIsActif($value)
@@ -209,12 +208,11 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereProgrammeId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereProtectedPath($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereSemestreId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereSourceUrl($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereTitle($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereUploadedBy($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereViewCount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Document withTrashed(bool $withTrashed = true)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Document withoutTrashed()
  */
 	class Document extends \Eloquent {}
 }
@@ -224,8 +222,10 @@ namespace App\Models{
  * @property int $id
  * @property int $document_id
  * @property int $user_id
- * @property string|null $created_at
- * @property string|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $viewed_at
+ * @property \Illuminate\Support\Carbon|null $downloaded_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Document $document
  * @property-read \App\Models\User $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentView newModelQuery()
@@ -233,9 +233,11 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentView query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentView whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentView whereDocumentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentView whereDownloadedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentView whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentView whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentView whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DocumentView whereViewedAt($value)
  */
 	class DocumentView extends \Eloquent {}
 }

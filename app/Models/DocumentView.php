@@ -10,10 +10,14 @@ class DocumentView extends Model
     protected $fillable = [
         'document_id',
         'user_id',
+        'viewed_at',
+        'downloaded_at',
     ];
 
-    // ✅ Mets false si la table n'a pas created_at/updated_at
-    public $timestamps = false;
+    protected $casts = [
+        'viewed_at' => 'datetime',
+        'downloaded_at' => 'datetime',
+    ];
 
     public function document(): BelongsTo
     {

@@ -107,11 +107,9 @@
                 </p>
             </div>
         @else
-            @if ($viewType === 'grid')
-                @include('livewire.student.sections.grid')
-            @else
-                @include('livewire.student.sections.liste')
-            @endif
+        
+            @include('livewire.documents.liste-document')
+
         @endif
     </div>
 

@@ -19,7 +19,7 @@ class NiveauSeeder extends Seeder
             [
                 'sigle' => 'M2',
                 'name' => 'Master 2',
-                'status' => false,
+                'status' => true,
             ],
         ];
 

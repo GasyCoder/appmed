@@ -97,15 +97,6 @@ namespace App\Models{
 
 namespace App\Models{
 /**
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatKnowledgeItem newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatKnowledgeItem newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatKnowledgeItem query()
- */
-	class ChatKnowledgeItem extends \Eloquent {}
-}
-
-namespace App\Models{
-/**
  * @property int $id
  * @property int|null $user_id
  * @property string $session_id

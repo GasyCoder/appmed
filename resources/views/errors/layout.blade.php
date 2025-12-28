@@ -36,7 +36,7 @@
 <main class="min-h-screen flex items-center justify-center px-4">
     <div class="w-full max-w-lg">
         <div class="mb-6 text-center">
-            <img src="{{ asset('assets/image/logo_med.png') }}" alt="Logo" class="mx-auto h-12 w-auto">
+            <img src="{{ asset('assets/image/logo.png') }}" alt="Logo" class="mx-auto h-12 w-auto">
             <h1 class="mt-5 text-xl font-semibold tracking-tight">{{ $title ?? 'Erreur' }}</h1>
 
             @isset($subtitle)

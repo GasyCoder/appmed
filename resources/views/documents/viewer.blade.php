@@ -5,16 +5,11 @@
         $downloads = (int) ($document->download_count ?? 0);
         $extUpper = strtoupper($ext ?: 'DOC');
 
-        // $fileUrl doit être: route('document.serve', ['document' => $document->id, 'embedded' => 1])
+        // Variables selon le type
+        $isPdf = $isPdf ?? false;
         $fileUrl = $fileUrl ?? null;
-
-        // $onlineViewerUrl pour ppt/pptx (gview)
-        $onlineViewerUrl = $onlineViewerUrl ?? null;
-
-        $downloadRoute = $downloadRoute ?? '#';
-
-        // URL “plein écran” PDF (ouvre le fichier direct dans le viewer natif du navigateur)
-        $pdfFullUrl = $fileUrl ?: null;
+        $pdfFullUrl = $pdfFullUrl ?? null;
+        $downloadRoute = $downloadRoute ?? route('document.download', $document);
     @endphp
 
     <div class="min-h-screen flex flex-col">
@@ -30,7 +25,7 @@
                             <div class="flex items-start gap-2 sm:gap-3">
                                 {{-- Back: compact mobile --}}
                                 <a href="{{ route('document.teacher') }}"
-                                        onclick="history.back()"
+                                        onclick="history.back(); return false;"
                                         class="inline-flex shrink-0 items-center justify-center rounded-lg
                                             border border-gray-200 dark:border-gray-700
                                             bg-gray-50 dark:bg-gray-800
@@ -91,9 +86,9 @@
                                                     border border-gray-200 dark:border-gray-700
                                                     bg-gray-50 dark:bg-gray-800 px-2 py-1
                                                     text-gray-700 dark:text-gray-200">
-                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                    </svg>
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
                                             <span class="font-semibold">{{ $downloads }}</span>
                                             <span class="text-gray-500 dark:text-gray-400">Téléch.</span>
                                         </span>
@@ -105,48 +100,33 @@
                         {{-- RIGHT: actions (responsive grid on mobile) --}}
                         <div class="flex flex-col sm:flex-row sm:items-center gap-2">
                             <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-                                {{-- Plein écran --}}
+                                {{-- Plein écran (uniquement pour PDF) --}}
                                 @if($isPdf && !empty($pdfFullUrl))
                                     <a href="{{ $pdfFullUrl }}" target="_blank" rel="noopener noreferrer"
-                                    class="col-span-1 inline-flex items-center justify-center gap-2
+                                       class="col-span-1 inline-flex items-center justify-center gap-2
                                             h-10 px-3 rounded-lg text-sm font-bold
                                             bg-blue-600 dark:bg-blue-500 text-white
                                             hover:bg-blue-700 dark:hover:bg-blue-600 transition">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6m0 0v6m0-6L14 10M9 21H3m0 0v-6m0 6l7-7M3 9V3m0 0h6m-6 0l7 7m5 5l7 7m0 0v-6m0 6h-6" />
-                                            </svg>
-                                        <span class="hidden sm:inline">Plein écran</span>
-                                        <span class="sm:hidden">Plein écran</span>
-                                    </a>
-                                @elseif(!$isPdf && !empty($onlineViewerUrl))
-                                    <a href="{{ $onlineViewerUrl }}" target="_blank" rel="noopener noreferrer"
-                                    class="col-span-1 inline-flex items-center justify-center gap-2
-                                            h-10 px-3 rounded-lg text-sm font-bold
-                                            bg-blue-600 dark:bg-blue-500 text-white
-                                            hover:bg-blue-700 dark:hover:bg-blue-600 transition">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6m0 0v6m0-6L14 10M9 21H3m0 0v-6m0 6l7-7M3 9V3m0 0h6m-6 0l7 7m5 5l7 7m0 0v-6m0 6h-6" />
-                                            </svg>
+                                        </svg>
                                         <span class="hidden sm:inline">Plein écran</span>
                                         <span class="sm:hidden">Écran</span>
                                     </a>
-                                @else
-                                    {{-- Placeholder pour garder la grille alignée sur mobile (optionnel) --}}
-                                    <div class="col-span-1 hidden sm:block"></div>
                                 @endif
 
                                 {{-- Télécharger --}}
                                 <a href="{{ $downloadRoute }}"
-                                class="col-span-1 inline-flex items-center justify-center gap-2
+                                   class="col-span-1 inline-flex items-center justify-center gap-2
                                         h-10 px-3 rounded-lg text-sm font-bold
                                         bg-emerald-600 dark:bg-emerald-500 text-white
                                         hover:bg-emerald-700 dark:hover:bg-emerald-600 transition"
-                                title="Télécharger">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                   title="Télécharger">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                     <span class="hidden sm:inline">Télécharger</span>
-                                    <span class="sm:hidden">Télécharger</span>
+                                    <span class="sm:hidden">Téléch.</span>
                                 </a>
                             </div>
                         </div>
@@ -157,10 +137,11 @@
         </div>
 
 
-        {{-- Body (iframe full height responsive) --}}
+        {{-- Body : UNIQUEMENT POUR PDF --}}
         <div class="flex-1 min-h-0">
             <div class="max-w-10xl mx-auto px-4 py-4 h-full">
                 @if($isPdf)
+                    {{-- ✅ VIEWER PDF --}}
                     @if(!empty($fileUrl))
                         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full">
                             <iframe
@@ -174,35 +155,43 @@
                         </div>
                     @else
                         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 text-sm text-gray-700 dark:text-gray-300">
-                            URL PDF introuvable. Télécharge le fichier.
+                            URL PDF introuvable. Veuillez télécharger le fichier.
                         </div>
                     @endif
                 @else
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full">
-                        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">Lecture en ligne (PPT/PPTX)</span>
-                            @if(!empty($onlineViewerUrl))
-                                <a href="{{ $onlineViewerUrl }}" target="_blank" rel="noopener noreferrer"
-                                   class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                                    Ouvrir plein écran
-                                </a>
-                            @endif
-                        </div>
-
-                        @if(!empty($onlineViewerUrl))
-                            <iframe
-                                src="{{ $onlineViewerUrl }}"
-                                class="w-full"
-                                style="height: calc(100vh - 210px);"
-                                frameborder="0"
-                                allowfullscreen
-                                referrerpolicy="no-referrer"
-                            ></iframe>
-                        @else
-                            <div class="p-6 text-sm text-gray-700 dark:text-gray-300">
-                                Impossible d’afficher ce fichier en lecture web. Télécharge le fichier.
+                    {{-- ❌ PAS DE VIEWER POUR AUTRES TYPES (doc, pptx, etc.) --}}
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+                        <div class="max-w-md mx-auto">
+                            <div class="mb-4">
+                                <svg class="h-16 w-16 mx-auto text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
                             </div>
-                        @endif
+                            
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                                Fichier {{ $extUpper }}
+                            </h3>
+                            
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                                Ce type de fichier doit être téléchargé pour être consulté.
+                                Il s'ouvrira automatiquement dans l'application appropriée sur votre appareil.
+                            </p>
+                            
+                            <a href="{{ $downloadRoute }}"
+                               class="inline-flex items-center justify-center gap-2
+                                    px-6 py-3 rounded-lg text-base font-bold
+                                    bg-emerald-600 dark:bg-emerald-500 text-white
+                                    hover:bg-emerald-700 dark:hover:bg-emerald-600 transition">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Télécharger le fichier
+                            </a>
+                            
+                            <p class="mt-4 text-xs text-gray-500 dark:text-gray-500">
+                                Taille : {{ $document->formatted_size ?? '0 Bytes' }}
+                            </p>
+                        </div>
                     </div>
                 @endif
             </div>

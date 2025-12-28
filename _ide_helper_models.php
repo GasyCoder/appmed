@@ -156,6 +156,7 @@ namespace App\Models{
  * @property string|null $conversion_error
  * @property string|null $converted_from
  * @property \Illuminate\Support\Carbon|null $converted_at
+ * @property int $conversion_failed
  * @property string|null $protected_path
  * @property string $file_type
  * @property int $file_size
@@ -188,6 +189,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConversionError($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConversionFailed($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConversionStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConvertedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConvertedFrom($value)

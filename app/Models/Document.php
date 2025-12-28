@@ -60,18 +60,26 @@ class Document extends Model
         return strtolower(pathinfo($path, PATHINFO_EXTENSION) ?: '');
     }
 
+    /**
+     * ✅ CORRECTION : PPT/PPTX sont des téléchargements directs, PAS du viewer
+     * Les fichiers Office (doc, docx, ppt, pptx, xls, xlsx) doivent être téléchargés
+     */
     public function isDirectDownloadType(): bool
     {
         $ext = $this->extensionFromPath();
-        return in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'csv'], true);
+        return in_array($ext, ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'csv'], true);
     }
 
+    /**
+     * ✅ CORRECTION : Seuls les PDF locaux peuvent être affichés dans le viewer
+     * Google Viewer ne fonctionne PAS en iframe pour PPTX
+     */
     public function isViewerLocalType(): bool
     {
         if ($this->isExternalLink()) return false;
 
         $ext = $this->extensionFromPath();
-        return in_array($ext, ['pdf', 'ppt', 'pptx'], true);
+        return $ext === 'pdf'; // UNIQUEMENT PDF
     }
 
     public function isPdfLocal(): bool
@@ -98,7 +106,7 @@ class Document extends Model
     }
 
     /**
-     * ✅ “Convertible” = lien Google avec ID exploitable
+     * ✅ "Convertible" = lien Google avec ID exploitable
      */
     public function canExternalDownload(): bool
     {
@@ -168,7 +176,7 @@ class Document extends Model
             if (str_contains($url, '/document/')) return "https://docs.google.com/document/d/{$id}/preview";
         }
 
-        // ✅ Si c’est un fichier PDF externe direct, on tente ouverture directe (souvent lisible)
+        // ✅ Si c'est un fichier PDF externe direct, on tente ouverture directe (souvent lisible)
         // Exemple: .../rapport.pdf
         if ($this->isExternalFileUrl()) {
             $path = (string) (parse_url($url, PHP_URL_PATH) ?? '');
@@ -177,16 +185,17 @@ class Document extends Model
                 return $url; // le navigateur affichera généralement le PDF
             }
 
-            // PPT/PPTX externes => gview tente lecture
+            // ⚠️ PPT/PPTX externes => NE PAS utiliser gview en iframe (ça ne marche pas)
+            // Retourner l'URL brute pour téléchargement
             if (in_array($ext, ['ppt','pptx'], true)) {
-                return 'https://docs.google.com/gview?embedded=1&url=' . urlencode($url);
+                return $url; // Téléchargement direct
             }
 
-            // Pour doc/xls externes => souvent téléchargement, on garde l'url
+            // Pour doc/xls externes => téléchargement
             return $url;
         }
 
-        // ✅ Sinon c’est une page web (article) => ouvrir tel quel
+        // ✅ Sinon c'est une page web (article) => ouvrir tel quel
         return $url;
     }
 
@@ -202,7 +211,7 @@ class Document extends Model
 
         if (!$id) return $url;
 
-        // ✅ Exports “propres” selon type Docs
+        // ✅ Exports "propres" selon type Docs
         if (str_contains($host, 'docs.google.com')) {
             if (str_contains($url, '/document/')) {
                 return "https://docs.google.com/document/d/{$id}/export?format=docx";
@@ -215,7 +224,7 @@ class Document extends Model
             }
         }
 
-        // ✅ Drive “classique”
+        // ✅ Drive "classique"
         if (str_contains($host, 'drive.google.com')) {
             return "https://drive.google.com/uc?export=download&id={$id}";
         }

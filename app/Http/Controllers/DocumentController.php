@@ -4,113 +4,160 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
-    public function viewer(Document $document)
+    /**
+     * Affiche un document (viewer pour PDF, téléchargement pour le reste)
+     */
+    public function show(Document $document)
     {
-        if (!$document->isViewerLocalType()) abort(404);
+        $user = Auth::user();
 
-        // ✅ Compter UNE fois ici
-        $document->registerView();
-        $document->refresh();
+        // Vérifier accès
+        if (!$document->canAccess($user)) {
+            abort(403, 'Accès non autorisé à ce document.');
+        }
+
+        // Enregistrer la vue (si étudiant)
+        $document->registerView($user);
 
         $ext = $document->extensionFromPath();
-        $isPdf = ($ext === 'pdf');
 
-        // ✅ embedded=1 => serve() ne recompte pas
-        $fileUrl = route('document.serve', ['document' => $document->id, 'embedded' => 1]);
-        $downloadRoute = route('document.download', $document);
-
-        $onlineViewerUrl = null;
-        if (in_array($ext, ['ppt', 'pptx'], true)) {
-            $publicUrl = URL::temporarySignedRoute(
-                'document.public',
-                now()->addMinutes(30),
-                ['document' => $document->id, 'embedded' => 1]
-            );
-
-            $onlineViewerUrl = 'https://docs.google.com/gview?embedded=1&url=' . urlencode($publicUrl);
+        // ✅ CAS 1 : FICHIERS OFFICE (doc, docx, ppt, pptx, xls, xlsx) → TÉLÉCHARGEMENT DIRECT
+        if ($document->isDirectDownloadType()) {
+            return $this->download($document);
         }
 
-        $teacher = $document->uploader;
-        $teacherInfo = $teacher ? [
-            'name'  => $teacher->name ?? '',
-            'grade' => $teacher->profil->grade ?? null,
-        ] : null;
+        // ✅ CAS 2 : PDF LOCAL → VIEWER
+        if ($document->isPdfLocal()) {
+            return $this->showPdfViewer($document);
+        }
 
-        return view('documents.viewer', compact(
-            'document', 'ext', 'isPdf', 'fileUrl', 'onlineViewerUrl', 'downloadRoute', 'teacherInfo'
-        ));
+        // ✅ CAS 3 : LIEN GOOGLE (Drive/Docs) → REDIRECTION
+        if ($document->isExternalLink() && $document->isGoogleLink()) {
+            $readUrl = $document->externalReadUrl();
+            return redirect()->away($readUrl);
+        }
+
+        // ✅ CAS 4 : AUTRE LIEN EXTERNE → REDIRECTION
+        if ($document->isExternalLink()) {
+            return redirect()->away($document->file_path);
+        }
+
+        // ✅ CAS 5 : AUTRE FICHIER LOCAL → TÉLÉCHARGEMENT
+        return $this->download($document);
     }
 
-    public function serve(Request $request, Document $document)
+    /**
+     * Affiche le viewer PDF
+     */
+    private function showPdfViewer(Document $document)
     {
-        if ($document->isExternalLink()) abort(404);
-        if (!$document->fileExists()) abort(404, 'Fichier introuvable');
-
-        // ✅ Ne pas recompter si vient du viewer (iframe/gview)
-        if (!$request->boolean('embedded')) {
-            $document->registerView();
-            $document->refresh();
+        $teacherInfo = null;
+        if ($document->teacher) {
+            $teacherInfo = [
+                'name' => $document->teacher->name ?? '',
+                'grade' => $document->teacher->grade ?? '',
+            ];
         }
 
-        $filename = $document->getDisplayFilename();
-
-        return Storage::disk('public')->response($document->file_path, $filename, [
-            'Content-Disposition' => 'inline; filename="' . $filename . '"',
-            'Cache-Control' => 'public, max-age=3600',
+        return view('documents.show', [
+            'document' => $document,
+            'teacherInfo' => $teacherInfo,
+            'ext' => 'pdf',
+            'isPdf' => true,
+            
+            // URL pour l'iframe (embedded=1)
+            'fileUrl' => route('document.serve', [
+                'document' => $document->id,
+                'embedded' => 1
+            ]),
+            
+            // URL plein écran (ouvre le PDF natif du navigateur)
+            'pdfFullUrl' => route('document.serve', [
+                'document' => $document->id
+            ]),
+            
+            'downloadRoute' => route('document.download', $document),
+            'onlineViewerUrl' => null,
         ]);
     }
 
-    public function public(Request $request, Document $document)
+    /**
+     * Sert le fichier PDF (pour iframe ou ouverture directe)
+     */
+    public function serve(Document $document, Request $request)
     {
-        return $this->serve($request, $document);
+        $user = Auth::user();
+
+        if (!$document->canAccess($user)) {
+            abort(403, 'Accès non autorisé.');
+        }
+
+        if (!$document->fileExists()) {
+            abort(404, 'Fichier introuvable.');
+        }
+
+        // Seulement pour PDF
+        if ($document->extensionFromPath() !== 'pdf') {
+            abort(400, 'Ce endpoint est réservé aux PDF.');
+        }
+
+        $path = Storage::disk('public')->path($document->file_path);
+
+        if (!file_exists($path)) {
+            abort(404, 'Fichier physique introuvable.');
+        }
+
+        $embedded = (int) $request->get('embedded', 0);
+
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $embedded === 1 
+                ? 'inline; filename="' . $document->getDisplayFilename() . '"'
+                : 'attachment; filename="' . $document->getDisplayFilename() . '"',
+        ]);
     }
 
+    /**
+     * Téléchargement direct (pour tous types sauf PDF en mode viewer)
+     */
     public function download(Document $document)
     {
-        if ($document->isExternalLink()) abort(404);
-        if (!$document->fileExists()) abort(404, 'Fichier introuvable');
+        $user = Auth::user();
 
-        $document->registerDownload();
-        $document->refresh();
-
-        return Storage::disk('public')->download(
-            $document->file_path,
-            $document->getDisplayFilename()
-        );
-    }
-
-    public function openExternal(Document $document)
-    {
-        if (!$document->isExternalLink()) abort(404);
-
-        $document->registerView();
-        $document->refresh();
-
-        return redirect()->away($document->externalReadUrl());
-    }
-
-    public function downloadExternal(Document $document)
-    {
-        if (!$document->isExternalLink()) abort(404);
-
-        // ✅ si pas convertible, on ouvre en lecture
-        if (method_exists($document, 'canExternalDownload') && !$document->canExternalDownload()) {
-            return redirect()->route('document.openExternal', $document);
+        if (!$document->canAccess($user)) {
+            abort(403, 'Accès non autorisé.');
         }
 
-        // fallback ancien comportement
-        if (!method_exists($document, 'canExternalDownload') && !$document->isDirectDownloadType()) {
-            return redirect()->route('document.openExternal', $document);
+        // Enregistrer le téléchargement (si étudiant)
+        $document->registerDownload($user);
+
+        // ✅ Lien externe Google
+        if ($document->isExternalLink() && $document->isGoogleLink()) {
+            $downloadUrl = $document->externalDownloadUrl();
+            return redirect()->away($downloadUrl);
         }
 
-        $document->registerDownload();
-        $document->refresh();
+        // ✅ Autre lien externe
+        if ($document->isExternalLink()) {
+            return redirect()->away($document->file_path);
+        }
 
-        return redirect()->away($document->externalDownloadUrl());
+        // ✅ Fichier local
+        if (!$document->fileExists()) {
+            abort(404, 'Fichier introuvable.');
+        }
+
+        $path = Storage::disk('public')->path($document->file_path);
+
+        if (!file_exists($path)) {
+            abort(404, 'Fichier physique introuvable.');
+        }
+
+        return response()->download($path, $document->getDisplayFilename());
     }
 }

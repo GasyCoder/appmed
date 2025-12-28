@@ -4,11 +4,15 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class PdfConversionService
 {
     public const CONVERTIBLE_FORMATS = ['doc', 'docx', 'ppt', 'pptx'];
     public const CONVERSION_TIMEOUT = 120;
+
+    private ?string $libreOfficeCommand = null;
+    private bool $checkedAvailability = false;
 
     public function convertToPdf(string $inputPath, string $outputDir, ?string $outputFileName = null): string
     {
@@ -63,6 +67,7 @@ class PdfConversionService
                 'input' => $inputPath,
                 'output_dir' => $outputDir,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
         }
@@ -74,27 +79,55 @@ class PdfConversionService
         return in_array($extension, self::CONVERTIBLE_FORMATS, true);
     }
 
+    /**
+     * Vérifie si LibreOffice est disponible (avec cache)
+     */
     public function isLibreOfficeAvailable(): bool
     {
+        if ($this->checkedAvailability && $this->libreOfficeCommand !== null) {
+            return true;
+        }
+
+        if ($this->checkedAvailability && $this->libreOfficeCommand === null) {
+            return false;
+        }
+
         try {
             $command = $this->getLibreOfficeCommand();
-            return !empty($command);
+            $this->libreOfficeCommand = $command;
+            $this->checkedAvailability = true;
+            return true;
         } catch (\Throwable $e) {
+            $this->libreOfficeCommand = null;
+            $this->checkedAvailability = true;
+            
+            Log::warning('LibreOffice non disponible', [
+                'error' => $e->getMessage(),
+            ]);
+            
             return false;
         }
     }
 
     private function getLibreOfficeCommand(): string
     {
+        // Si déjà en cache
+        if ($this->libreOfficeCommand !== null) {
+            return $this->libreOfficeCommand;
+        }
+
         $commands = [
             'libreoffice',
             '/usr/bin/libreoffice',
-            '/Applications/LibreOffice.app/Contents/MacOS/soffice',
+            '/usr/local/bin/libreoffice',
             'soffice',
+            '/usr/bin/soffice',
+            '/Applications/LibreOffice.app/Contents/MacOS/soffice',
         ];
 
         foreach ($commands as $command) {
             if ($this->commandExists($command)) {
+                Log::info("LibreOffice trouvé", ['command' => $command]);
                 return $command;
             }
         }
@@ -120,7 +153,7 @@ class PdfConversionService
             throw new \RuntimeException("Le fichier est trop volumineux pour la conversion (max 50MB)");
         }
 
-        // MIME check (sans finfo_close)
+        // MIME check
         if (class_exists(\finfo::class)) {
             $finfo = new \finfo(FILEINFO_MIME_TYPE);
             $mimeType = $finfo->file($inputPath) ?: null;
@@ -154,18 +187,22 @@ class PdfConversionService
             throw new \RuntimeException("Le fichier PDF de sortie est vide");
         }
 
-        $handle = fopen($outputPath, 'rb');
-        $header = $handle ? fread($handle, 4) : '';
-        if ($handle) fclose($handle);
+        $handle = @fopen($outputPath, 'rb');
+        if (!$handle) {
+            throw new \RuntimeException("Impossible d'ouvrir le fichier PDF pour validation");
+        }
 
-        if ($header !== '%PDF') {
-            throw new \RuntimeException("Le fichier de sortie n'est pas un PDF valide");
+        $header = fread($handle, 5);
+        fclose($handle);
+
+        if (!str_starts_with($header, '%PDF')) {
+            throw new \RuntimeException("Le fichier de sortie n'est pas un PDF valide (header: " . bin2hex($header) . ")");
         }
     }
 
     private function executeConversion(string $inputPath, string $outputDir): void
     {
-        $command = $this->getLibreOfficeCommand();
+        $command = $this->libreOfficeCommand ?? $this->getLibreOfficeCommand();
 
         $profileDir = storage_path('app/lo-profile/' . uniqid('lo_', true));
         $this->ensureDirectoryExists($profileDir);
@@ -187,19 +224,29 @@ class PdfConversionService
         $process->setTimeout(self::CONVERSION_TIMEOUT);
         $process->setEnv(['HOME' => storage_path('app/temp')]);
 
-        $process->run();
+        try {
+            $process->run();
 
-        if (!$process->isSuccessful()) {
-            Log::error('Échec de la conversion LibreOffice', [
-                'command' => $process->getCommandLine(),
-                'output' => $process->getOutput(),
-                'error_output' => $process->getErrorOutput(),
-                'exit_code' => $process->getExitCode(),
-                'input_path' => $inputPath,
-                'output_dir' => $outputDir,
-            ]);
+            if (!$process->isSuccessful()) {
+                Log::error('Échec de la conversion LibreOffice', [
+                    'command' => $process->getCommandLine(),
+                    'output' => $process->getOutput(),
+                    'error_output' => $process->getErrorOutput(),
+                    'exit_code' => $process->getExitCode(),
+                    'input_path' => $inputPath,
+                    'output_dir' => $outputDir,
+                ]);
 
-            throw new \RuntimeException('La conversion LibreOffice a échoué : ' . trim($process->getErrorOutput()));
+                throw new \RuntimeException(
+                    'La conversion LibreOffice a échoué (code ' . $process->getExitCode() . '): ' . 
+                    trim($process->getErrorOutput() ?: $process->getOutput())
+                );
+            }
+        } finally {
+            // Nettoyage du profil temporaire
+            if (is_dir($profileDir)) {
+                $this->recursiveRemoveDirectory($profileDir);
+            }
         }
     }
 
@@ -225,12 +272,18 @@ class PdfConversionService
 
     private function commandExists(string $command): bool
     {
-        $process = PHP_OS_FAMILY === 'Windows'
-            ? new Process(['where', $command])
-            : new Process(['which', $command]);
+        try {
+            $process = PHP_OS_FAMILY === 'Windows'
+                ? new Process(['where', $command])
+                : new Process(['which', $command]);
 
-        $process->run();
-        return $process->isSuccessful();
+            $process->setTimeout(5); // Timeout court
+            $process->run();
+            
+            return $process->isSuccessful();
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     private function ensureAbsolutePath(string $path): string
@@ -258,5 +311,24 @@ class PdfConversionService
                 throw new \RuntimeException("Dossier non inscriptible: {$dir}");
             }
         }
+    }
+
+    private function recursiveRemoveDirectory(string $dir): void
+    {
+        if (!is_dir($dir)) return;
+
+        $items = scandir($dir) ?: [];
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') continue;
+            
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $this->recursiveRemoveDirectory($path);
+            } else {
+                @unlink($path);
+            }
+        }
+        
+        @rmdir($dir);
     }
 }

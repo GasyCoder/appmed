@@ -12,17 +12,28 @@ use Illuminate\Support\Str;
 
 class DocumentUploadService
 {
+    public function __construct(
+        private PdfConversionService $pdfService
+    ) {}
+
     public function handle(UploadDocumentRequest $req): int
     {
         return DB::transaction(function () use ($req) {
             $count = 0;
+
+            // Vérifier une seule fois si LibreOffice est disponible
+            $canConvert = $this->pdfService->isLibreOfficeAvailable();
+
+            if (!$canConvert) {
+                Log::warning('LibreOffice non disponible - les fichiers Office seront stockés tels quels');
+            }
 
             // 1) Local files
             foreach ($req->files as $i => $file) {
                 $title   = $this->pickTitle($req, $i, $file?->getClientOriginalName());
                 $isActif = $this->pickStatus($req, $i);
 
-                $stored = $this->storeLocalFile($file, $title);
+                $stored = $this->storeLocalFile($file, $title, $canConvert);
 
                 $document = Document::create([
                     'uploaded_by'  => $req->uploadedBy,
@@ -48,31 +59,9 @@ class DocumentUploadService
                     'download_count' => 0,
                 ]);
 
-                // Si conversion nécessaire -> copier vers temp + dispatch job
-                if (($stored['conversion_pending'] ?? false) === true) {
-                    $tempDir = storage_path('app/temp');
-                    if (!is_dir($tempDir)) {
-                        @mkdir($tempDir, 0755, true);
-                    }
-
-                    $tempFileName = "convert_{$document->id}_" . time() . ".{$stored['original_extension']}";
-                    $tempPath = $tempDir . DIRECTORY_SEPARATOR . $tempFileName;
-
-                    $sourcePath = storage_path('app/public/' . $stored['file_path']);
-
-                    if (@copy($sourcePath, $tempPath)) {
-                        ConvertDocumentToPdf::dispatch($document, $tempPath);
-
-                        Log::info("Conversion PDF planifiée", [
-                            'document_id' => $document->id,
-                            'temp_path' => $tempPath,
-                        ]);
-                    } else {
-                        Log::error("Impossible de copier le fichier pour conversion", [
-                            'document_id' => $document->id,
-                            'sourcePath' => $sourcePath,
-                        ]);
-                    }
+                // Si conversion demandée ET possible → dispatch job
+                if (($stored['conversion_pending'] ?? false) === true && $canConvert) {
+                    $this->scheduleConversion($document, $stored);
                 }
 
                 $count++;
@@ -117,6 +106,33 @@ class DocumentUploadService
         });
     }
 
+    private function scheduleConversion(Document $document, array $stored): void
+    {
+        $tempDir = storage_path('app/temp');
+        if (!is_dir($tempDir)) {
+            @mkdir($tempDir, 0755, true);
+        }
+
+        $tempFileName = "convert_{$document->id}_" . time() . ".{$stored['original_extension']}";
+        $tempPath = $tempDir . DIRECTORY_SEPARATOR . $tempFileName;
+
+        $sourcePath = storage_path('app/public/' . $stored['file_path']);
+
+        if (@copy($sourcePath, $tempPath)) {
+            ConvertDocumentToPdf::dispatch($document, $tempPath);
+
+            Log::info("Conversion PDF planifiée", [
+                'document_id' => $document->id,
+                'temp_path' => $tempPath,
+            ]);
+        } else {
+            Log::error("Impossible de copier le fichier pour conversion", [
+                'document_id' => $document->id,
+                'sourcePath' => $sourcePath,
+            ]);
+        }
+    }
+
     private function pickTitle(UploadDocumentRequest $req, int $index, ?string $fallback = null): string
     {
         $t = $req->titles[$index] ?? null;
@@ -137,7 +153,7 @@ class DocumentUploadService
         return (bool) ($req->statuses[$index] ?? true);
     }
 
-    private function storeLocalFile($file, string $title): array
+    private function storeLocalFile($file, string $title, bool $canConvert): array
     {
         $originalName = $file->getClientOriginalName();
         $originalExt  = strtolower($file->getClientOriginalExtension() ?: pathinfo($originalName, PATHINFO_EXTENSION));
@@ -149,9 +165,16 @@ class DocumentUploadService
 
         $stored = $this->storeOriginalFile($file, $slug, $timestamp, $random, $originalName, $originalExt);
 
-        $needsConversion = in_array($originalExt, ['doc', 'docx', 'ppt', 'pptx'], true);
-        if ($needsConversion) {
+        // Ne marquer pour conversion QUE si LibreOffice est disponible
+        $isConvertibleFormat = in_array($originalExt, ['doc', 'docx', 'ppt', 'pptx'], true);
+        
+        if ($isConvertibleFormat && $canConvert) {
             $stored['conversion_pending'] = true;
+        } elseif ($isConvertibleFormat && !$canConvert) {
+            Log::info("Fichier Office stocké sans conversion (LibreOffice indisponible)", [
+                'filename' => $originalName,
+                'extension' => $originalExt,
+            ]);
         }
 
         return $stored;

@@ -19,7 +19,7 @@ class Document extends Model
         'uploaded_by', 'niveau_id', 'parcour_id', 'semestre_id', 'programme_id',
         'title', 'file_path', 'protected_path', 'original_filename', 'original_extension',
         'converted_from', 'converted_at', 'file_type', 'file_size', 'is_actif',
-        'download_count', 'view_count', 'is_archive',
+        'download_count', 'view_count', 'is_archive','conversion_status', 'conversion_error',
     ];
 
     protected $casts = [
@@ -44,11 +44,6 @@ class Document extends Model
     // Règles / Helpers
     // ----------------------------
 
-    public function downloads(): HasMany
-    {
-        return $this->hasMany(DocumentDownload::class);
-    }
-
     public function isExternalLink(): bool
     {
         return Str::startsWith((string) $this->file_path, ['http://', 'https://']);
@@ -69,15 +64,13 @@ class Document extends Model
     public function isDirectDownloadType(): bool
     {
         $ext = $this->extensionFromPath();
-        return in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'csv'], true);
+        return in_array($ext, ['pdf','doc','docx','ppt','pptx','xls','xlsx','csv','jpg','jpeg','png'], true);
     }
 
     public function isViewerLocalType(): bool
     {
         if ($this->isExternalLink()) return false;
-
-        $ext = $this->extensionFromPath();
-        return in_array($ext, ['pdf', 'ppt', 'pptx'], true);
+        return $this->extensionFromPath() === 'pdf';
     }
 
     public function isPdfLocal(): bool

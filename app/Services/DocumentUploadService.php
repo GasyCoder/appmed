@@ -1,23 +1,21 @@
 <?php
+// app/Services/DocumentUploadService.php
 
 namespace App\Services;
 
-use App\Models\Document;
-use Illuminate\Support\Str;
-use App\Jobs\ConvertDocumentToPdf;
-use Illuminate\Support\Facades\DB;
 use App\Data\UploadDocumentRequest;
+use App\Jobs\ConvertDocumentToPdf;
+use App\Models\Document;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class DocumentUploadService
 {
-    protected PdfConversionService $pdfService;
-
-    public function __construct(PdfConversionService $pdfService)
-    {
-        $this->pdfService = $pdfService;
-    }
+    public function __construct(
+        protected PdfConversionService $pdfService
+    ) {}
 
     public function handle(UploadDocumentRequest $req): int
     {
@@ -47,38 +45,20 @@ class DocumentUploadService
                     'original_filename'  => $stored['original_filename'] ?? null,
                     'original_extension' => $stored['original_extension'] ?? null,
 
-                    'converted_from'     => null, // Sera rempli après conversion
+                    'converted_from'     => null,
                     'converted_at'       => null,
+
+                    'conversion_status'  => 'none',
+                    'conversion_error'   => null,
 
                     'is_actif'       => $isActif,
                     'view_count'     => 0,
                     'download_count' => 0,
                 ]);
 
-                // ✅ Si conversion nécessaire, lancer le Job
-                if ($stored['conversion_pending'] ?? false) {
-                    $tempDir = storage_path('app/temp');
-                    if (!is_dir($tempDir)) {
-                        @mkdir($tempDir, 0755, true);
-                    }
-                    
-                    $tempFileName = "convert_{$document->id}_" . time() . ".{$stored['original_extension']}";
-                    $tempPath = $tempDir . DIRECTORY_SEPARATOR . $tempFileName;
-                    
-                    $sourcePath = storage_path('app/public/' . $stored['file_path']);
-                    
-                    if (copy($sourcePath, $tempPath)) {
-                        \App\Jobs\ConvertDocumentToPdf::dispatch($document, $tempPath);
-                        
-                        Log::info("Conversion PDF planifiée", [
-                            'document_id' => $document->id,
-                            'temp_path' => $tempPath,
-                        ]);
-                    } else {
-                        Log::error("Impossible de copier le fichier pour conversion", [
-                            'document_id' => $document->id,
-                        ]);
-                    }
+                // ✅ Planifier conversion si doc/docx/ppt/pptx
+                if (($stored['conversion_pending'] ?? false) === true) {
+                    $this->planConversionIfPossible($document, $stored['file_path'], $stored['original_extension']);
                 }
 
                 $count++;
@@ -86,13 +66,10 @@ class DocumentUploadService
 
             // 2) External links (PAS de conversion)
             foreach ($req->urls as $j => $url) {
-                $idx = $j;
-                $title   = $this->pickTitle($req, $idx, $url);
-                $isActif = $this->pickStatus($req, $idx);
+                $title   = $this->pickTitle($req, $j, $url);
+                $isActif = $this->pickStatus($req, $j);
 
-                if (mb_strlen($url) > 250) {
-                    $url = mb_substr($url, 0, 250);
-                }
+                if (mb_strlen($url) > 250) $url = mb_substr($url, 0, 250);
 
                 Document::create([
                     'uploaded_by'  => $req->uploadedBy,
@@ -110,6 +87,9 @@ class DocumentUploadService
                     'original_filename'  => $title,
                     'original_extension' => 'url',
 
+                    'conversion_status'  => 'none',
+                    'conversion_error'   => null,
+
                     'is_actif'       => $isActif,
                     'view_count'     => 0,
                     'download_count' => 0,
@@ -122,143 +102,89 @@ class DocumentUploadService
         });
     }
 
-    
-
-    private function pickTitle(UploadDocumentRequest $req, int $index, ?string $fallback = null): string
+    private function planConversionIfPossible(Document $document, string $storedPublicPath, string $originalExt): void
     {
-        $t = $req->titles[$index] ?? null;
-        $t = is_string($t) ? trim($t) : '';
-        if ($t !== '') return $t;
+        // Si LO absent => skipped
+        if (!$this->pdfService->isLibreOfficeAvailable()) {
+            $document->update([
+                'conversion_status' => 'skipped',
+                'conversion_error'  => "Conversion PDF indisponible sur ce serveur (LibreOffice absent).",
+            ]);
 
-        if ($fallback) {
-            $fallback = trim($fallback);
-            if (str_starts_with($fallback, 'http')) {
-                return 'Lien ' . ($index + 1);
-            }
-            return pathinfo($fallback, PATHINFO_FILENAME) ?: ('Document ' . ($index + 1));
+            Log::warning("Conversion ignorée (LibreOffice absent)", [
+                'document_id' => $document->id,
+            ]);
+
+            return;
         }
 
-        return 'Document ' . ($index + 1);
-    }
-
-    private function pickStatus(UploadDocumentRequest $req, int $index): bool
-    {
-        return (bool) ($req->statuses[$index] ?? true);
-    }
-
-    /**
-     * ✅ NOUVELLE VERSION avec conversion automatique DOCX/PPTX → PDF
-     */
-    private function storeLocalFile($file, string $title): array
-    {
-        $originalName = $file->getClientOriginalName();
-        $originalExt = strtolower($file->getClientOriginalExtension() ?: pathinfo($originalName, PATHINFO_EXTENSION));
-        $originalExt = $originalExt ?: 'bin';
-
-        $slug = Str::slug($title) ?: 'document';
-        $timestamp = time();
-        $random = Str::random(6);
-
-        // ✅ Toujours stocker l'original d'abord (upload rapide)
-        $result = $this->storeOriginalFile($file, $slug, $timestamp, $random, $originalName, $originalExt);
-
-        // ✅ Si conversion nécessaire, planifier en arrière-plan
-        $needsConversion = in_array($originalExt, ['doc', 'docx', 'ppt', 'pptx'], true);
-        
-        if ($needsConversion) {
-            // Marquer que la conversion sera faite
-            $result['conversion_pending'] = true;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Stocker et convertir en PDF
-     */
-    private function storeAndConvertToPdf($file, string $slug, int $timestamp, string $random, string $originalName, string $originalExt): array
-    {
-        // 1. Créer dossier temporaire
         $tempDir = storage_path('app/temp');
         if (!is_dir($tempDir)) {
             @mkdir($tempDir, 0755, true);
         }
 
-        // 2. Sauvegarder temporairement le fichier original
-        $tempFileName = "{$timestamp}_{$slug}_{$random}.{$originalExt}";
+        $tempFileName = "convert_{$document->id}_" . time() . ".{$originalExt}";
         $tempPath = $tempDir . DIRECTORY_SEPARATOR . $tempFileName;
-        
-        if (!@copy($file->getRealPath(), $tempPath)) {
-            throw new \RuntimeException("Impossible de copier le fichier temporaire");
-        }
 
-        Log::info("Fichier temporaire créé pour conversion", [
-            'temp_path' => $tempPath,
-            'original_name' => $originalName,
-        ]);
+        $sourcePath = storage_path('app/public/' . $storedPublicPath);
 
-        // 3. Définir le dossier de sortie
-        $outputDir = storage_path('app/public/documents');
-        if (!is_dir($outputDir)) {
-            @mkdir($outputDir, 0755, true);
-        }
-
-        // 4. Convertir en PDF
-        $pdfFileName = "{$timestamp}_{$slug}_{$random}.pdf";
-        
-        try {
-            $pdfPath = $this->pdfService->convertToPdf($tempPath, $outputDir, $pdfFileName);
-            
-            if (!$pdfPath || !file_exists($pdfPath)) {
-                throw new \RuntimeException("Le fichier PDF n'a pas été généré");
-            }
-
-            $fileSize = filesize($pdfPath) ?: 0;
-            $relativePath = 'documents/' . $pdfFileName;
-
-            Log::info("Conversion PDF réussie", [
-                'original' => $originalName,
-                'pdf_path' => $pdfPath,
-                'size' => $fileSize,
+        if (!@copy($sourcePath, $tempPath)) {
+            $document->update([
+                'conversion_status' => 'failed',
+                'conversion_error'  => "Impossible de préparer le fichier pour conversion (copy).",
             ]);
 
-            // 5. Nettoyer le fichier temporaire
-            @unlink($tempPath);
+            Log::error("Copy vers temp impossible", [
+                'document_id' => $document->id,
+                'source' => $sourcePath,
+                'temp' => $tempPath,
+            ]);
 
-            // 6. Retourner les infos
-            return [
-                'file_path'          => $relativePath,
-                'file_size'          => $fileSize,
-                'file_type'          => 'pdf',
-                'original_filename'  => $originalName,
-                'original_extension' => $originalExt,
-                'converted_from'     => $originalExt,
-                'converted_at'       => now(),
-            ];
-
-        } catch (\Exception $e) {
-            // Nettoyer en cas d'erreur
-            @unlink($tempPath);
-            throw $e;
+            return;
         }
+
+        $document->update([
+            'conversion_status' => 'pending',
+            'conversion_error'  => null,
+        ]);
+
+        ConvertDocumentToPdf::dispatch($document, $tempPath);
+
+        Log::info("Conversion PDF planifiée", [
+            'document_id' => $document->id,
+            'temp_path' => $tempPath,
+        ]);
     }
 
-    /**
-     * Stocker le fichier original sans conversion
-     */
+    private function storeLocalFile($file, string $title): array
+    {
+        $originalName = $file->getClientOriginalName();
+        $originalExt  = strtolower($file->getClientOriginalExtension() ?: pathinfo($originalName, PATHINFO_EXTENSION));
+        $originalExt  = $originalExt ?: 'bin';
+
+        $slug = Str::slug($title) ?: 'document';
+        $timestamp = time();
+        $random = Str::random(6);
+
+        $result = $this->storeOriginalFile($file, $slug, $timestamp, $random, $originalName, $originalExt);
+
+        $needsConversion = in_array($originalExt, ['doc','docx','ppt','pptx'], true);
+        if ($needsConversion) $result['conversion_pending'] = true;
+
+        return $result;
+    }
+
     private function storeOriginalFile($file, string $slug, int $timestamp, string $random, string $originalName, string $originalExt): array
     {
         $fileName = "{$timestamp}_{$slug}_{$random}.{$originalExt}";
         $path = Storage::disk('public')->putFileAs('documents', $file, $fileName);
 
-        // ✅ getSize SAFE
         $size = 0;
         try {
             $size = (int) ($file->getSize() ?: 0);
         } catch (\Throwable $e) {
-            Log::warning('Unable to read uploaded file size in DocumentUploadService', [
+            Log::warning('Unable to read uploaded file size', [
                 'path' => $path,
-                'file_class' => is_object($file) ? get_class($file) : gettype($file),
                 'msg' => $e->getMessage(),
             ]);
         }
@@ -269,16 +195,12 @@ class DocumentUploadService
             'file_type'          => $this->resolveFileType($originalExt, $file->getMimeType()),
             'original_filename'  => $originalName,
             'original_extension' => $originalExt,
-            'converted_from'     => null,
-            'converted_at'       => null,
         ];
     }
-
 
     private function resolveFileType(?string $extension, ?string $mime = null): string
     {
         $ext = strtolower(trim((string) $extension));
-
         if ($ext === '') {
             if ($mime && str_starts_with($mime, 'image/')) return 'image';
             if ($mime === 'application/pdf') return 'pdf';
@@ -287,11 +209,31 @@ class DocumentUploadService
 
         return match ($ext) {
             'pdf' => 'pdf',
-            'doc', 'docx' => 'word',
-            'ppt', 'pptx' => 'powerpoint',
-            'xls', 'xlsx' => 'excel',
-            'jpg', 'jpeg', 'png', 'webp', 'gif' => 'image',
+            'doc','docx' => 'word',
+            'ppt','pptx' => 'powerpoint',
+            'xls','xlsx' => 'excel',
+            'jpg','jpeg','png','webp','gif' => 'image',
             default => 'other',
         };
+    }
+
+    private function pickTitle(UploadDocumentRequest $req, int $index, ?string $fallback = null): string
+    {
+        $t = $req->titles[$index] ?? null;
+        $t = is_string($t) ? trim($t) : '';
+        if ($t !== '') return $t;
+
+        if ($fallback) {
+            $fallback = trim($fallback);
+            if (str_starts_with($fallback, 'http')) return 'Lien ' . ($index + 1);
+            return pathinfo($fallback, PATHINFO_FILENAME) ?: ('Document ' . ($index + 1));
+        }
+
+        return 'Document ' . ($index + 1);
+    }
+
+    private function pickStatus(UploadDocumentRequest $req, int $index): bool
+    {
+        return (bool) ($req->statuses[$index] ?? true);
     }
 }

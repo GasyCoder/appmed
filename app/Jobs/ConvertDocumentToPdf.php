@@ -1,4 +1,5 @@
 <?php
+// app/Jobs/ConvertDocumentToPdf.php
 
 namespace App\Jobs;
 
@@ -17,8 +18,8 @@ class ConvertDocumentToPdf implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tries = 2; // 2 tentatives
-    public $timeout = 180; // 3 minutes max
+    public int $tries = 2;
+    public int $timeout = 180;
 
     public function __construct(
         public Document $document,
@@ -27,30 +28,42 @@ class ConvertDocumentToPdf implements ShouldQueue
 
     public function handle(PdfConversionService $pdfService): void
     {
-        try {
-            Log::info("Début conversion PDF", [
-                'document_id' => $this->document->id,
-                'temp_file' => $this->tempFilePath,
+        Log::info("Début conversion PDF", [
+            'document_id' => $this->document->id,
+            'temp_file' => $this->tempFilePath,
+        ]);
+
+        // ✅ Si LO absent => on skip proprement, pas d'échec queue
+        if (!$pdfService->isLibreOfficeAvailable()) {
+            $this->document->update([
+                'conversion_status' => 'skipped',
+                'conversion_error'  => "Conversion PDF indisponible sur ce serveur (LibreOffice absent).",
             ]);
 
-            // 1. Vérifier que le fichier temporaire existe
+            @unlink($this->tempFilePath);
+
+            Log::warning("Conversion ignorée (LibreOffice absent)", [
+                'document_id' => $this->document->id,
+            ]);
+
+            return;
+        }
+
+        try {
             if (!file_exists($this->tempFilePath)) {
                 throw new \RuntimeException("Fichier temporaire introuvable");
             }
 
-            // 2. Dossier de sortie
             $outputDir = storage_path('app/public/documents');
             if (!is_dir($outputDir)) {
                 @mkdir($outputDir, 0755, true);
             }
 
-            // 3. Nom du PDF final
             $slug = Str::slug($this->document->title) ?: 'document';
             $timestamp = time();
             $random = Str::random(6);
             $pdfFileName = "{$timestamp}_{$slug}_{$random}.pdf";
 
-            // 4. Convertir
             $pdfPath = $pdfService->convertToPdf($this->tempFilePath, $outputDir, $pdfFileName);
 
             if (!$pdfPath || !file_exists($pdfPath)) {
@@ -60,22 +73,22 @@ class ConvertDocumentToPdf implements ShouldQueue
             $fileSize = filesize($pdfPath) ?: 0;
             $relativePath = 'documents/' . $pdfFileName;
 
-            // 5. Supprimer l'ancien fichier temporaire du storage
+            // supprimer l'ancien (original office) du public si existe
             if ($this->document->file_path && Storage::disk('public')->exists($this->document->file_path)) {
                 Storage::disk('public')->delete($this->document->file_path);
             }
 
-            // 6. Mettre à jour le document
             $this->document->update([
-                'file_path' => $relativePath,
-                'protected_path' => $relativePath,
-                'file_size' => $fileSize,
-                'file_type' => 'pdf',
-                'converted_from' => $this->document->original_extension,
-                'converted_at' => now(),
+                'file_path'          => $relativePath,
+                'protected_path'     => $relativePath,
+                'file_size'          => $fileSize,
+                'file_type'          => 'pdf',
+                'converted_from'     => $this->document->original_extension,
+                'converted_at'       => now(),
+                'conversion_status'  => 'done',
+                'conversion_error'   => null,
             ]);
 
-            // 7. Nettoyer le fichier temporaire
             @unlink($this->tempFilePath);
 
             Log::info("Conversion PDF réussie", [
@@ -83,30 +96,36 @@ class ConvertDocumentToPdf implements ShouldQueue
                 'pdf_path' => $pdfPath,
                 'size' => $fileSize,
             ]);
-
-        } catch (\Exception $e) {
-            // Nettoyer en cas d'erreur
+        } catch (\Throwable $e) {
             @unlink($this->tempFilePath);
+
+            $this->document->update([
+                'conversion_status' => 'failed',
+                'conversion_error'  => $e->getMessage(),
+            ]);
 
             Log::error("Échec conversion PDF", [
                 'document_id' => $this->document->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
-            // Ne pas relancer le job si échec
-            $this->fail($e);
+            // ✅ on relance pour les vraies erreurs (tries=2)
+            throw $e;
         }
     }
 
     public function failed(\Throwable $exception): void
     {
+        $this->document->update([
+            'conversion_status' => 'failed',
+            'conversion_error'  => $exception->getMessage(),
+        ]);
+
+        @unlink($this->tempFilePath);
+
         Log::error("Job conversion PDF échoué définitivement", [
             'document_id' => $this->document->id,
             'error' => $exception->getMessage(),
         ]);
-
-        // Nettoyer
-        @unlink($this->tempFilePath);
     }
 }

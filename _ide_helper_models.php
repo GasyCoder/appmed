@@ -152,6 +152,8 @@ namespace App\Models{
  * @property string $file_path
  * @property string|null $original_filename
  * @property string|null $original_extension
+ * @property string $conversion_status
+ * @property string|null $conversion_error
  * @property string|null $converted_from
  * @property \Illuminate\Support\Carbon|null $converted_at
  * @property string|null $protected_path
@@ -185,6 +187,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document notArchived()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConversionError($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConversionStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConvertedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereConvertedFrom($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereCreatedAt($value)

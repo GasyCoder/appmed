@@ -2,103 +2,154 @@
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
     <script>
-        function lwUploadOverlay() {
-            return {
-                open: false,
-                progress: 5,
-                title: 'Upload en cours…',
-                subtitle: 'Veuillez patienter',
-                hint: 'Préparation…',
-                _closeTimer: null,
+    function lwUploadOverlay() {
+        return {
+            open: false,
+            progress: 0,
+            title: 'Upload en cours…',
+            subtitle: 'Veuillez patienter',
+            hint: 'Préparation…',
 
-                init() {
-                    const on = (name, fn) => window.addEventListener(name, fn);
+            _closeTimer: null,
+            _smoothTimer: null,
+            _lastRealProgress: null,
 
-                    on('livewire-upload-start', (e) => {
-                        if (!this._isFilesUploadEvent(e)) return;
+            init() {
+                const on = (name, fn) => window.addEventListener(name, fn);
 
-                        this._clearClose();
-                        this.open = true;
-                        this.progress = 5;
-                        this.title = 'Upload en cours…';
-                        this.subtitle = 'Veuillez patienter';
-                        this.hint = 'Démarrage du transfert…';
-                    });
+                on('livewire-upload-start', (e) => {
+                    if (!this._isFilesUploadEvent(e)) return;
 
-                    on('livewire-upload-progress', (e) => {
-                        if (!this._isFilesUploadEvent(e)) return;
+                    this._clearClose();
+                    this._stopSmooth();
 
-                        const p = Number(e?.detail?.progress ?? 0);
-                        this.progress = Math.min(99, Math.max(5, p));
+                    this.open = true;
+                    this.progress = 0;
+                    this._lastRealProgress = null;
 
-                        if (this.progress < 20) this.hint = 'Préparation…';
-                        else if (this.progress < 60) this.hint = 'Transfert du fichier…';
-                        else if (this.progress < 90) this.hint = 'Traitement…';
-                        else this.hint = 'Finalisation…';
-                    });
-
-                    on('livewire-upload-finish', (e) => {
-                        if (!this._isFilesUploadEvent(e)) return;
-                        this._finishAndClose();
-                    });
-
-                    on('livewire-upload-error', (e) => {
-                        if (!this._isFilesUploadEvent(e)) return;
-
-                        this.title = 'Erreur d’upload';
-                        this.subtitle = 'Vérifiez le fichier et réessayez';
-                        this.hint = 'Upload interrompu.';
-                        this.progress = 100;
-
-                        this._clearClose();
-                        this._closeTimer = setTimeout(() => {
-                            this.open = false;
-                            this.progress = 5;
-                        }, 900);
-                    });
-                },
-
-                _finishAndClose() {
-                    this.title = 'Upload terminé';
+                    this.title = 'Upload en cours…';
                     this.subtitle = 'Veuillez patienter';
-                    this.hint = 'Terminé.';
+                    this.hint = 'Démarrage du transfert…';
+
+                    // Fallback visuel : si aucun vrai progress ne vient, on anime doucement
+                    this._startSmooth();
+                });
+
+                on('livewire-upload-progress', (e) => {
+                    if (!this._isFilesUploadEvent(e)) return;
+
+                    const raw = e?.detail?.progress;
+                    const p = Number.isFinite(Number(raw)) ? Number(raw) : null;
+
+                    if (p === null) return;
+
+                    // Dès qu'on reçoit un vrai progress, on stoppe l'animation fallback
+                    this._lastRealProgress = p;
+                    this._stopSmooth();
+
+                    // Important: ne pas forcer à 5 => on laisse 0..100
+                    this.progress = Math.min(99, Math.max(0, Math.round(p)));
+
+                    if (this.progress < 20) this.hint = 'Préparation…';
+                    else if (this.progress < 60) this.hint = 'Transfert du fichier…';
+                    else if (this.progress < 90) this.hint = 'Traitement…';
+                    else this.hint = 'Finalisation…';
+                });
+
+                on('livewire-upload-finish', (e) => {
+                    if (!this._isFilesUploadEvent(e)) return;
+                    this._finishAndClose();
+                });
+
+                on('livewire-upload-error', (e) => {
+                    if (!this._isFilesUploadEvent(e)) return;
+
+                    this._stopSmooth();
+                    this.title = 'Erreur d’upload';
+                    this.subtitle = 'Vérifiez le fichier et réessayez';
+                    this.hint = 'Upload interrompu.';
                     this.progress = 100;
 
                     this._clearClose();
                     this._closeTimer = setTimeout(() => {
                         this.open = false;
-                        this.progress = 5;
-                        this.title = 'Upload en cours…';
-                        this.subtitle = 'Veuillez patienter';
-                        this.hint = 'Préparation…';
-                    }, 350);
-                },
+                        this.progress = 0;
+                    }, 900);
+                });
+            },
 
-                _clearClose() {
-                    if (this._closeTimer) {
-                        clearTimeout(this._closeTimer);
-                        this._closeTimer = null;
-                    }
-                },
+            _startSmooth() {
+                // Augmente doucement jusqu'à ~85% tant qu'on n'a pas de vrai progress
+                // (évite l’effet figé à 0/5)
+                this._smoothTimer = setInterval(() => {
+                    // si on a un vrai progress, on ne fait rien
+                    if (this._lastRealProgress !== null) return;
 
-                _isFilesUploadEvent(e) {
-                    // Livewire v3: selon versions, le nom peut être dans plusieurs clés.
-                    // Si absent -> on ne bloque pas (robuste).
-                    const d = e?.detail ?? {};
-                    const prop =
-                        d.propertyName ??
-                        d.name ??
-                        d.property ??
-                        d.uploadName ??
-                        d?.file?.propertyName ??
-                        null;
+                    // progression non-linéaire + plafonds
+                    if (this.progress < 15) this.progress += 2;
+                    else if (this.progress < 40) this.progress += 1;
+                    else if (this.progress < 70) this.progress += 1;
+                    else if (this.progress < 85) this.progress += 0.5;
 
-                    if (!prop) return true; // fallback
-                    return prop === 'files';
-                },
-            }
+                    this.progress = Math.min(85, Math.round(this.progress));
+
+                    if (this.progress < 20) this.hint = 'Préparation…';
+                    else if (this.progress < 60) this.hint = 'Transfert du fichier…';
+                    else this.hint = 'Traitement…';
+                }, 180);
+            },
+
+            _stopSmooth() {
+                if (this._smoothTimer) {
+                    clearInterval(this._smoothTimer);
+                    this._smoothTimer = null;
+                }
+            },
+
+            _finishAndClose() {
+                this._stopSmooth();
+
+                this.title = 'Upload terminé';
+                this.subtitle = 'Veuillez patienter';
+                this.hint = 'Terminé.';
+                this.progress = 100;
+
+                this._clearClose();
+                this._closeTimer = setTimeout(() => {
+                    this.open = false;
+                    this.progress = 0;
+                    this.title = 'Upload en cours…';
+                    this.subtitle = 'Veuillez patienter';
+                    this.hint = 'Préparation…';
+                    this._lastRealProgress = null;
+                }, 350);
+            },
+
+            _clearClose() {
+                if (this._closeTimer) {
+                    clearTimeout(this._closeTimer);
+                    this._closeTimer = null;
+                }
+            },
+
+            _isFilesUploadEvent(e) {
+                const d = e?.detail ?? {};
+                const prop =
+                    d.propertyName ??
+                    d.name ??
+                    d.property ??
+                    d.uploadName ??
+                    d?.file?.propertyName ??
+                    null;
+
+                // fallback permissif
+                if (!prop) return true;
+                return prop === 'files';
+            },
         }
+    }
     </script>
+
 
     {{-- Fullscreen Loading Overlay (Progress réel) --}}
     <div

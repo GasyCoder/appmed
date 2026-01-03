@@ -38,7 +38,7 @@
       x-init="setTimeout(() => { pageLoading = false }, 650)">
     <div x-show="pageLoading" x-cloak aria-busy="true" aria-live="polite">
         <span class="sr-only">Chargement de la page…</span>
-        <x-skeleton.page :has-sidebar="false" />
+        <x-skeleton.auth />
     </div>
 
     <div x-show="!pageLoading" x-cloak>

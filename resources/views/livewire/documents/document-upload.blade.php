@@ -51,13 +51,64 @@
     <div wire:loading wire:target="uploadDocuments,files,links,niveau_id,ue_id,ec_id,source" aria-busy="true" class="space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-8 space-y-6">
-                <x-skeleton.card :lines="4" />
-                <x-skeleton.card :lines="5" />
-                <x-skeleton.card :lines="3" />
+                <div class="rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-800 p-5 space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <x-skeleton.line width="w-32" height="h-5" />
+                        <x-skeleton.line width="w-24" height="h-3" />
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <x-skeleton.line width="w-24" height="h-4" />
+                            <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                        </div>
+                        <div class="space-y-2">
+                            <x-skeleton.line width="w-24" height="h-4" />
+                            <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                        </div>
+                        <div class="space-y-2 md:col-span-2">
+                            <x-skeleton.line width="w-32" height="h-4" />
+                            <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-800 p-5 space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <x-skeleton.line width="w-24" height="h-5" />
+                        <x-skeleton.line width="w-40" height="h-3" />
+                    </div>
+                    <div class="space-y-3">
+                        <x-skeleton.line width="w-28" height="h-4" />
+                        <div class="flex flex-wrap gap-2">
+                            <x-skeleton.button width="w-36" height="h-9" />
+                            <x-skeleton.button width="w-44" height="h-9" />
+                        </div>
+                        <x-skeleton.line width="w-full" height="h-28" class="rounded-xl" />
+                        <x-skeleton.line width="w-64" height="h-3" />
+                    </div>
+                </div>
             </div>
             <div class="lg:col-span-4 space-y-6">
-                <x-skeleton.card :lines="4" />
-                <x-skeleton.card :lines="3" />
+                <div class="rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-800 p-4 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <x-skeleton.line width="w-32" height="h-4" />
+                        <x-skeleton.line width="w-10" height="h-3" />
+                    </div>
+                    <div class="space-y-3">
+                        <x-skeleton.line width="w-full" height="h-16" class="rounded-lg" />
+                        <x-skeleton.line width="w-full" height="h-16" class="rounded-lg" />
+                    </div>
+                </div>
+                <div class="rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-800 p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <x-skeleton.line width="w-20" height="h-4" />
+                        <x-skeleton.line width="w-16" height="h-3" />
+                    </div>
+                    <div class="flex gap-2">
+                        <x-skeleton.button width="w-full" height="h-10" />
+                        <x-skeleton.button width="w-full" height="h-10" />
+                    </div>
+                </div>
             </div>
         </div>
     </div>

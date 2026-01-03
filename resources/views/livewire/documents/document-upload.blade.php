@@ -48,7 +48,23 @@
     @enderror
 
 
-    <form wire:submit.prevent="uploadDocuments">
+    <div wire:loading wire:target="uploadDocuments,files,links,niveau_id,ue_id,ec_id,source" aria-busy="true" class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-8 space-y-6">
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="5" />
+                <x-skeleton.card :lines="3" />
+            </div>
+            <div class="lg:col-span-4 space-y-6">
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="3" />
+            </div>
+        </div>
+    </div>
+
+    <form wire:submit.prevent="uploadDocuments"
+          wire:loading.remove
+          wire:target="uploadDocuments,files,links,niveau_id,ue_id,ec_id,source">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
             {{-- LEFT --}}

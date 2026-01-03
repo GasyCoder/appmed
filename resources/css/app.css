@@ -12,9 +12,13 @@
 
 /* Base skeleton class */
 .skeleton {
-    @apply animate-pulse bg-gray-200 dark:bg-gray-800 rounded;
+    @apply bg-gray-200 dark:bg-gray-800 rounded;
     position: relative;
     overflow: hidden;
+}
+
+.skeleton-pulse {
+    @apply animate-pulse;
 }
 
 /* Shimmer effect for skeleton loaders */
@@ -40,7 +44,7 @@
         rgba(255, 255, 255, 0.2) 50%,
         rgba(255, 255, 255, 0) 100%
     );
-    animation: shimmer 2s infinite;
+    animation: shimmer 1.6s ease-in-out infinite;
 }
 
 /* Dark mode shimmer effect */
@@ -51,6 +55,10 @@
         rgba(255, 255, 255, 0.05) 50%,
         rgba(255, 255, 255, 0) 100%
     );
+}
+
+.skeleton-muted {
+    @apply bg-gray-100 dark:bg-gray-900/40;
 }
 
 /* Respect user's motion preferences (accessibility) */

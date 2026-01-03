@@ -22,7 +22,58 @@
         </div>
     @endif
 
-    <form wire:submit.prevent="save" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div wire:loading wire:target="niveau_id,ue_id,ec_id" aria-busy="true" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-8 space-y-6">
+            <div class="rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-800 p-5 space-y-4">
+                <x-skeleton.line width="w-32" height="h-5" />
+                <div class="space-y-2">
+                    <x-skeleton.line width="w-24" height="h-4" />
+                    <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="space-y-2">
+                        <x-skeleton.line width="w-24" height="h-4" />
+                        <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                    </div>
+                    <div class="space-y-2">
+                        <x-skeleton.line width="w-20" height="h-4" />
+                        <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                    </div>
+                    <div class="space-y-2">
+                        <x-skeleton.line width="w-24" height="h-4" />
+                        <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-800 p-5 space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                    <x-skeleton.line width="w-24" height="h-5" />
+                    <x-skeleton.line width="w-28" height="h-3" />
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <x-skeleton.button width="w-full" height="h-10" />
+                    <x-skeleton.button width="w-full" height="h-10" />
+                    <x-skeleton.button width="w-full" height="h-10" />
+                </div>
+                <x-skeleton.line width="w-full" height="h-16" class="rounded-lg" />
+            </div>
+        </div>
+        <aside class="lg:col-span-4 space-y-4">
+            <div class="rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-800 p-4 space-y-4">
+                <x-skeleton.line width="w-20" height="h-4" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <x-skeleton.button width="w-full" height="h-10" />
+                    <x-skeleton.button width="w-full" height="h-10" />
+                </div>
+                <div class="flex gap-2">
+                    <x-skeleton.button width="w-full" height="h-10" />
+                    <x-skeleton.button width="w-full" height="h-10" />
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <form wire:submit.prevent="save" wire:loading.remove wire:target="niveau_id,ue_id,ec_id" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <div class="lg:col-span-8 space-y-6">
 

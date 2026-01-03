@@ -20,6 +20,13 @@
 
 <body class="bg-white text-gray-900 dark:bg-gray-950 dark:text-white antialiased">
 
+    <div x-show="pageLoading" x-cloak aria-busy="true" aria-live="polite">
+        <span class="sr-only">Chargement de la page…</span>
+        <x-skeleton.page variant="landing" />
+    </div>
+
+    <div x-show="!pageLoading" x-cloak>
+
     {{-- Header fixed --}}
     <header id="landingHeader"
             class="fixed top-0 left-0 right-0 z-50 border-b border-gray-200/70 dark:border-gray-800/70
@@ -185,11 +192,13 @@
             </div>
         </div>
     </footer>
+    </div>
 
     <script>
         function landingTheme(){
             return {
                 darkMode: false,
+                pageLoading: true,
                 init(){
                     const saved = localStorage.getItem('darkMode');
                     // compat: ton app.js utilise "true/false", ici on accepte aussi "1/0"
@@ -215,6 +224,10 @@
 
                     // force la classe dès le chargement
                     document.documentElement.classList.toggle('dark', this.darkMode);
+
+                    setTimeout(() => {
+                        this.pageLoading = false;
+                    }, 700);
                 },
                 toggleDark(){
                     this.darkMode = !this.darkMode;

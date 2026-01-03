@@ -39,9 +39,15 @@
     class="min-h-screen font-sans antialiased flex flex-col
            bg-gray-50 text-gray-900
            dark:bg-gray-950 dark:text-gray-100"
-    x-data="{ sidebarOpen: false }"
+    x-data="{ sidebarOpen: false, pageLoading: true }"
+    x-init="setTimeout(() => { pageLoading = false }, 750)"
 >
-    <div class="flex-1 flex flex-col">
+    <div x-show="pageLoading" x-cloak aria-busy="true" aria-live="polite" class="flex-1 flex flex-col">
+        <span class="sr-only">Chargement de la page…</span>
+        <x-skeleton.page :has-sidebar="!$isStudent" />
+    </div>
+
+    <div x-show="!pageLoading" x-cloak class="flex-1 flex flex-col">
         @unless($isStudent)
             @include('layouts.partials.top-bar')
         @else
@@ -65,14 +71,14 @@
 
     {{-- Bottom navigation (mobile) uniquement étudiant --}}
     @if($isStudent)
-        <div class="md:hidden">
+        <div class="md:hidden" x-show="!pageLoading" x-cloak>
             @include('layouts.partials.bottom-nav')
         </div>
     @endif
 
     @RegisterServiceWorkerScript
 
-    <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-4">   
+    <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-4" x-show="!pageLoading" x-cloak>
         <div class="text-center text-sm text-gray-500 dark:text-gray-400">
             &copy; {{ date('Y') }} Faculté de Médecine - Université de Mahajanga
             <span class="mx-2 dark:text-gray-500">•</span>

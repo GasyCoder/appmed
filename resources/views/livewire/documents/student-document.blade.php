@@ -87,7 +87,31 @@
     @include('livewire.student.sections.header-liste')
 
     {{-- Content --}}
-    <div wire:key="view-type-{{ $viewType }}">
+    <div wire:loading
+         wire:target="search,teacherFilter,semesterFilter,viewedFilter,viewType,setScope,setViewedFilter,page,markViewed,markDownload"
+         aria-busy="true">
+        @if(($viewType ?? 'grid') === 'grid')
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="4" />
+            </div>
+        @else
+            <div class="space-y-3">
+                <x-skeleton.card :lines="3" />
+                <x-skeleton.card :lines="3" />
+                <x-skeleton.card :lines="3" />
+                <x-skeleton.card :lines="3" />
+            </div>
+        @endif
+    </div>
+
+    <div wire:loading.remove
+         wire:target="search,teacherFilter,semesterFilter,viewedFilter,viewType,setScope,setViewedFilter,page,markViewed,markDownload"
+         wire:key="view-type-{{ $viewType }}">
         @if (($documents?->count() ?? 0) === 0)
             {{-- Empty state --}}
             <div class="rounded-2xl border border-dashed border-gray-300 dark:border-gray-800 bg-white dark:bg-gray-950 p-8 sm:p-10 text-center">
@@ -107,9 +131,7 @@
                 </p>
             </div>
         @else
-        
             @include('livewire.documents.liste-document')
-
         @endif
     </div>
 

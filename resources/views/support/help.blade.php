@@ -53,10 +53,10 @@
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Bugs, accès, affichage, téléchargement</p>
 
                 <div class="mt-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 p-4">
-                    <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Email</p>
+                    <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Mon SiteWeb</p>
 
                     <div class="mt-1 flex items-center justify-between gap-2">
-                        <p class="text-sm text-gray-900 dark:text-white truncate">Mon site web</p>
+                        <p class="text-sm text-gray-900 dark:text-white truncate">Développeur</p>
 
                         <div class="flex items-center gap-2">
                             <a class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition"

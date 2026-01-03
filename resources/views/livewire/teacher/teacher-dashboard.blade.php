@@ -1,4 +1,34 @@
-<div class="mx-auto w-full max-w-10xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6">
+<div class="mx-auto w-full max-w-10xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6" x-data="{ loading: true }" x-init="setTimeout(() => loading = false, 750)">
+    
+    {{-- Skeleton Loading --}}
+    <div x-show="loading" x-cloak class="space-y-8">
+        {{-- Header Skeleton --}}
+        <x-skeleton.card :lines="2" :hasFooter="false" />
+
+        {{-- Stats Grid Skeleton --}}
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <x-skeleton.stat-card :hasIcon="false" />
+            <x-skeleton.stat-card :hasIcon="false" />
+            <x-skeleton.stat-card :hasIcon="false" />
+            <x-skeleton.stat-card :hasIcon="false" />
+            <x-skeleton.stat-card :hasIcon="false" />
+        </div>
+
+         {{-- Main Content Skeleton --}}
+         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+             <div class="lg:col-span-2 space-y-6">
+                 <x-skeleton.card :lines="5" />
+                 <x-skeleton.card :lines="3" />
+             </div>
+             <div class="space-y-6">
+                 <x-skeleton.card :lines="4" :hasHeader="false" />
+                 <x-skeleton.card :lines="4" :hasHeader="false" />
+             </div>
+         </div>
+    </div>
+
+    {{-- Content --}}
+    <div x-show="!loading" x-cloak x-transition>
 
     @php
         $me = $user; // passé par le component
@@ -426,6 +456,8 @@
             </div>
 
         </div>
+    </div>
+
     </div>
 
 </div>

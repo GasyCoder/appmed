@@ -1,9 +1,34 @@
 <x-guest-layout>
     <div class="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
+<x-guest-layout>
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
         <div class="w-full max-w-lg">
+            {{-- Back to Home --}}
+            <div class="mb-4">
+                <x-back-to-home />
+            </div>
 
-            {{-- Card --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+            {{-- Card with Skeleton --}}
+            <div x-data="{ loading: true }" x-init="setTimeout(() => loading = false, 500)">
+                {{-- Skeleton --}}
+                <div x-show="loading" x-cloak>
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden p-6">
+                        <div class="flex items-center gap-4 mb-5">
+                            <x-skeleton.avatar size="h-[120px] w-[120px]" />
+                            <div class="flex-1 space-y-2">
+                                <x-skeleton.line width="w-3/4" height="h-6" />
+                                <x-skeleton.line width="w-1/2" height="h-4" />
+                            </div>
+                        </div>
+                        <x-skeleton.line width="w-full" height="h-16" class="mb-5" />
+                        <x-skeleton.form :fields="1" />
+                    </div>
+                </div>
+
+                {{-- Actual Content --}}
+                <div x-show="!loading" x-cloak x-transition>
+                    {{-- Card --}}
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 
                 {{-- Header --}}
                 <div class="p-6">
@@ -159,6 +184,8 @@
                     <p class="text-xs text-center text-gray-500 dark:text-gray-400">
                         © {{ date('Y') }} EpiRC — Université de Mahajanga
                     </p>
+                </div>
+            </div>
                 </div>
             </div>
         </div>

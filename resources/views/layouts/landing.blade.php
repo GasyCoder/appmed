@@ -43,6 +43,46 @@
                 </div>
             </a>
 
+            {{-- Navigation --}}
+            <nav class="hidden md:flex items-center gap-1">
+                <a href="#features" 
+                   class="px-3 py-2 text-sm font-medium rounded-lg 
+                          text-gray-700 dark:text-gray-300
+                          hover:bg-gray-100 dark:hover:bg-gray-900 
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 
+                          transition"
+                   aria-label="Aller aux fonctionnalités">
+                    Fonctionnalités
+                </a>
+                <a href="#stats" 
+                   class="px-3 py-2 text-sm font-medium rounded-lg 
+                          text-gray-700 dark:text-gray-300
+                          hover:bg-gray-100 dark:hover:bg-gray-900 
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 
+                          transition"
+                   aria-label="Voir les statistiques">
+                    Chiffres
+                </a>
+                <a href="#updates" 
+                   class="px-3 py-2 text-sm font-medium rounded-lg 
+                          text-gray-700 dark:text-gray-300
+                          hover:bg-gray-100 dark:hover:bg-gray-900 
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 
+                          transition"
+                   aria-label="Voir les dernières actualités">
+                    Actualités
+                </a>
+                <a href="#support" 
+                   class="px-3 py-2 text-sm font-medium rounded-lg 
+                          text-gray-700 dark:text-gray-300
+                          hover:bg-gray-100 dark:hover:bg-gray-900 
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 
+                          transition"
+                   aria-label="Accéder au support">
+                    Support
+                </a>
+            </nav>
+
             {{-- Actions --}}
             <div class="flex items-center gap-2">
                 {{-- Dark toggle --}}
@@ -103,7 +143,7 @@
     </main>
 
     {{-- Footer --}}
-        <footer id="landingFooter" class="border-t border-gray-200/70 dark:border-gray-800/70 bg-gray-50 dark:bg-gray-950"> 
+        <footer id="footer" class="border-t border-gray-200/70 dark:border-gray-800/70 bg-gray-50 dark:bg-gray-950"> 
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                 <div class="flex items-center gap-3">

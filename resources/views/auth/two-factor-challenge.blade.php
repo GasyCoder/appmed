@@ -1,14 +1,39 @@
 {{-- resources/views/auth/two-factor-challenge.blade.php --}}
 <x-guest-layout>
-    <div class="min-h-screen flex items-center justify-center px-4 py-10">
+<x-guest-layout>
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
         <div class="w-full max-w-md">
-            <div
-                x-data="twoFactorOtp()"
-                x-init="init()"
-                class="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/50 shadow-xl shadow-gray-900/5 dark:shadow-black/30"
-            >
-                {{-- Header --}}
-                <div class="px-6 pt-6 pb-4">
+            {{-- Back to Home --}}
+            <div class="mb-4">
+                <x-back-to-home />
+            </div>
+
+            {{-- Card with Skeleton --}}
+            <div x-data="{ loading: true }" x-init="setTimeout(() => loading = false, 500)">
+                {{-- Skeleton --}}
+                <div x-show="loading" x-cloak>
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden p-6">
+                         <div class="flex items-center gap-3 mb-6">
+                            <x-skeleton.avatar size="h-14 w-14" class="rounded-xl" />
+                            <div class="flex-1 space-y-2">
+                                <x-skeleton.line width="w-3/4" height="h-5" />
+                                <x-skeleton.line width="w-1/2" height="h-3" />
+                            </div>
+                         </div>
+                         <x-skeleton.line width="w-full" height="h-12" class="mb-3" />
+                         <x-skeleton.button width="w-full" height="h-11" />
+                    </div>
+                </div>
+
+                {{-- Actual Content --}}
+                <div x-show="!loading" x-cloak x-transition>
+                    <div
+                        x-data="twoFactorOtp()"
+                        x-init="init()"
+                        class="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/50 shadow-xl shadow-gray-900/5 dark:shadow-black/30"
+                    >
+                        {{-- Header --}}
+                        <div class="px-6 pt-6 pb-4">
                     <div class="flex items-center gap-3">
                         <img
                             src="{{ asset('assets/image/logo.png') }}"
@@ -173,6 +198,9 @@
 
             <div class="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
                 Astuce : collez “123456” dans la première case, ça se répartit automatiquement.
+            </div>
+        </div>
+                </div>
             </div>
         </div>
     </div>

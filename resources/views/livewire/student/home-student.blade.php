@@ -1,4 +1,28 @@
-<div class="mx-auto w-full max-w-[88rem] px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-6 space-y-6">
+<div class="mx-auto w-full max-w-[88rem] px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-6 space-y-6" x-data="{ loading: true }" x-init="setTimeout(() => loading = false, 700)">
+
+    {{-- Skeleton Loading --}}
+    <div x-show="loading" x-cloak class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+         {{-- Main Col Skeleton --}}
+         <div class="lg:col-span-9 space-y-6">
+             {{-- Menu Grid Skeleton --}}
+             <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-5 bg-white dark:bg-gray-950/40">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <x-skeleton.card :lines="2" :hasHeader="false" />
+                    <x-skeleton.card :lines="2" :hasHeader="false" />
+                    <x-skeleton.card :lines="2" :hasHeader="false" />
+                    <x-skeleton.card :lines="2" :hasHeader="false" />
+                </div>
+             </div>
+         </div>
+         {{-- Sidebar Skeleton --}}
+         <aside class="lg:col-span-3 space-y-6">
+             <x-skeleton.card :lines="4" />
+             <x-skeleton.card :lines="3" />
+         </aside>
+    </div>
+
+    {{-- Content --}}
+    <div x-show="!loading" x-cloak x-transition>
 
     @php
         use Illuminate\Support\Facades\Route;
@@ -260,4 +284,6 @@
         </aside>
     </div>
      <x-footer-version />
+    </div>
+
 </div>

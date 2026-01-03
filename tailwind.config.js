@@ -80,6 +80,7 @@ export default {
                 'slide-in-right': 'slideInRight 0.3s ease-out',
                 'slide-in-left': 'slideInLeft 0.3s ease-out',
                 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                'shimmer': 'shimmer 2s infinite',
             },
             keyframes: {
                 fadeIn: {
@@ -101,6 +102,10 @@ export default {
                 slideInLeft: {
                     '0%': { transform: 'translateX(-10px)', opacity: 0 },
                     '100%': { transform: 'translateX(0)', opacity: 1 },
+                },
+                shimmer: {
+                    '0%': { transform: 'translateX(-100%)' },
+                    '100%': { transform: 'translateX(100%)' },
                 },
             },
             transitionProperty: {

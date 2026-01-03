@@ -211,7 +211,7 @@
 
                     <div class="p-4 space-y-3">
                         {{-- Archives des cours --}}
-                        <a href="{{ route('document.index', ['scope' => 'archives']) }}" wire:navigate
+                        <a href="{{ route('documents.index', ['scope' => 'archives']) }}" wire:navigate
                         class="group flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800
                                 bg-gray-50 dark:bg-gray-900/30 p-4
                                 hover:bg-gray-100 dark:hover:bg-gray-900/50 transition">

@@ -173,7 +173,7 @@
 
 
     {{-- Stats (mobile collapsible) --}}
-    <div class="space-y-3" x-data="{ statsOpen: false }">
+    <div class="space-y-3 mt-6" x-data="{ statsOpen: false }">
 
         {{-- Mobile résumé + toggle --}}
         <div class="sm:hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -262,7 +262,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
 
         {{-- Col gauche --}}
-        <div class="lg:col-span-2 space-y-4 sm:space-y-6">
+        <div class="lg:col-span-2 space-y-4 sm:space-y-6 mt-6">
 
             {{-- Documents récents --}}
             <div class="rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -385,7 +385,7 @@
         </div>
 
         {{-- Col droite --}}
-        <div class="space-y-4 sm:space-y-6">
+        <div class="space-y-4 sm:space-y-6 mt-6">
 
             {{-- Activité mensuelle --}}
             <div class="rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden">

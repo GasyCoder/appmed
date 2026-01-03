@@ -124,16 +124,18 @@ class Chatbot {
             document.querySelector('main .mx-auto') ||
             null;
 
-        if (anchor) {
+        if (anchor && anchor.offsetParent !== null) {
             const rect = anchor.getBoundingClientRect();
             const pr = parseFloat(getComputedStyle(anchor).paddingRight) || 0;
 
-            const desiredX = rect.right - pr;
-            right = Math.round(window.innerWidth - desiredX);
-            right += isMobile ? 0 : 6;
+            if (rect.width > 0 && rect.right > 0) {
+                const desiredX = rect.right - pr;
+                right = Math.round(window.innerWidth - desiredX);
+                right += isMobile ? 0 : 6;
 
-            right = Math.max(12, right);
-            right = Math.min(right, Math.max(12, window.innerWidth - 72));
+                right = Math.max(12, right);
+                right = Math.min(right, 48);
+            }
         }
 
         root.style.setProperty('--chat-dock-right', `${right}px`);
@@ -146,8 +148,8 @@ class Chatbot {
         <div id="chatbot-container"
              style="
                position:fixed;
-               right:var(--chat-dock-right, 24px);
-               bottom:var(--chat-dock-bottom, 96px);
+               right:calc(var(--chat-dock-right, 24px) + env(safe-area-inset-right));
+               bottom:calc(var(--chat-dock-bottom, 96px) + env(safe-area-inset-bottom));
                top:auto; left:auto;
                z-index:9999;
              ">
@@ -156,8 +158,8 @@ class Chatbot {
                  class="hidden"
                  style="
                    position:fixed;
-                   right:var(--chat-dock-right, 24px);
-                   bottom:calc(var(--chat-dock-bottom, 96px) + 76px);
+                   right:calc(var(--chat-dock-right, 24px) + env(safe-area-inset-right));
+                   bottom:calc(var(--chat-dock-bottom, 96px) + 76px + env(safe-area-inset-bottom));
                    top:auto; left:auto;
 
                    width:min(30rem, calc(100vw - 2rem));

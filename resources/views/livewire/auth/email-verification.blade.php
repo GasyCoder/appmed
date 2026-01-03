@@ -1,7 +1,10 @@
 <x-guest-layout>
     <div class="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
         <div class="w-full max-w-md">
-
+            {{-- Back to Home Button --}}
+            <div class="mb-4">
+                <x-back-to-home />
+            </div>
             <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
 
                 {{-- Header --}}

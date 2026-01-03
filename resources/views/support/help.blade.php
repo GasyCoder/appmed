@@ -56,24 +56,15 @@
                     <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Email</p>
 
                     <div class="mt-1 flex items-center justify-between gap-2">
-                        <p class="text-sm text-gray-900 dark:text-white truncate">support.informatique@exemple.umg</p>
+                        <p class="text-sm text-gray-900 dark:text-white truncate">Mon site web</p>
 
                         <div class="flex items-center gap-2">
                             <a class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                               href="mailto:support.informatique@exemple.umg?subject=EpiRC%20-%20Assistance%20technique">
-                                Écrire
+                               href="https://me.gasycoder.com" target="_blank">
+                                Voir
                             </a>
-
-                            <button type="button"
-                                    class="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700
-                                           text-gray-700 dark:text-gray-200 hover:bg-white/70 dark:hover:bg-gray-800 transition"
-                                    @click="navigator.clipboard.writeText('support.informatique@exemple.umg'); copied='support'; setTimeout(() => copied=null, 1200)">
-                                Copier
-                            </button>
                         </div>
                     </div>
-
-                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400" x-show="copied==='support'" x-cloak>Copié.</p>
                 </div>
             </div>
 
@@ -86,18 +77,18 @@
                     <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Email</p>
 
                     <div class="mt-1 flex items-center justify-between gap-2">
-                        <p class="text-sm text-gray-900 dark:text-white truncate">scolarite@exemple.umg</p>
+                        <p class="text-sm text-gray-900 dark:text-white truncate">facmed@mahajanga-univ.mg</p>
 
                         <div class="flex items-center gap-2">
                             <a class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition"
-                               href="mailto:scolarite@exemple.umg?subject=EpiRC%20-%20Demande%20Scolarit%C3%A9">
+                               href="mailto:facmed@mahajanga-univ.mgg?subject=EpiRC%20-%20Demande%20Scolarit%C3%A9">
                                 Écrire
                             </a>
 
                             <button type="button"
                                     class="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700
                                            text-gray-700 dark:text-gray-200 hover:bg-white/70 dark:hover:bg-gray-800 transition"
-                                    @click="navigator.clipboard.writeText('scolarite@exemple.umg'); copied='scolarite'; setTimeout(() => copied=null, 1200)">
+                                    @click="navigator.clipboard.writeText('facmed@mahajanga-univ.mg'); copied='facmed'; setTimeout(() => copied=null, 1200)">
                                 Copier
                             </button>
                         </div>

@@ -183,8 +183,27 @@
         </div>
     </div>
 
+    <div wire:loading
+         wire:target="setViewedFilter,downloadSchedule"
+         aria-busy="true"
+         class="space-y-4">
+        <div x-show="viewMode === 'grid'" x-cloak class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <x-skeleton.card :lines="4" />
+            <x-skeleton.card :lines="4" />
+            <x-skeleton.card :lines="4" />
+            <x-skeleton.card :lines="4" />
+        </div>
+        <div x-show="viewMode === 'list'" x-cloak class="space-y-3">
+            <x-skeleton.card :lines="3" />
+            <x-skeleton.card :lines="3" />
+            <x-skeleton.card :lines="3" />
+        </div>
+    </div>
+
     {{-- Vue Grille --}}
-    <div x-show="viewMode === 'grid'"
+    <div wire:loading.remove
+         wire:target="setViewedFilter,downloadSchedule"
+         x-show="viewMode === 'grid'"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 translate-y-1"
          x-transition:enter-end="opacity-100 translate-y-0"
@@ -325,7 +344,9 @@
     </div>
 
     {{-- Vue Liste --}}
-    <div x-show="viewMode === 'list'"
+    <div wire:loading.remove
+         wire:target="setViewedFilter,downloadSchedule"
+         x-show="viewMode === 'list'"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 translate-y-1"
          x-transition:enter-end="opacity-100 translate-y-0"

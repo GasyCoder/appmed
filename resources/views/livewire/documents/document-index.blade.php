@@ -197,7 +197,28 @@
         </div>
 
         {{-- LISTE / GRID --}}
-        <div wire:loading.class="opacity-60 pointer-events-none"
+        <div wire:loading
+             wire:target="search,teacherFilter,semesterFilter,viewedFilter,filterNiveau,filterParcour,filterSemestre,filterStatus,sortBy,setScope,toggleView,page,toggleArchive,toggleStatus,deleteDocument,markViewed,markDownload"
+             aria-busy="true"
+             class="space-y-4">
+            <div x-show="view === 'grid'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="4" />
+                <x-skeleton.card :lines="4" />
+            </div>
+            <div x-show="view === 'list'" x-cloak class="space-y-3">
+                <x-skeleton.card :lines="3" />
+                <x-skeleton.card :lines="3" />
+                <x-skeleton.card :lines="3" />
+                <x-skeleton.card :lines="3" />
+            </div>
+        </div>
+
+        <div wire:loading.remove
+             wire:target="search,teacherFilter,semesterFilter,viewedFilter,filterNiveau,filterParcour,filterSemestre,filterStatus,sortBy,setScope,toggleView,page,toggleArchive,toggleStatus,deleteDocument,markViewed,markDownload"
              :class="view === 'grid'
                 ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4'
                 : 'grid grid-cols-1 gap-3'">

@@ -33,8 +33,17 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="min-h-screen font-sans antialiased bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-    {{ $slot }}
+<body class="min-h-screen font-sans antialiased bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100"
+      x-data="{ pageLoading: true }"
+      x-init="setTimeout(() => { pageLoading = false }, 650)">
+    <div x-show="pageLoading" x-cloak aria-busy="true" aria-live="polite">
+        <span class="sr-only">Chargement de la page…</span>
+        <x-skeleton.page :has-sidebar="false" />
+    </div>
+
+    <div x-show="!pageLoading" x-cloak>
+        {{ $slot }}
+    </div>
     
     @livewireScripts
 </body>

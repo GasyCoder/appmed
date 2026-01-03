@@ -66,7 +66,25 @@
                         </a>
                     @endrole
 
-                {{-- VIEW TOGGLE (icônes) --}}
+                {{-- Retour à l’accueil (STUDENT ONLY) --}}
+                    @role('student')
+                        <a href="{{ route('studentEspace') }}"
+                        class="inline-flex h-10 w-full sm:w-auto items-center justify-center gap-2 rounded-xl
+                                border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800
+                                hover:bg-gray-50 active:bg-gray-100
+                                focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
+                                dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-100 dark:hover:bg-gray-700/40
+                                dark:focus-visible:ring-offset-gray-900 transition"
+                        aria-label="Retour à l'accueil étudiant">
+                            {{-- Arrow left icon --}}
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M15 18l-6-6 6-6"></path>
+                            </svg>
+                            <span>Retour à l’accueil</span>
+                        </a>
+                    @endrole
+
                     {{-- GRID --}}
                     <button type="button"
                             @click="view='grid'; $wire.toggleView('grid')"
@@ -109,6 +127,7 @@
                         <span class="hidden sm:inline">Liste</span>
                     </button>
             </div>
+            
         </div>
 
         {{-- FILTER BAR (simple, adapte selon ton composant Livewire) --}}

@@ -1,7 +1,5 @@
 <x-guest-layout>
     <div class="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
-<x-guest-layout>
-    <div class="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
         <div class="w-full max-w-lg">
             {{-- Back to Home --}}
             <div class="mb-4">

@@ -44,9 +44,9 @@
             [
                 'label' => 'Mes documents',
                 'desc'  => 'Documents, PDF, supports',
-                'href'  => Route::has('document.index') ? route('document.index') : '#',
+                'href'  => Route::has('documents.index') ? route('documents.index') : '#',
                 'icon'  => 'doc',
-                'active'=> request()->routeIs('document.index'),
+                'active'=> request()->routeIs('documents.index'),
                 'badge' => (int) ($menuStats['documents'] ?? 0),
                 'badgeColor' => 'bg-red-500',
             ],

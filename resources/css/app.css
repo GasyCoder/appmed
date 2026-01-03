@@ -12,9 +12,22 @@
 
 /* Base skeleton class */
 .skeleton {
-    @apply bg-gray-200 dark:bg-gray-800 rounded;
+    @apply bg-gray-200/80 dark:bg-gray-800/70 rounded;
     position: relative;
     overflow: hidden;
+}
+
+/* Skeleton variants */
+.skeleton-light {
+    @apply bg-gray-200/90;
+}
+
+.skeleton-dark {
+    @apply bg-gray-800/80;
+}
+
+.skeleton-muted {
+    @apply bg-gray-100 dark:bg-gray-900/40;
 }
 
 .skeleton-pulse {
@@ -55,10 +68,6 @@
         rgba(255, 255, 255, 0.05) 50%,
         rgba(255, 255, 255, 0) 100%
     );
-}
-
-.skeleton-muted {
-    @apply bg-gray-100 dark:bg-gray-900/40;
 }
 
 /* Respect user's motion preferences (accessibility) */

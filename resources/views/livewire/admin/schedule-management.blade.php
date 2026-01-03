@@ -65,7 +65,18 @@
     </div>
 
     {{-- Liste --}}
-    <div class="space-y-4">
+    <div wire:loading
+         wire:target="search,typeFilter,niveauFilter,statusFilter,toggleStatus,deleteSchedule,page"
+         aria-busy="true"
+         class="space-y-4">
+        <x-skeleton.card :lines="4" />
+        <x-skeleton.card :lines="4" />
+        <x-skeleton.card :lines="4" />
+    </div>
+
+    <div wire:loading.remove
+         wire:target="search,typeFilter,niveauFilter,statusFilter,toggleStatus,deleteSchedule,page"
+         class="space-y-4">
         @forelse($schedules as $schedule)
             <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 hover:shadow-lg transition-shadow">
                 <div class="flex items-start justify-between">

@@ -22,7 +22,58 @@
         </div>
     @endif
 
-    <form wire:submit.prevent="save" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div wire:loading wire:target="niveau_id,ue_id,ec_id" aria-busy="true" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-8 space-y-6">
+            <div class="rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-800 p-5 space-y-4">
+                <x-skeleton.line width="w-32" height="h-5" />
+                <div class="space-y-2">
+                    <x-skeleton.line width="w-24" height="h-4" />
+                    <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="space-y-2">
+                        <x-skeleton.line width="w-24" height="h-4" />
+                        <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                    </div>
+                    <div class="space-y-2">
+                        <x-skeleton.line width="w-20" height="h-4" />
+                        <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                    </div>
+                    <div class="space-y-2">
+                        <x-skeleton.line width="w-24" height="h-4" />
+                        <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-800 p-5 space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                    <x-skeleton.line width="w-24" height="h-5" />
+                    <x-skeleton.line width="w-28" height="h-3" />
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <x-skeleton.button width="w-full" height="h-10" />
+                    <x-skeleton.button width="w-full" height="h-10" />
+                    <x-skeleton.button width="w-full" height="h-10" />
+                </div>
+                <x-skeleton.line width="w-full" height="h-16" class="rounded-lg" />
+            </div>
+        </div>
+        <aside class="lg:col-span-4 space-y-4">
+            <div class="rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-white dark:bg-gray-800 p-4 space-y-4">
+                <x-skeleton.line width="w-20" height="h-4" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <x-skeleton.button width="w-full" height="h-10" />
+                    <x-skeleton.button width="w-full" height="h-10" />
+                </div>
+                <div class="flex gap-2">
+                    <x-skeleton.button width="w-full" height="h-10" />
+                    <x-skeleton.button width="w-full" height="h-10" />
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <form wire:submit.prevent="save" wire:loading.remove wire:target="niveau_id,ue_id,ec_id" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <div class="lg:col-span-8 space-y-6">
 
@@ -40,9 +91,7 @@
                 </div>
 
                 {{-- Niveau -> UE -> EC (Programme) --}}
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4"
-                     wire:loading.attr="aria-busy"
-                     wire:target="niveau_id,ue_id">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                             Niveau <span class="text-red-500">*</span>
@@ -61,19 +110,14 @@
                         <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                             UE <span class="text-red-500">*</span>
                         </label>
-                        <div wire:loading.remove wire:target="niveau_id">
-                            <select wire:model.live="ue_id"
-                                    class="w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
-                                    @if(!$niveau_id) disabled @endif>
-                                <option value="">Sélectionnez</option>
-                                @foreach($ues as $ue)
-                                    <option value="{{ $ue->id }}">{{ $ue->code }} — {{ $ue->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div wire:loading.delay wire:target="niveau_id" class="space-y-2" aria-busy="true">
-                            <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
-                        </div>
+                        <select wire:model.live="ue_id"
+                                class="w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
+                                @if(!$niveau_id) disabled @endif>
+                            <option value="">Sélectionnez</option>
+                            @foreach($ues as $ue)
+                                <option value="{{ $ue->id }}">{{ $ue->code }} — {{ $ue->name }}</option>
+                            @endforeach
+                        </select>
                         @error('ue_id') <p class="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                     </div>
 
@@ -81,19 +125,14 @@
                         <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                             EC (optionnel)
                         </label>
-                        <div wire:loading.remove wire:target="niveau_id,ue_id">
-                            <select wire:model.live="ec_id"
-                                    class="w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
-                                    @if(!$ue_id || $ecs->isEmpty()) disabled @endif>
-                                <option value="">Toute l’UE</option>
-                                @foreach($ecs as $ec)
-                                    <option value="{{ $ec->id }}">{{ $ec->code }} — {{ $ec->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div wire:loading.delay wire:target="niveau_id,ue_id" class="space-y-2" aria-busy="true">
-                            <x-skeleton.line width="w-full" height="h-11" class="rounded-lg" />
-                        </div>
+                        <select wire:model.live="ec_id"
+                                class="w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
+                                @if(!$ue_id || $ecs->isEmpty()) disabled @endif>
+                            <option value="">Toute l’UE</option>
+                            @foreach($ecs as $ec)
+                                <option value="{{ $ec->id }}">{{ $ec->code }} — {{ $ec->name }}</option>
+                            @endforeach
+                        </select>
                         @error('ec_id') <p class="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                     </div>
                 </div>
